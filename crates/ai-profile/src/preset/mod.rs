@@ -28,8 +28,10 @@ use crate::kind::{Kind, Protocol};
 pub mod vendor;
 
 mod chat;
+mod docgen;
 
-pub use vendor::{vendors, Vendor};
+pub use docgen::render_providers_markdown;
+pub use vendor::{vendors, vendors_all, Vendor};
 
 /// 一个模型候选项。
 ///

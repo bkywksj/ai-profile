@@ -87,6 +87,24 @@ pub fn vendors(allow_kinds: &[Kind]) -> Vec<Vendor> {
     out
 }
 
+/// 全部厂商，不按 kind 过滤 —— 文档生成与「看看总共支持哪些」用。
+///
+/// 界面渲染应当用 [`vendors`]：只声明了 chat 的应用不该看到纯视频厂商。
+pub fn vendors_all() -> Vec<Vendor> {
+    vendors(ALL_KINDS)
+}
+
+/// 本 build 开启的所有 kind。
+const ALL_KINDS: &[Kind] = &[
+    Kind::Chat,
+    #[cfg(feature = "image")]
+    Kind::Image,
+    #[cfg(feature = "video")]
+    Kind::Video,
+    #[cfg(feature = "tts")]
+    Kind::Tts,
+];
+
 /// 该厂商下的全部预置。
 pub fn presets_of_vendor(vendor_id: &str) -> impl Iterator<Item = &'static ProviderPreset> + '_ {
     presets().iter().filter(move |p| p.vendor_id == vendor_id)

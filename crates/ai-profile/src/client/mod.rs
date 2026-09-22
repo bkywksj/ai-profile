@@ -46,6 +46,20 @@ pub struct ServiceConfig<'a> {
     pub extra: &'a [(&'a str, &'a str)],
 }
 
+/// 🔴 本类型带 `#[non_exhaustive]`，**外部 crate 不能用字面量构造它** ——
+/// 必须走下面这组链式方法。
+///
+/// 这不是绕弯路：`non_exhaustive` 让本 crate 以后加字段只算 minor 版本，
+/// 代价就是调用方不能写 `ServiceConfig { .. }`。入参类型上用它，
+/// **必须同时提供完整的 builder**，否则下游根本没法用（实测踩过 E0639）。
+///
+/// ```no_run
+/// # use ai_profile::{client::ServiceConfig, Protocol};
+/// let cfg = ServiceConfig::new(Protocol::OpenAiCompatible, "https://api.deepseek.com/v1")
+///     .with_preset("deepseek")
+///     .with_api_key("sk-…")
+///     .with_model("deepseek-flash");
+/// ```
 impl<'a> ServiceConfig<'a> {
     /// 最小构造：只给协议与端点。
     pub fn new(protocol: Protocol, base_url: &'a str) -> Self {
@@ -57,6 +71,31 @@ impl<'a> ServiceConfig<'a> {
             model: "",
             extra: &[],
         }
+    }
+
+    /// 指定预置 key —— 会校验该预置要求的 `extra_fields`，
+    /// 并在 `base_url` 为空时用预置的地址兜底。
+    pub fn with_preset(mut self, key: &'a str) -> Self {
+        self.preset_key = Some(key);
+        self
+    }
+
+    /// 明文密钥。空串 = 不带鉴权（本地服务常见）。
+    pub fn with_api_key(mut self, key: &'a str) -> Self {
+        self.api_key = key;
+        self
+    }
+
+    /// 当前填的模型 id；给了就会校验它在不在端点返回的清单里。
+    pub fn with_model(mut self, model: &'a str) -> Self {
+        self.model = model;
+        self
+    }
+
+    /// 服务商专有字段的实际值。
+    pub fn with_extra(mut self, extra: &'a [(&'a str, &'a str)]) -> Self {
+        self.extra = extra;
+        self
     }
 }
 

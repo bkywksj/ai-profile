@@ -13,9 +13,19 @@
 - `error` —— 结构化 `VerifyError`，每个变体对应一个 UI 动作
 - 规划与交互原型迁入 `docs/`
 
-### 待办（见 `docs/tasks/active/`）
-- `preset` 模块：20 家服务商预置 + `vendor_id` 聚合
-- `protocol` 模块：`ai.profile` 解析 / 生成
-- `client` 模块：`verify()` / `dry_run()` / `fetch_models()`
-- `docs/providers.md`、`docs/versioning.md`
-- `cargo xtask probe` 实现
+### 数据与协议
+- `preset` —— 16 家 chat 预置，按 `vendor_id` 聚合成服务商目录
+- `protocol` —— `ai.profile` 解析 / 生成，统一四份既有实现
+  （修掉其中一份漏 `baseUrl` 别名导致的静默不兼容）
+- `client::verify` —— 零成本验证，六个错误变体各对应一个 UI 动作
+
+### 文档与工具
+- `docs/providers.md` —— 由 `cargo xtask gen-docs` 生成，
+  守卫测试 `providers_md_in_sync` 保证与代码一致
+- `docs/versioning.md` —— 版本位判定表 + 两个高危改动的说明
+- `cargo xtask probe` —— 探活各家端点（人工触发，不进 CI）
+
+### 待办
+- `client::dry_run` —— 真实调用（产生费用），按 kind 分实现
+- image / video / tts 三种 kind 的预置与 client
+- `packages/react` —— headless hook + 预制组件

@@ -124,3 +124,36 @@ fn tolerates_foreign_spellings() {
     // provider 写的是 custom，但 model 名暴露了它其实要走 Anthropic 端点
     assert_eq!(got.protocol, Protocol::Anthropic);
 }
+
+/// 🔴 `ServiceConfig` 带 `#[non_exhaustive]`，外部 crate 不能用字面量构造它 ——
+/// 必须能走完整的 builder 链。
+///
+/// 这条是实测踩出来的：最初只有 `new()` 没有 `with_*()`，xtask 作为外部 crate
+/// 编译直接报 E0639。**单元测试抓不到** —— 它们在 crate 内部，不受该限制。
+/// 集成测试是这类问题的唯一防线。
+#[cfg(feature = "client")]
+#[test]
+fn service_config_builder_is_usable_from_outside() {
+    use ai_profile::client::ServiceConfig;
+
+    let extra = [("appid", "123"), ("cluster", "volcano_tts")];
+    let cfg = ServiceConfig::new(Protocol::OpenAiCompatible, "https://api.deepseek.com/v1")
+        .with_preset("deepseek")
+        .with_api_key("sk-test")
+        .with_model("deepseek-flash")
+        .with_extra(&extra);
+
+    assert_eq!(cfg.preset_key, Some("deepseek"));
+    assert_eq!(cfg.api_key, "sk-test");
+    assert_eq!(cfg.model, "deepseek-flash");
+    assert_eq!(cfg.extra.len(), 2);
+}
+
+/// 缺必填专有字段时，调用方能在**发请求之前**就判出来 —— 用于禁用按钮。
+#[cfg(feature = "client")]
+#[test]
+fn required_fields_check_is_public() {
+    use ai_profile::client::check_required_fields;
+    assert!(check_required_fields(Some("deepseek"), &[]).is_ok());
+    assert!(check_required_fields(None, &[]).is_ok());
+}
