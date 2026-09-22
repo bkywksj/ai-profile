@@ -1,0 +1,29 @@
+[package]
+name = "ai-profile"
+description = "AI 模型服务配置层：provider 预置、ai.profile 互通协议、端点拼接与连通性验证"
+keywords = ["llm", "ai", "provider", "config"]
+categories = ["api-bindings", "config"]
+readme = "../../README.md"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[features]
+# 🔴 默认只给纯数据 + 纯函数：零重依赖，能编到 Android / iOS。
+# 不用的 kind 不编进下游的二进制。
+default = ["chat"]
+chat = []
+image = []
+video = []
+tts = []
+# 真实 HTTP 调用（verify / dry_run / fetch_models）。拉 reqwest，按需开启。
+client = ["dep:reqwest", "dep:tokio"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+reqwest = { version = "0.12", optional = true, default-features = false, features = ["json", "rustls-tls"] }
+tokio = { version = "1", optional = true, features = ["time"] }

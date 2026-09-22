@@ -1,0 +1,19 @@
+# ai-profile —— workspace 根
+#
+# 🔴 这是库项目：Cargo.lock 不提交（由下游应用决定依赖版本）。
+# xtask 是本地工具，不发布到 crates.io。
+[workspace]
+members = ["crates/ai-profile", "xtask"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/bkywksj/ai-profile"
+authors = ["抓蛙师"]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"

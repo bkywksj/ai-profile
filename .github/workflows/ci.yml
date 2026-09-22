@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+# 🔴 这里只做「代码自洽」检查，绝不访问任何服务商端点。
+#    探活是 `cargo xtask probe`，人工季度触发 —— 放进 CI 等于每次 PR 都滥用人家的接口，
+#    而且网络波动会让 CI 随机红。
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+
+      - name: fmt
+        run: cargo fmt --all --check
+
+      - name: clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      # 默认 feature（chat）
+      - name: test
+        run: cargo test --workspace
+
+      # 🔴 多模态 feature 必须单独验一遍：kind.rs 里有 #[cfg(feature)] 分支，
+      #    只跑默认 feature 的话，image/video/tts 的 match 臂根本没被编译过
+      - name: test (all features)
+        run: cargo test --workspace --all-features
+
+      # 只开 chat、不开 client 时也要能编 —— 这是移动端 / 纯配置场景的形态
+      - name: build (no default features)
+        run: cargo build -p ai-profile --no-default-features --features chat

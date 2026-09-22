@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模型服务 · 多模态能力接入原型 v2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { primary:'#5e6ad2','primary-light':'#eff1fe', ink:'#18181b', ink2:'#52525b', ink3:'#71717a',
+              line:'#e4e4e7', surface:'#ffffff', canvas:'#fafafa' },
+    fontFamily: { sans:['Inter','Noto Sans SC','system-ui','sans-serif'] }
+  }}
+}
+</script>
+<style>
+  .mono{font-family:ui-monospace,'Cascadia Code',Consolas,monospace}
+  .scene{display:none} .scene.active{display:block}
+</style>
+</head>
+<body class="bg-canvas font-sans text-ink">
+
+<div class="bg-ink text-white px-6 py-3 flex items-center gap-4 sticky top-0 z-30">
+  <div class="flex items-center gap-2 mr-2">
+    <i data-lucide="layers" class="w-5 h-5"></i>
+    <span class="font-semibold text-sm">模型服务 · 多模态接入原型</span>
+    <span class="px-1.5 py-0.5 rounded bg-white/10 text-[10px]">v2</span>
+  </div>
+  <div class="flex gap-1 text-xs">
+    <button onclick="showScene('sigil')" data-tab="sigil" class="tab-btn px-3 py-1.5 rounded-md cursor-pointer transition-colors bg-primary">A · Sigil</button>
+    <button onclick="showScene('loom')" data-tab="loom" class="tab-btn px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-white/10">B · StoryLoom</button>
+    <button onclick="showScene('catalog')" data-tab="catalog" class="tab-btn px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-white/10 relative">
+      C · 服务商目录 <span class="absolute -top-1 -right-1 w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+    </button>
+    <button onclick="showScene('form')" data-tab="form" class="tab-btn px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-white/10">D · 新建表单</button>
+    <button onclick="showScene('verify')" data-tab="verify" class="tab-btn px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-white/10">E · 验证状态机</button>
+    <button onclick="showScene('code')" data-tab="code" class="tab-btn px-3 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-white/10">F · 代码控制点</button>
+  </div>
+  <span class="ml-auto text-[11px] text-white/50">同一份 crate + 同一个组件，靠一行声明决定渲染什么</span>
+</div>
+
+<!-- ============ 场景 A：Sigil ============ -->
+<div id="scene-sigil" class="scene active">
+  <div class="flex">
+    <nav class="w-48 shrink-0 px-6 py-6">
+      <div class="bg-surface border border-line rounded-lg overflow-hidden">
+        <div class="px-3 py-2.5 flex items-center gap-2 border-b border-line">
+          <i data-lucide="settings" class="w-4 h-4 text-ink2"></i><span class="text-sm font-semibold">设置</span>
+        </div>
+        <div class="p-1.5 text-[13px]">
+          <div class="px-2 pt-1 pb-1 text-xs text-ink3">AI 与网络</div>
+          <a class="flex items-center gap-2 px-2 py-1.5 rounded-md bg-primary-light text-primary font-medium cursor-pointer"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 模型服务</a>
+          <a class="flex items-center gap-2 px-2 py-1.5 rounded-md text-ink2 hover:bg-gray-50 cursor-pointer transition-colors"><i data-lucide="globe" class="w-3.5 h-3.5"></i> 网络</a>
+        </div>
+      </div>
+    </nav>
+    <main class="flex-1 min-w-0 px-6 py-6">
+      <section class="bg-surface border border-line rounded-lg">
+        <div class="px-4 py-3 border-b border-line flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="message-square" class="w-4 h-4 text-primary"></i>
+            <span class="font-semibold text-sm">对话模型</span><span class="text-xs text-ink3">2 个已配置</span>
+          </div>
+          <div class="flex gap-2">
+            <!-- 🔴 新增：批量验证。4 种能力时逐个点太累（Nielsen #7 灵活高效） -->
+            <button class="border border-line px-3 py-1.5 rounded-md text-xs hover:border-primary hover:text-primary transition cursor-pointer flex items-center gap-1">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> 全部验证
+            </button>
+            <button class="border border-line px-3 py-1.5 rounded-md text-xs hover:border-primary hover:text-primary transition cursor-pointer flex items-center gap-1">
+              <i data-lucide="clipboard-paste" class="w-3.5 h-3.5"></i> 粘贴导入
+            </button>
+            <button class="bg-primary text-white px-3 py-1.5 rounded-md text-xs hover:opacity-90 transition cursor-pointer flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新建
+            </button>
+          </div>
+        </div>
+        <div class="divide-y divide-line">
+          <!-- 已验证成功 -->
+          <div class="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-sm">永夜</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-violet-50 text-violet-600">Anthropic</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-green-50 text-green-700">当前</span>
+              </div>
+              <div class="mono text-[11px] text-ink3 mt-0.5">claude-opus-5 · https://cc.nightsoil.cn/v1</div>
+            </div>
+            <!-- 🔴 验证结果常驻，不是点了才有的瞬时 toast（Nielsen #1 状态可见） -->
+            <span class="flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded">
+              <i data-lucide="check-circle-2" class="w-3 h-3"></i> 连接正常 · 320ms
+            </span>
+            <div class="flex items-center gap-2 text-ink3">
+              <button class="hover:text-primary cursor-pointer transition-colors" title="验证连接"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i></button>
+              <button class="hover:text-primary cursor-pointer transition-colors" title="试运行"><i data-lucide="play" class="w-3.5 h-3.5"></i></button>
+              <button class="hover:text-primary cursor-pointer transition-colors" title="分享"><i data-lucide="share-2" class="w-3.5 h-3.5"></i></button>
+              <button class="hover:text-primary cursor-pointer transition-colors" title="编辑"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+              <button class="hover:text-red-500 cursor-pointer transition-colors" title="删除"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+          <!-- 验证失败 —— 带可操作诊断（Nielsen #9 错误恢复） -->
+          <div class="px-4 py-3 hover:bg-gray-50 transition-colors">
+            <div class="flex items-center gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-sm">DeepSeek 日常</span>
+                  <span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-blue-600">OpenAI 兼容</span>
+                </div>
+                <div class="mono text-[11px] text-ink3 mt-0.5">deepseek-flash · https://api.deepseek.com</div>
+              </div>
+              <span class="flex items-center gap-1 text-[11px] text-red-700 bg-red-50 px-2 py-0.5 rounded">
+                <i data-lucide="x-circle" class="w-3 h-3"></i> 404 端点不存在
+              </span>
+              <div class="flex items-center gap-2 text-ink3">
+                <button class="hover:text-primary cursor-pointer transition-colors" title="验证连接"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i></button>
+                <button class="hover:text-primary cursor-pointer transition-colors" title="试运行"><i data-lucide="play" class="w-3.5 h-3.5"></i></button>
+                <button class="hover:text-primary cursor-pointer transition-colors"><i data-lucide="share-2" class="w-3.5 h-3.5"></i></button>
+                <button class="hover:text-primary cursor-pointer transition-colors"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                <button class="hover:text-red-500 cursor-pointer transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+              </div>
+            </div>
+            <!-- 🔴 失败必须给「怎么修」而不只是「失败了」 -->
+            <div class="mt-2 bg-red-50 border border-red-200 rounded-md px-3 py-2 flex items-start gap-2">
+              <i data-lucide="wrench" class="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5"></i>
+              <div class="text-[11px] text-red-900 flex-1">
+                请求 <span class="mono">https://api.deepseek.com/chat/completions</span> 返回 404。
+                该地址缺少版本段 —— DeepSeek 的 Base URL 应为
+                <span class="mono">https://api.deepseek.com/v1</span>
+              </div>
+              <button class="shrink-0 bg-red-600 text-white px-2 py-1 rounded text-[11px] hover:opacity-90 transition cursor-pointer">一键修正</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="mt-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-900 flex gap-2">
+        <i data-lucide="lightbulb" class="w-4 h-4 shrink-0 mt-0.5"></i>
+        <div>
+          <b>v2 修正：验证按钮全量补齐，且验证结果常驻而非一闪而过的 toast。</b><br>
+          失败不只说"失败了"，而是给出<b>请求的完整 URL + 判定 + 一键修正</b> ——
+          这三样正是 crate 的结构化错误该带的字段（见场景 D）。
+          未声明的 kind 依然完全不渲染，不是灰掉。
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ 场景 B：StoryLoom ============ -->
+<div id="scene-loom" class="scene">
+  <div class="flex">
+    <nav class="w-48 shrink-0 px-6 py-6">
+      <div class="bg-surface border border-line rounded-lg overflow-hidden">
+        <div class="px-3 py-2.5 flex items-center gap-2 border-b border-line">
+          <i data-lucide="settings" class="w-4 h-4 text-ink2"></i><span class="text-sm font-semibold">设置</span>
+        </div>
+        <div class="p-1.5 text-[13px]">
+          <div class="px-2 pt-1 pb-1 text-xs text-ink3">AI 能力</div>
+          <a class="flex items-center gap-2 px-2 py-1.5 rounded-md bg-primary-light text-primary font-medium cursor-pointer"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 模型服务</a>
+          <a class="flex items-center gap-2 pl-7 pr-2 py-1 rounded-md text-ink2 hover:bg-gray-50 cursor-pointer text-xs transition-colors">对话 <i data-lucide="check-circle-2" class="w-3 h-3 text-green-600 ml-auto"></i></a>
+          <a class="flex items-center gap-2 pl-7 pr-2 py-1 rounded-md text-ink2 hover:bg-gray-50 cursor-pointer text-xs transition-colors">生图 <i data-lucide="check-circle-2" class="w-3 h-3 text-green-600 ml-auto"></i></a>
+          <a class="flex items-center gap-2 pl-7 pr-2 py-1 rounded-md text-ink2 hover:bg-gray-50 cursor-pointer text-xs transition-colors">视频 <i data-lucide="loader" class="w-3 h-3 text-primary ml-auto animate-spin"></i></a>
+          <a class="flex items-center gap-2 pl-7 pr-2 py-1 rounded-md text-ink2 hover:bg-gray-50 cursor-pointer text-xs transition-colors">配音 <i data-lucide="alert-circle" class="w-3 h-3 text-amber-600 ml-auto"></i></a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="flex-1 min-w-0 px-6 py-6 flex flex-col gap-4">
+      <div class="bg-surface border border-line rounded-lg px-4 py-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-ink3">能力就绪度 —— 漫剧化流水线需要全部四项</span>
+          <button class="border border-line px-2.5 py-1 rounded text-[11px] hover:border-primary hover:text-primary transition cursor-pointer flex items-center gap-1">
+            <i data-lucide="shield-check" class="w-3 h-3"></i> 全部验证
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="flex-1 flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 border border-green-200">
+            <i data-lucide="message-square" class="w-4 h-4 text-green-700"></i>
+            <div class="text-xs"><div class="font-medium text-green-900">对话</div><div class="text-green-700">已验证</div></div>
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-green-600 ml-auto"></i>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-ink3 shrink-0"></i>
+          <div class="flex-1 flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 border border-green-200">
+            <i data-lucide="image" class="w-4 h-4 text-green-700"></i>
+            <div class="text-xs"><div class="font-medium text-green-900">生图</div><div class="text-green-700">已验证</div></div>
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-green-600 ml-auto"></i>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-ink3 shrink-0"></i>
+          <div class="flex-1 flex items-center gap-2 px-3 py-2 rounded-md bg-primary-light border border-primary/30">
+            <i data-lucide="video" class="w-4 h-4 text-primary"></i>
+            <div class="text-xs"><div class="font-medium text-primary">视频</div><div class="text-primary/70">验证中…</div></div>
+            <i data-lucide="loader" class="w-4 h-4 text-primary ml-auto animate-spin"></i>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-ink3 shrink-0"></i>
+          <div class="flex-1 flex items-center gap-2 px-3 py-2 rounded-md bg-amber-50 border border-amber-200">
+            <i data-lucide="mic" class="w-4 h-4 text-amber-700"></i>
+            <div class="text-xs"><div class="font-medium text-amber-900">配音</div><div class="text-amber-700">缺 App ID</div></div>
+            <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600 ml-auto"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 对话 -->
+      <section class="bg-surface border border-line rounded-lg">
+        <div class="px-4 py-3 border-b border-line flex items-center justify-between">
+          <div class="flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4 text-primary"></i><span class="font-semibold text-sm">对话模型</span><span class="text-xs text-ink3">大纲 / 续写 / 润色</span></div>
+          <button class="bg-primary text-white px-3 py-1.5 rounded-md text-xs hover:opacity-90 transition cursor-pointer flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 新建</button>
+        </div>
+        <div class="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2"><span class="font-medium text-sm">DeepSeek 主力</span><span class="px-1.5 py-0.5 rounded text-[10px] bg-green-50 text-green-700">默认</span></div>
+            <div class="mono text-[11px] text-ink3 mt-0.5">deepseek-flash · api.deepseek.com/v1</div>
+          </div>
+          <span class="flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded"><i data-lucide="check-circle-2" class="w-3 h-3"></i> 正常</span>
+          <div class="flex items-center gap-2 text-ink3">
+            <button class="hover:text-primary cursor-pointer transition-colors" title="验证连接"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i></button>
+            <!-- 试运行：chat 成本极低，直接给 -->
+            <button class="hover:text-primary cursor-pointer transition-colors" title="试运行 · 发一句测试对话"><i data-lucide="play" class="w-3.5 h-3.5"></i></button>
+            <button class="hover:text-primary cursor-pointer transition-colors"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+            <button class="hover:text-red-500 cursor-pointer transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 生图：试运行要花钱，按钮带成本标注 -->
+      <section class="bg-surface border border-line rounded-lg">
+        <div class="px-4 py-3 border-b border-line flex items-center justify-between">
+          <div class="flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-primary"></i><span class="font-semibold text-sm">生图模型</span><span class="text-xs text-ink3">角色参考图 / 分镜画面</span></div>
+          <button class="bg-primary text-white px-3 py-1.5 rounded-md text-xs hover:opacity-90 transition cursor-pointer flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 新建</button>
+        </div>
+        <div class="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2"><span class="font-medium text-sm">即梦 Seedream</span><span class="px-1.5 py-0.5 rounded text-[10px] bg-green-50 text-green-700">默认</span></div>
+            <div class="mono text-[11px] text-ink3 mt-0.5">doubao-seedream-3-0-t2i · ark.cn-beijing.volces.com</div>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-gray-100 text-[10px] text-ink2 mono">1024×1024</span>
+          <span class="flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded"><i data-lucide="check-circle-2" class="w-3 h-3"></i> 正常</span>
+          <div class="flex items-center gap-2 text-ink3">
+            <button class="hover:text-primary cursor-pointer transition-colors" title="验证连接 · 不产生费用"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i></button>
+            <!-- 🔴 试运行会真出一张图 = 真花钱，图标带 ¥ 提示 -->
+            <button class="hover:text-amber-600 cursor-pointer transition-colors relative" title="试运行 · 会生成 1 张图，产生费用">
+              <i data-lucide="play" class="w-3.5 h-3.5"></i>
+              <span class="absolute -top-1 -right-1 text-[8px] text-amber-600 font-bold">¥</span>
+            </button>
+            <button class="hover:text-primary cursor-pointer transition-colors"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+            <button class="hover:text-red-500 cursor-pointer transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 视频：任务可取消 -->
+      <section class="bg-surface border border-line rounded-lg">
+        <div class="px-4 py-3 border-b border-line flex items-center justify-between">
+          <div class="flex items-center gap-2"><i data-lucide="video" class="w-4 h-4 text-primary"></i><span class="font-semibold text-sm">视频模型</span><span class="px-1.5 py-0.5 rounded text-[10px] bg-violet-50 text-violet-600">异步任务</span></div>
+          <button class="bg-primary text-white px-3 py-1.5 rounded-md text-xs hover:opacity-90 transition cursor-pointer flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 新建</button>
+        </div>
+        <div class="px-4 py-3 hover:bg-gray-50 transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2"><span class="font-medium text-sm">即梦 Seedance</span><span class="px-1.5 py-0.5 rounded text-[10px] bg-green-50 text-green-700">默认</span></div>
+              <div class="mono text-[11px] text-ink3 mt-0.5">doubao-seedance-1-0-lite-i2v · 5s · 720p</div>
+            </div>
+            <span class="flex items-center gap-1 text-[11px] text-primary bg-primary-light px-2 py-0.5 rounded"><i data-lucide="loader" class="w-3 h-3 animate-spin"></i> 验证中</span>
+            <div class="flex items-center gap-2 text-ink3">
+              <button class="hover:text-primary cursor-pointer transition-colors" title="验证连接 · 不产生费用"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i></button>
+              <!-- 🔴 video 没有试运行按钮：一次要花钱 + 等 90 秒，不该做成随手一点 -->
+              <button class="opacity-30 cursor-not-allowed" title="视频不提供试运行 —— 单次生成耗时约 90 秒且产生较高费用，请在实际分镜里验证">
+                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+              </button>
+              <button class="hover:text-primary cursor-pointer transition-colors"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+              <button class="hover:text-red-500 cursor-pointer transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+          <div class="mt-2.5 bg-canvas border border-line rounded-md px-3 py-2">
+            <div class="flex items-center justify-between text-[11px] mb-1.5">
+              <span class="text-ink2 flex items-center gap-1.5"><i data-lucide="loader" class="w-3 h-3 text-primary animate-spin"></i> 第 3 幕 · 分镜 12 生成中</span>
+              <div class="flex items-center gap-2">
+                <span class="mono text-ink3">task_id 7f3a…c91 · 48s</span>
+                <!-- 🔴 新增：长任务必须可取消（Nielsen #3 用户可控） -->
+                <button class="text-ink3 hover:text-red-500 cursor-pointer transition-colors flex items-center gap-0.5" title="取消任务">
+                  <i data-lucide="x" class="w-3 h-3"></i> 取消
+                </button>
+              </div>
+            </div>
+            <div class="h-1 bg-line rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full" style="width:62%"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 配音：缺字段 = 验证前就能拦住 -->
+      <section class="bg-surface border border-line rounded-lg">
+        <div class="px-4 py-3 border-b border-line flex items-center justify-between">
+          <div class="flex items-center gap-2"><i data-lucide="mic" class="w-4 h-4 text-primary"></i><span class="font-semibold text-sm">配音模型</span><span class="px-1.5 py-0.5 rounded text-[10px] bg-orange-50 text-orange-600">专有协议</span></div>
+          <button class="bg-primary text-white px-3 py-1.5 rounded-md text-xs hover:opacity-90 transition cursor-pointer flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> 新建</button>
+        </div>
+        <div class="px-4 py-3 hover:bg-gray-50 transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-sm">字节豆包 配音</div>
+              <div class="mono text-[11px] text-ink3 mt-0.5">volcano_tts · 12 个音色</div>
+            </div>
+            <span class="flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded"><i data-lucide="alert-circle" class="w-3 h-3"></i> 配置不完整</span>
+            <div class="flex items-center gap-2 text-ink3">
+              <button class="opacity-30 cursor-not-allowed" title="请先补全 App ID 后再验证"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i></button>
+              <button class="opacity-30 cursor-not-allowed" title="请先补全 App ID"><i data-lucide="play" class="w-3.5 h-3.5"></i></button>
+              <button class="hover:text-primary cursor-pointer transition-colors"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+              <button class="hover:text-red-500 cursor-pointer transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+          <!-- 🔴 缺必填字段时禁用按钮 + 说明，优于"点了才报错"（Nielsen #5 防错） -->
+          <div class="mt-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 flex items-start gap-2">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5"></i>
+            <div class="text-[11px] text-amber-900 flex-1">
+              该服务商要求 <span class="mono">App ID</span>，当前为空 —— 验证与试运行已禁用。
+            </div>
+            <button class="shrink-0 border border-amber-400 text-amber-800 px-2 py-1 rounded text-[11px] hover:bg-amber-100 transition cursor-pointer">去补全</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-900 flex gap-2">
+        <i data-lucide="lightbulb" class="w-4 h-4 shrink-0 mt-0.5"></i>
+        <div>
+          <b>v2 核心修正：验证分两级，因为四种 kind 的测试成本差几个数量级。</b><br>
+          「验证连接」<b>零成本</b>（只打鉴权/模型列表端点），四种 kind 都有；
+          「试运行」<b>产生真实费用</b>，chat 随便点、生图标 ¥ 提示、
+          <b>视频直接禁用</b>（单次约 90 秒且费用高，不该做成随手一点的按钮）。
+          配置不完整时两个按钮都禁用 —— 禁用态优于"点了才报错"。
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ 场景 C：服务商目录（新增） ============ -->
+<div id="scene-catalog" class="scene">
+  <div class="px-6 py-6 flex flex-col gap-4">
+
+    <!-- 工具条 -->
+    <div class="bg-surface border border-line rounded-lg px-4 py-3">
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="relative">
+          <i data-lucide="search" class="absolute left-2.5 top-2 w-3.5 h-3.5 text-ink3"></i>
+          <input class="border border-line rounded-md pl-8 pr-3 py-1.5 text-xs w-56 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition" placeholder="搜索服务商 / 模型名…">
+        </div>
+        <div class="h-4 w-px bg-line"></div>
+        <!-- 🔴 只渲染当前应用声明的 kind —— sigil 模式下这一排只有「对话」 -->
+        <span class="text-[11px] text-ink3">能力</span>
+        <div class="flex gap-1" id="catalog-kind-filter"></div>
+        <div class="h-4 w-px bg-line"></div>
+        <label class="flex items-center gap-1.5 text-[11px] text-ink2 cursor-pointer">
+          <input type="checkbox" class="rounded cursor-pointer"> 只看已配置
+        </label>
+        <div class="ml-auto flex items-center gap-2">
+          <span class="text-[11px] text-ink3">模拟应用：</span>
+          <button onclick="setCatalogApp('loom')" data-app="loom" class="app-btn px-2.5 py-1 rounded text-[11px] cursor-pointer transition-colors bg-primary text-white">StoryLoom（4 种）</button>
+          <button onclick="setCatalogApp('sigil')" data-app="sigil" class="app-btn px-2.5 py-1 rounded text-[11px] cursor-pointer transition-colors border border-line hover:border-primary">Sigil（仅对话）</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 目录主体 -->
+    <div id="catalog-body" class="flex flex-col gap-4"></div>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-900 flex gap-2">
+      <i data-lucide="lightbulb" class="w-4 h-4 shrink-0 mt-0.5"></i>
+      <div>
+        <b>为什么目录按「服务商」聚合，而不是把 35 条平铺成列表。</b><br>
+        实测各家 endpoint 的 host：<span class="mono">api.siliconflow.cn</span> 覆盖
+        <b>4 种能力</b>、阿里百炼 3 种、智谱/火山方舟/302.AI 各 2 种 ——
+        <b>同一个 host 用同一个 key</b>。按 kind 平铺会让用户把同一家的 key 填四遍；
+        按服务商聚合则是「填一次 key，勾选要启用哪几种能力」。
+        平铺还有个更糟的后果：用户看不出"配了硅基流动就等于四种能力全有了"。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 场景 D：新建表单 ============ -->
+<div id="scene-form" class="scene">
+  <div class="px-6 py-6">
+    <div class="mb-4 flex items-center gap-2 text-xs">
+      <span class="text-ink3">切换 kind 看表单如何变形：</span>
+      <button onclick="showForm('chat')" data-form="chat" class="form-btn px-3 py-1.5 rounded-md cursor-pointer transition-colors bg-primary text-white">对话</button>
+      <button onclick="showForm('image')" data-form="image" class="form-btn px-3 py-1.5 rounded-md cursor-pointer transition-colors border border-line hover:border-primary">生图</button>
+      <button onclick="showForm('video')" data-form="video" class="form-btn px-3 py-1.5 rounded-md cursor-pointer transition-colors border border-line hover:border-primary">视频</button>
+      <button onclick="showForm('tts')" data-form="tts" class="form-btn px-3 py-1.5 rounded-md cursor-pointer transition-colors border border-line hover:border-primary">配音</button>
+    </div>
+
+    <div class="flex gap-4 items-start">
+      <div class="w-[520px] shrink-0 bg-surface border border-line rounded-lg shadow-lg">
+        <div class="px-4 py-3 border-b border-line flex items-center justify-between">
+          <span class="font-semibold text-sm">新建<span id="form-kind-name">对话</span>模型服务</span>
+          <i data-lucide="x" class="w-4 h-4 text-ink3 cursor-pointer hover:text-ink transition-colors"></i>
+        </div>
+        <div class="px-4 py-4 flex flex-col gap-3.5">
+          <div>
+            <label class="block text-xs text-ink2 mb-1">名称 <span class="text-red-500">*</span></label>
+            <input class="w-full border border-line rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition" placeholder="例如：即梦主力">
+          </div>
+          <div>
+            <label class="block text-xs text-ink2 mb-1 flex items-center gap-1">服务商 <span class="text-red-500">*</span> <i data-lucide="help-circle" class="w-3 h-3 text-ink3"></i></label>
+            <select class="w-full border border-line rounded-md px-3 py-2 text-sm cursor-pointer outline-none focus:border-primary transition">
+              <optgroup label="国内" id="form-optgroup"><option id="form-opt">DeepSeek</option></optgroup>
+            </select>
+            <div class="text-[11px] text-ink3 mt-1" id="form-hint">走 /v1/chat/completions 端点</div>
+          </div>
+          <div>
+            <label class="block text-xs text-ink2 mb-1">接口地址 <span class="text-red-500">*</span></label>
+            <input class="w-full border border-line rounded-md px-3 py-2 text-sm mono outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition" id="form-endpoint" value="https://api.deepseek.com/v1">
+            <div class="text-[11px] text-ink3 mt-1">照抄服务商文档里的 Base URL，含版本段 —— 原样使用、不会替你补</div>
+          </div>
+          <div>
+            <label class="block text-xs text-ink2 mb-1">API 密钥 <span class="text-red-500">*</span></label>
+            <input type="password" class="w-full border border-line rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition" value="sk-xxxxxxxxxxxx">
+          </div>
+          <div>
+            <label class="block text-xs text-ink2 mb-1">模型 <span class="text-red-500">*</span></label>
+            <div class="flex gap-0">
+              <input class="flex-1 border border-line rounded-l-md px-3 py-2 text-sm mono outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition" id="form-model" value="deepseek-flash">
+              <button class="border border-l-0 border-line rounded-r-md px-3 text-xs hover:border-primary hover:text-primary transition cursor-pointer whitespace-nowrap">获取</button>
+            </div>
+          </div>
+          <div id="form-extra" class="border-t border-dashed border-line pt-3.5 flex flex-col gap-3.5"></div>
+
+          <!-- 🔴 新增：保存前就能验证。原来必须先保存才能测，等于逼用户先存一条错的 -->
+          <div class="border-t border-line pt-3.5">
+            <div class="flex items-center gap-2">
+              <button class="border border-line px-3 py-1.5 rounded-md text-xs hover:border-primary hover:text-primary transition cursor-pointer flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> 验证连接
+              </button>
+              <span class="text-[11px] text-ink3">不保存也能测 · 不产生费用</span>
+            </div>
+            <div class="mt-2 bg-green-50 border border-green-200 rounded-md px-3 py-2 flex items-start gap-2">
+              <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-green-600 shrink-0 mt-0.5"></i>
+              <div class="text-[11px] text-green-900">
+                连接正常 · 320ms · 端点返回 <b>28</b> 个可用模型<br>
+                <span class="text-green-700">当前填写的 <span class="mono" id="verify-model">deepseek-flash</span> 在清单中</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="px-4 py-3 border-t border-line flex justify-between items-center">
+          <span class="text-[11px] text-ink3">密钥经 AES-256-GCM 加密后入库</span>
+          <div class="flex gap-2">
+            <button class="border border-line px-4 py-1.5 rounded-md text-sm hover:bg-gray-50 transition cursor-pointer">取消</button>
+            <button class="bg-primary text-white px-4 py-1.5 rounded-md text-sm hover:opacity-90 transition cursor-pointer">创建</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-1 min-w-0 flex flex-col gap-4">
+        <div class="bg-surface border border-line rounded-lg p-4">
+          <div class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-lucide="git-branch" class="w-4 h-4 text-primary"></i> 字段从哪来</div>
+          <table class="w-full text-xs">
+            <thead><tr class="text-ink3 border-b border-line">
+              <th class="text-left font-medium py-2">字段</th><th class="text-left font-medium py-2">来源</th><th class="text-left font-medium py-2">谁定义</th>
+            </tr></thead>
+            <tbody class="divide-y divide-line">
+              <tr><td class="py-2">名称 / 地址 / 密钥</td><td class="py-2 text-ink2">共通</td><td class="py-2 mono text-[11px] text-ink3">组件内置</td></tr>
+              <tr><td class="py-2">服务商</td><td class="py-2 text-ink2">预置表按 kind 过滤</td><td class="py-2 mono text-[11px] text-ink3">crate presets</td></tr>
+              <tr><td class="py-2">模型</td><td class="py-2 text-ink2">预置 models[] + 端点拉取</td><td class="py-2 mono text-[11px] text-ink3">crate presets</td></tr>
+              <tr class="bg-amber-50"><td class="py-2 font-medium" id="diff-label">—</td><td class="py-2 text-ink2" id="diff-src">—</td><td class="py-2 mono text-[11px] text-ink3">crate extraFields</td></tr>
+              <tr class="bg-green-50"><td class="py-2 font-medium">验证结果</td><td class="py-2 text-ink2">verify() 结构化返回</td><td class="py-2 mono text-[11px] text-ink3">crate client</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="bg-surface border border-line rounded-lg p-4 text-[11px] leading-relaxed">
+          <div class="text-ink2 font-medium mb-1.5 text-xs">为什么「验证」要放在保存之前</div>
+          <div class="text-ink3">
+            原设计只有列表行有测试按钮 —— 意味着用户必须<b>先存一条可能是错的配置</b>才能知道对不对，
+            错了还要回来编辑。中转站的 base_url 和模型名恰恰是最容易填错的两项。
+            保存前验证把「试错」收进弹窗内部，一次填对再落库。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 场景 D：验证状态机（新增） ============ -->
+<div id="scene-verify" class="scene">
+  <div class="px-6 py-6 flex flex-col gap-4">
+
+    <div class="bg-surface border border-line rounded-lg p-4">
+      <div class="text-sm font-semibold mb-1 flex items-center gap-2"><i data-lucide="git-merge" class="w-4 h-4 text-primary"></i> 两级测试 —— 为什么不能只有一个「测试」按钮</div>
+      <div class="text-xs text-ink3 mb-3">四种 kind 的测试成本差几个数量级，混成一个按钮会让用户随手点出账单</div>
+      <table class="w-full text-xs">
+        <thead><tr class="bg-gray-50 text-ink2">
+          <th class="px-3 py-2 text-left font-medium">kind</th>
+          <th class="px-3 py-2 text-left font-medium">验证连接（零成本）</th>
+          <th class="px-3 py-2 text-left font-medium">试运行（真实调用）</th>
+          <th class="px-3 py-2 text-left font-medium">单次成本</th>
+          <th class="px-3 py-2 text-left font-medium">UI 处置</th>
+        </tr></thead>
+        <tbody class="divide-y divide-line">
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-3 py-2.5 mono">chat</td>
+            <td class="px-3 py-2.5 text-ink2">GET /models</td>
+            <td class="px-3 py-2.5 text-ink2">发一句 ping</td>
+            <td class="px-3 py-2.5 text-green-700">几十 token</td>
+            <td class="px-3 py-2.5">两个按钮都常驻</td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-3 py-2.5 mono">image</td>
+            <td class="px-3 py-2.5 text-ink2">GET /models</td>
+            <td class="px-3 py-2.5 text-ink2">生成 1 张图</td>
+            <td class="px-3 py-2.5 text-amber-700">约 ¥0.1–0.5</td>
+            <td class="px-3 py-2.5">试运行标 <span class="text-amber-600 font-bold">¥</span> + hover 说明</td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors bg-amber-50">
+            <td class="px-3 py-2.5 mono">video</td>
+            <td class="px-3 py-2.5 text-ink2">GET /models</td>
+            <td class="px-3 py-2.5 text-ink2">生成 5s 视频</td>
+            <td class="px-3 py-2.5 text-red-700"><b>约 ¥1–5 + 90 秒</b></td>
+            <td class="px-3 py-2.5"><b>试运行禁用</b>，在真实分镜里验证</td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-3 py-2.5 mono">tts</td>
+            <td class="px-3 py-2.5 text-ink2">拉音色列表</td>
+            <td class="px-3 py-2.5 text-ink2">合成一句话（可试听）</td>
+            <td class="px-3 py-2.5 text-green-700">极低</td>
+            <td class="px-3 py-2.5">试运行 = 试听按钮</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="text-sm font-semibold mb-2 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-primary"></i> 验证的五种状态 —— 组件必须都渲染得出来</div>
+      <div class="grid grid-cols-5 gap-3">
+        <div class="bg-surface border border-line rounded-lg p-3">
+          <div class="text-[11px] text-ink3 mb-2">① 未验证</div>
+          <div class="bg-canvas border border-line rounded px-2 py-1.5 flex items-center gap-1.5 text-[11px] text-ink3">
+            <i data-lucide="circle-dashed" class="w-3 h-3"></i> 尚未验证
+          </div>
+          <div class="text-[10px] text-ink3 mt-2 leading-relaxed">新建后的初始态。<b>不显示红色</b> —— 没验证不等于有问题。</div>
+        </div>
+        <div class="bg-surface border border-line rounded-lg p-3">
+          <div class="text-[11px] text-ink3 mb-2">② 验证中</div>
+          <div class="bg-primary-light border border-primary/30 rounded px-2 py-1.5 flex items-center gap-1.5 text-[11px] text-primary">
+            <i data-lucide="loader" class="w-3 h-3 animate-spin"></i> 验证中…
+          </div>
+          <div class="text-[10px] text-ink3 mt-2 leading-relaxed">按钮同时禁用，防重复提交。</div>
+        </div>
+        <div class="bg-surface border border-line rounded-lg p-3">
+          <div class="text-[11px] text-ink3 mb-2">③ 成功</div>
+          <div class="bg-green-50 border border-green-200 rounded px-2 py-1.5 flex items-center gap-1.5 text-[11px] text-green-700">
+            <i data-lucide="check-circle-2" class="w-3 h-3"></i> 正常 · 320ms
+          </div>
+          <div class="text-[10px] text-ink3 mt-2 leading-relaxed">带<b>延迟</b>，中转站慢不慢一眼看出。</div>
+        </div>
+        <div class="bg-surface border border-line rounded-lg p-3">
+          <div class="text-[11px] text-ink3 mb-2">④ 失败</div>
+          <div class="bg-red-50 border border-red-200 rounded px-2 py-1.5 flex items-center gap-1.5 text-[11px] text-red-700">
+            <i data-lucide="x-circle" class="w-3 h-3"></i> 401 密钥无效
+          </div>
+          <div class="text-[10px] text-ink3 mt-2 leading-relaxed">必须带<b>错误分类</b>，不能只说"失败"。</div>
+        </div>
+        <div class="bg-surface border border-line rounded-lg p-3">
+          <div class="text-[11px] text-ink3 mb-2">⑤ 不可验证</div>
+          <div class="bg-amber-50 border border-amber-200 rounded px-2 py-1.5 flex items-center gap-1.5 text-[11px] text-amber-700">
+            <i data-lucide="alert-circle" class="w-3 h-3"></i> 配置不完整
+          </div>
+          <div class="text-[10px] text-ink3 mt-2 leading-relaxed">必填字段没填，<b>按钮禁用</b>而非点了报错。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-surface border border-line rounded-lg p-4">
+      <div class="text-sm font-semibold mb-1 flex items-center gap-2"><i data-lucide="wrench" class="w-4 h-4 text-primary"></i> 失败诊断 —— crate 返回结构化错误，UI 才能给「一键修正」</div>
+      <div class="text-xs text-ink3 mb-3">每一类失败都对应一个可操作动作。这张表直接定义 crate 的错误枚举</div>
+      <table class="w-full text-xs">
+        <thead><tr class="bg-gray-50 text-ink2">
+          <th class="px-3 py-2 text-left font-medium">错误类型</th>
+          <th class="px-3 py-2 text-left font-medium">用户看到的</th>
+          <th class="px-3 py-2 text-left font-medium">可操作动作</th>
+          <th class="px-3 py-2 text-left font-medium">crate 错误变体</th>
+        </tr></thead>
+        <tbody class="divide-y divide-line">
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-3 py-2.5">401 / 403</td>
+            <td class="px-3 py-2.5 text-ink2">密钥无效或已过期</td>
+            <td class="px-3 py-2.5"><span class="text-primary">聚焦到密钥输入框</span></td>
+            <td class="px-3 py-2.5 mono text-[11px] text-ink3">AuthFailed</td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors bg-primary-light/30">
+            <td class="px-3 py-2.5">404</td>
+            <td class="px-3 py-2.5 text-ink2">端点不存在，多半缺版本段</td>
+            <td class="px-3 py-2.5"><span class="text-primary font-medium">一键补 /v1</span></td>
+            <td class="px-3 py-2.5 mono text-[11px] text-ink3">NotFound{suggested_url}</td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-3 py-2.5">超时 / DNS</td>
+            <td class="px-3 py-2.5 text-ink2">连不上，可能需要代理</td>
+            <td class="px-3 py-2.5"><span class="text-primary">跳到网络设置</span></td>
+            <td class="px-3 py-2.5 mono text-[11px] text-ink3">Unreachable</td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-3 py-2.5">模型不在清单</td>
+            <td class="px-3 py-2.5 text-ink2">端点可达，但填的模型名它不认</td>
+            <td class="px-3 py-2.5"><span class="text-primary">展开可用模型下拉</span></td>
+            <td class="px-3 py-2.5 mono text-[11px] text-ink3">ModelNotFound{available}</td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-3 py-2.5">协议不匹配</td>
+            <td class="px-3 py-2.5 text-ink2">密钥只接受 /v1/messages</td>
+            <td class="px-3 py-2.5"><span class="text-primary">切到 Claude Code 档</span></td>
+            <td class="px-3 py-2.5 mono text-[11px] text-ink3">ProtocolMismatch{expect}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="mt-3 bg-canvas border border-line rounded-md px-3 py-2 text-[11px] text-ink3 leading-relaxed">
+        🔴 <b>这张表是 crate API 的一部分，不是 UI 细节。</b>
+        如果 crate 只返回 <span class="mono">Err(String)</span>，UI 就只能显示一行红字 ——
+        「一键修正」这类动作<b>必须靠结构化错误才做得出来</b>。
+        sigil 现有实现已有两个这样的弹窗（密钥解密失败、协议不匹配），正是这条路走通了的证据。
+      </div>
+    </div>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-900 flex gap-2">
+      <i data-lucide="lightbulb" class="w-4 h-4 shrink-0 mt-0.5"></i>
+      <div>
+        <b>本场景是 v2 新增，也是「该有测试按钮的地方得有」的完整答案。</b><br>
+        补按钮只是第一步 —— 真正要定的是：测什么、花不花钱、失败了给什么。
+        这三问的答案直接决定 crate 的 <span class="mono">verify()</span> / <span class="mono">dry_run()</span>
+        两个函数签名和错误枚举，属于<b>阶段 0.6 必须敲定的 API</b>。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 场景 E：代码控制点 ============ -->
+<div id="scene-code" class="scene">
+  <div class="px-6 py-6 flex flex-col gap-4">
+    <div class="bg-surface border border-line rounded-lg p-4">
+      <div class="text-sm font-semibold mb-1 flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-primary"></i> 接入方唯一要写的代码</div>
+      <div class="text-xs text-ink3 mb-3">声明需要哪些能力，其余全部由 crate + 组件接管</div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-ink rounded-md p-3 mono text-[11px] leading-relaxed overflow-x-auto">
+<div class="text-white/40 mb-1">// sigil —— 只要对话</div>
+<div class="text-emerald-300">ModelServiceConfig</div><div class="text-white/80">  .kinds(&[<span class="text-amber-300">Kind::Chat</span>])</div><div class="text-white/80">  .build()</div>
+        </div>
+        <div class="bg-ink rounded-md p-3 mono text-[11px] leading-relaxed overflow-x-auto">
+<div class="text-white/40 mb-1">// storyloom —— 漫剧化全链路</div>
+<div class="text-emerald-300">ModelServiceConfig</div><div class="text-white/80">  .kinds(&[<span class="text-amber-300">Kind::Chat</span>, <span class="text-amber-300">Kind::Image</span>,</div><div class="text-white/80">          <span class="text-amber-300">Kind::Video</span>, <span class="text-amber-300">Kind::Tts</span>])</div><div class="text-white/80">  .build()</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-surface border border-line rounded-lg overflow-hidden">
+      <div class="px-4 py-3 border-b border-line text-sm font-semibold flex items-center gap-2"><i data-lucide="table-2" class="w-4 h-4 text-primary"></i> 四个应用的能力矩阵</div>
+      <table class="w-full text-xs">
+        <thead><tr class="bg-gray-50 text-ink2">
+          <th class="px-4 py-2.5 text-left font-medium">应用</th>
+          <th class="px-4 py-2.5 text-center font-medium">对话</th><th class="px-4 py-2.5 text-center font-medium">生图</th>
+          <th class="px-4 py-2.5 text-center font-medium">视频</th><th class="px-4 py-2.5 text-center font-medium">配音</th>
+          <th class="px-4 py-2.5 text-left font-medium">说明</th>
+        </tr></thead>
+        <tbody class="divide-y divide-line">
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 py-2.5 font-medium">Sigil</td>
+            <td class="px-4 py-2.5 text-center"><i data-lucide="check" class="w-4 h-4 text-green-600 inline"></i></td>
+            <td class="px-4 py-2.5 text-center text-ink3">—</td><td class="px-4 py-2.5 text-center text-ink3">—</td><td class="px-4 py-2.5 text-center text-ink3">—</td>
+            <td class="px-4 py-2.5 text-ink3">凭据保险库，AI 助手只需对话</td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 py-2.5 font-medium">Reeve</td>
+            <td class="px-4 py-2.5 text-center"><i data-lucide="check" class="w-4 h-4 text-green-600 inline"></i></td>
+            <td class="px-4 py-2.5 text-center text-ink3">—</td><td class="px-4 py-2.5 text-center text-ink3">—</td><td class="px-4 py-2.5 text-center text-ink3">—</td>
+            <td class="px-4 py-2.5 text-ink3">远程运维助手</td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-4 py-2.5 font-medium">知识库</td>
+            <td class="px-4 py-2.5 text-center"><i data-lucide="check" class="w-4 h-4 text-green-600 inline"></i></td>
+            <td class="px-4 py-2.5 text-center text-ink3">—</td><td class="px-4 py-2.5 text-center text-ink3">—</td><td class="px-4 py-2.5 text-center text-ink3">—</td>
+            <td class="px-4 py-2.5 text-ink3">RAG 检索 + 问答</td>
+          </tr>
+          <tr class="hover:bg-gray-50 transition-colors bg-primary-light/40">
+            <td class="px-4 py-2.5 font-medium">StoryLoom</td>
+            <td class="px-4 py-2.5 text-center"><i data-lucide="check" class="w-4 h-4 text-green-600 inline"></i></td>
+            <td class="px-4 py-2.5 text-center"><i data-lucide="check" class="w-4 h-4 text-green-600 inline"></i></td>
+            <td class="px-4 py-2.5 text-center"><i data-lucide="check" class="w-4 h-4 text-green-600 inline"></i></td>
+            <td class="px-4 py-2.5 text-center"><i data-lucide="check" class="w-4 h-4 text-green-600 inline"></i></td>
+            <td class="px-4 py-2.5 text-ink3">漫剧化：小说 → 分镜 → 视频 → 配音</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="px-4 py-2 border-t border-line text-[11px] text-ink3">
+        智码 AICoder 不在此列 —— 它的模型服务与登录账号体系耦合，不适用本地配置 provider 的模型。
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="bg-surface border border-line rounded-lg p-4">
+        <div class="text-sm font-semibold mb-2 flex items-center gap-2"><i data-lucide="package" class="w-4 h-4 text-primary"></i> crate 侧：kind 挂 feature</div>
+        <div class="bg-ink rounded-md p-3 mono text-[11px] leading-relaxed">
+<div class="text-white/40"># 不用的 kind 不编进二进制</div>
+<div class="text-white/80">ai-profile = { version = <span class="text-emerald-300">"0.1"</span>,</div>
+<div class="text-white/80">  features = [<span class="text-amber-300">"chat"</span>] }  <span class="text-white/40">// sigil</span></div>
+<div class="text-white/80">  features = [<span class="text-amber-300">"chat"</span>,<span class="text-amber-300">"image"</span>,<span class="text-amber-300">"video"</span>,<span class="text-amber-300">"tts"</span>] }</div>
+        </div>
+        <div class="text-[11px] text-ink3 mt-2 leading-relaxed">视频要轮询、配音要音频编解码 —— sigil 不该为用不到的能力付出编译时间和二进制体积。</div>
+      </div>
+
+      <div class="bg-surface border border-line rounded-lg p-4">
+        <div class="text-sm font-semibold mb-2 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i> 四种 kind 的执行模型不同</div>
+        <table class="w-full text-[11px]">
+          <thead><tr class="text-ink3 border-b border-line">
+            <th class="text-left font-medium py-1.5">kind</th><th class="text-left font-medium py-1.5">执行模型</th><th class="text-left font-medium py-1.5">UI 必需</th>
+          </tr></thead>
+          <tbody class="divide-y divide-line">
+            <tr><td class="py-1.5 mono">chat</td><td class="py-1.5">同步 / 流式</td><td class="py-1.5 text-ink3">流式开关</td></tr>
+            <tr><td class="py-1.5 mono">image</td><td class="py-1.5">同步 <b>或</b> submit+poll</td><td class="py-1.5 text-ink3">尺寸 / 张数</td></tr>
+            <tr class="bg-amber-50"><td class="py-1.5 mono">video</td><td class="py-1.5"><b>必然 submit+poll</b></td><td class="py-1.5 text-ink3">进度条 + <b>取消</b></td></tr>
+            <tr><td class="py-1.5 mono">tts</td><td class="py-1.5">同步，返回字节流</td><td class="py-1.5 text-ink3">音色 + 试听</td></tr>
+          </tbody>
+        </table>
+        <div class="text-[11px] text-ink3 mt-2 leading-relaxed">
+          <b>不能用一个 trait 抹平。</b>视频每家 poll 协议都不同（Ark <span class="mono">GET /tasks/{id}</span>、
+          硅基流动 <span class="mono">POST {requestId}</span>、海螺 <span class="mono">GET /query?task_id=</span>）
+          —— 实测自 StoryLoom 现有实现。
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-900 flex gap-2">
+      <i data-lucide="lightbulb" class="w-4 h-4 shrink-0 mt-0.5"></i>
+      <div>
+        <b>「方便代码控制」的落点：kind 是数据不是分支。</b><br>
+        组件遍历 <span class="mono">config.kinds</span> 渲染区块，表单遍历 <span class="mono">preset.extraFields</span> 渲染输入框，
+        失败提示遍历错误枚举匹配动作 —— 新增一种 kind（比如将来的「音乐模型」）只需在 crate 里加一个枚举值 + 一组预置，
+        <b>四个应用的前端零改动</b>。写成 <span class="mono">if kind == "video"</span> 的分支，每加一种就要改四个应用。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const FORMS = {
+  chat:  { name:'对话', group:'国内', opt:'DeepSeek', hint:'走 /v1/chat/completions 端点',
+           endpoint:'https://api.deepseek.com/v1', model:'deepseek-flash',
+           diff:'流式开关', diffSrc:'kind=chat 固定项',
+           extra:`<div><label class="block text-xs text-ink2 mb-1">流式响应</label>
+             <div class="flex items-center gap-2"><div class="w-9 h-5 bg-primary rounded-full relative cursor-pointer"><div class="w-4 h-4 bg-white rounded-full absolute right-0.5 top-0.5"></div></div>
+             <span class="text-xs text-ink3">Anthropic 走 SSE，OpenAI 兼容自动降级</span></div></div>` },
+  image: { name:'生图', group:'生图', opt:'即梦 Seedream（火山方舟）', hint:'文生图，返回图片 URL 或 base64',
+           endpoint:'https://ark.cn-beijing.volces.com/api/v3', model:'doubao-seedream-3-0-t2i-250415',
+           diff:'默认尺寸 / 单次张数', diffSrc:'kind=image 固定项',
+           extra:`<div class="grid grid-cols-2 gap-3">
+             <div><label class="block text-xs text-ink2 mb-1">默认尺寸</label>
+               <select class="w-full border border-line rounded-md px-3 py-2 text-sm cursor-pointer"><option>1024×1024</option><option>960×1280</option></select></div>
+             <div><label class="block text-xs text-ink2 mb-1">单次张数</label>
+               <input class="w-full border border-line rounded-md px-3 py-2 text-sm" value="1"></div></div>` },
+  video: { name:'视频', group:'视频', opt:'即梦 Seedance（火山方舟）', hint:'图生视频 · 提交任务后轮询，单条约 40–90 秒',
+           endpoint:'https://ark.cn-beijing.volces.com/api/v3', model:'doubao-seedance-1-0-lite-i2v',
+           diff:'时长 / 分辨率', diffSrc:'kind=video 固定项',
+           extra:`<div class="grid grid-cols-2 gap-3">
+             <div><label class="block text-xs text-ink2 mb-1">时长</label>
+               <select class="w-full border border-line rounded-md px-3 py-2 text-sm cursor-pointer"><option>5 秒</option><option>10 秒</option></select></div>
+             <div><label class="block text-xs text-ink2 mb-1">分辨率</label>
+               <select class="w-full border border-line rounded-md px-3 py-2 text-sm cursor-pointer"><option>720p</option><option>1080p</option></select></div></div>
+             <div class="bg-violet-50 border border-violet-200 rounded-md px-3 py-2 text-[11px] text-violet-900 flex gap-1.5">
+               <i data-lucide="info" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i>
+               <span>异步任务：提交后返回 task_id，crate 按各家协议轮询。<b>本 kind 不提供试运行</b> —— 单次约 90 秒且费用较高。</span></div>` },
+  tts:   { name:'配音', group:'配音', opt:'字节豆包 配音（火山语音）', hint:'专有协议 —— 需额外填 App ID 与 Cluster',
+           endpoint:'https://openspeech.bytedance.com/api/v1/tts', model:'volcano_tts',
+           diff:'App ID / Cluster / 音色', diffSrc:'预置表 extraFields（按服务商变化）',
+           extra:`<div class="grid grid-cols-2 gap-3">
+             <div><label class="block text-xs text-ink2 mb-1">App ID <span class="text-red-500">*</span><span class="text-orange-600 ml-1">专有</span></label>
+               <input class="w-full border border-line rounded-md px-3 py-2 text-sm mono" placeholder="火山语音控制台 appid"></div>
+             <div><label class="block text-xs text-ink2 mb-1">Cluster <span class="text-orange-600">专有</span></label>
+               <input class="w-full border border-line rounded-md px-3 py-2 text-sm mono" value="volcano_tts"></div></div>
+             <div><label class="block text-xs text-ink2 mb-1">默认音色</label>
+               <div class="flex gap-2"><select class="flex-1 border border-line rounded-md px-3 py-2 text-sm cursor-pointer"><option>BV700_streaming · 通用女声</option></select>
+               <button class="border border-line px-3 rounded-md text-xs hover:border-primary hover:text-primary transition cursor-pointer flex items-center gap-1"><i data-lucide="play" class="w-3 h-3"></i>试听</button></div></div>` },
+};
+
+function showScene(id){
+  document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));
+  document.getElementById('scene-'+id).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    const on=b.dataset.tab===id;
+    b.classList.toggle('bg-primary',on); b.classList.toggle('hover:bg-white/10',!on);
+  });
+  lucide.createIcons();
+}
+function showForm(kind){
+  const f=FORMS[kind];
+  document.getElementById('form-kind-name').textContent=f.name;
+  document.getElementById('form-optgroup').label=f.group;
+  document.getElementById('form-opt').textContent=f.opt;
+  document.getElementById('form-hint').textContent=f.hint;
+  document.getElementById('form-endpoint').value=f.endpoint;
+  document.getElementById('form-model').value=f.model;
+  document.getElementById('verify-model').textContent=f.model;
+  document.getElementById('form-extra').innerHTML=f.extra;
+  document.getElementById('diff-label').textContent=f.diff;
+  document.getElementById('diff-src').textContent=f.diffSrc;
+  document.querySelectorAll('.form-btn').forEach(b=>{
+    const on=b.dataset.form===kind;
+    b.classList.toggle('bg-primary',on); b.classList.toggle('text-white',on);
+    b.classList.toggle('border',!on); b.classList.toggle('border-line',!on); b.classList.toggle('hover:border-primary',!on);
+  });
+  lucide.createIcons();
+}
+/* ===== 服务商目录 =====
+   数据来自 sigil llm-presets.ts（16 家 chat）+ storyloom providerPresets.ts
+   （chat 9 / image 5 / video 9 / tts 4）实测合并去重，按「服务商」而非「kind×服务商」聚合。
+   configured 字段模拟已配置条数。 */
+const KIND_META = {
+  chat:  { label:'对话', icon:'message-square' },
+  image: { label:'生图', icon:'image' },
+  video: { label:'视频', icon:'video' },
+  tts:   { label:'配音', icon:'mic' },
+};
+
+const VENDORS = [
+  { g:'全能平台 · 一个 key 多种能力', items:[
+    { name:'硅基流动 SiliconFlow', host:'api.siliconflow.cn', kinds:['chat','image','video','tts'], configured:{chat:1,image:1}, apply:true, note:'聚合平台，在架清单变动快' },
+    { name:'阿里百炼',             host:'dashscope.aliyuncs.com', kinds:['chat','image','video'], configured:{chat:1}, apply:true, note:'千问 / 万相 / Vidu' },
+    { name:'火山方舟',             host:'ark.cn-beijing.volces.com', kinds:['image','video'], configured:{image:1,video:1}, apply:true, note:'即梦 Seedream / Seedance' },
+    { name:'智谱 GLM',             host:'open.bigmodel.cn',   kinds:['chat','video'], configured:{}, apply:true, note:'版本段是 /v4' },
+    { name:'302.AI',               host:'api.302.ai',         kinds:['video'], configured:{}, apply:true, note:'转售海螺 / 智谱' },
+  ]},
+  { g:'Anthropic / 协议档', items:[
+    { name:'Anthropic 官方',       host:'api.anthropic.com',  kinds:['chat'], configured:{}, apply:true, note:'key 以 sk-ant- 开头' },
+    { name:'Claude Code 客户端',   host:'（自定义）',          kinds:['chat'], configured:{chat:1}, note:'key 限定 /v1/messages 的中转' },
+    { name:'Codex 客户端',         host:'（自定义）',          kinds:['chat'], configured:{}, note:'key 限定 Codex 端点的中转' },
+  ]},
+  { g:'国内', items:[
+    { name:'DeepSeek',             host:'api.deepseek.com',   kinds:['chat'], configured:{chat:1}, apply:true },
+    { name:'月之暗面 Kimi',        host:'api.moonshot.cn',    kinds:['chat'], configured:{}, apply:true },
+  ]},
+  { g:'国际', items:[
+    { name:'OpenAI',               host:'api.openai.com',     kinds:['chat'], configured:{}, apply:true },
+    { name:'OpenRouter',           host:'openrouter.ai',      kinds:['chat'], configured:{}, apply:true, note:'id 形如 厂商/模型' },
+    { name:'Google Gemini',        host:'generativelanguage.googleapis.com', kinds:['chat'], configured:{}, apply:true, note:'版本段不在末尾' },
+    { name:'Groq',                 host:'api.groq.com',       kinds:['chat'], configured:{}, apply:true },
+    { name:'海螺 MiniMax',         host:'api.minimaxi.com',   kinds:['video'], configured:{}, apply:true },
+  ]},
+  { g:'专有协议', items:[
+    { name:'字节豆包 配音',        host:'openspeech.bytedance.com', kinds:['tts'], configured:{tts:1}, apply:true, note:'需额外填 App ID / Cluster' },
+  ]},
+  { g:'本地 / 自建', items:[
+    { name:'Ollama',               host:'localhost:11434',    kinds:['chat'], configured:{}, note:'先跑 ollama serve' },
+    { name:'LM Studio',            host:'localhost:1234',     kinds:['chat'], configured:{} },
+    { name:'vLLM / 自建',          host:'localhost:8000',     kinds:['chat'], configured:{} },
+    { name:'自定义端点',           host:'（自己填）',          kinds:['chat','image','video','tts'], configured:{}, note:'上面都不匹配时用这档' },
+  ]},
+];
+
+let catalogApp = 'loom';
+const APP_KINDS = { loom:['chat','image','video','tts'], sigil:['chat'] };
+
+function setCatalogApp(app){
+  catalogApp = app;
+  document.querySelectorAll('.app-btn').forEach(b=>{
+    const on=b.dataset.app===app;
+    b.classList.toggle('bg-primary',on); b.classList.toggle('text-white',on);
+    b.classList.toggle('border',!on); b.classList.toggle('border-line',!on); b.classList.toggle('hover:border-primary',!on);
+  });
+  renderCatalog();
+}
+
+function renderCatalog(){
+  const allow = APP_KINDS[catalogApp];
+
+  // kind 筛选条：只渲染当前应用声明的 kind
+  document.getElementById('catalog-kind-filter').innerHTML =
+    ['all', ...allow].map((k,i)=>{
+      const on = i===0;
+      const label = k==='all' ? '全部' : KIND_META[k].label;
+      return `<button class="px-2 py-1 rounded text-[11px] cursor-pointer transition-colors ${
+        on?'bg-primary text-white':'border border-line hover:border-primary'}">${label}</button>`;
+    }).join('');
+
+  let html = '';
+  let shown = 0, total = 0;
+  for (const grp of VENDORS){
+    // 服务商的 kinds 与当前应用声明的 kinds 有交集才显示
+    const items = grp.items.filter(v => v.kinds.some(k => allow.includes(k)));
+    total += grp.items.length;
+    if (!items.length) continue;
+    shown += items.length;
+    html += `<div class="bg-surface border border-line rounded-lg">
+      <div class="px-4 py-2.5 border-b border-line flex items-center gap-2">
+        <span class="text-xs font-semibold">${grp.g}</span>
+        <span class="text-[11px] text-ink3">${items.length} 家</span>
+      </div>
+      <div class="p-3 grid grid-cols-3 gap-3">`;
+    for (const v of items){
+      // 只显示当前应用用得上的 kind 徽标
+      const visKinds = v.kinds.filter(k => allow.includes(k));
+      const cfgCount = Object.entries(v.configured||{}).filter(([k])=>allow.includes(k)).reduce((a,[,n])=>a+n,0);
+      const badges = visKinds.map(k=>{
+        const has = (v.configured||{})[k];
+        return `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] ${
+          has ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-ink3'
+        }" title="${KIND_META[k].label}${has?' · 已配置':' · 未配置'}">
+          <i data-lucide="${KIND_META[k].icon}" class="w-2.5 h-2.5"></i>${KIND_META[k].label}</span>`;
+      }).join('');
+      html += `<div class="border ${cfgCount?'border-green-200 bg-green-50/30':'border-line'} rounded-md p-3 hover:border-primary hover:shadow-sm transition cursor-pointer group">
+        <div class="flex items-start gap-2">
+          <div class="w-7 h-7 rounded-md bg-primary-light text-primary flex items-center justify-center text-xs font-bold shrink-0">${v.name.slice(0,1)}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-medium truncate">${v.name}</div>
+            <div class="mono text-[10px] text-ink3 truncate">${v.host}</div>
+          </div>
+          ${cfgCount ? `<span class="shrink-0 text-[10px] text-green-700 bg-green-100 px-1.5 py-0.5 rounded">${cfgCount} 条</span>`
+                     : `<i data-lucide="plus" class="w-3.5 h-3.5 text-ink3 shrink-0 group-hover:text-primary transition-colors"></i>`}
+        </div>
+        <div class="flex flex-wrap gap-1 mt-2">${badges}</div>
+        ${v.note ? `<div class="text-[10px] text-ink3 mt-1.5 leading-relaxed">${v.note}</div>` : ''}
+        ${v.apply ? `<div class="mt-1.5 text-[10px] text-primary flex items-center gap-0.5 hover:underline">
+          <i data-lucide="external-link" class="w-2.5 h-2.5"></i> 去申请密钥</div>` : ''}
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  // 顶部统计
+  html = `<div class="bg-primary-light border border-primary/20 rounded-lg px-4 py-2.5 flex items-center gap-2 text-xs">
+      <i data-lucide="info" class="w-3.5 h-3.5 text-primary"></i>
+      <span class="text-ink2">当前应用声明了
+        <b class="text-primary">${allow.map(k=>KIND_META[k].label).join(' / ')}</b>
+        ，目录展示 <b>${shown}</b> 家可用服务商</span>
+      <span class="text-ink3 ml-auto">crate 预置共 ${total} 家 · 其余 ${total-shown} 家因能力不匹配而隐藏</span>
+    </div>` + html;
+
+  document.getElementById('catalog-body').innerHTML = html;
+  lucide.createIcons();
+}
+
+lucide.createIcons(); showForm('chat'); renderCatalog();
+</script>
+
+<!--
+================================================================
+组件映射表（开发者参考）
+================================================================
+| 原型元素        | Ant Design              | 说明 |
+|-----------------|-------------------------|------|
+| kind 区块       | Card / section          | 遍历 config.kinds，未声明的不渲染 |
+| 服务条目        | List.Item               | 右侧附加信息按 kind 插槽化 |
+| 验证状态标签    | Tag                     | 五态：未验证/验证中/成功/失败/不可验证 |
+| 失败诊断条      | Alert type=error + 动作  | 🔴 action 由错误枚举决定，不是写死 |
+| 验证/试运行按钮 | Button + Tooltip        | 试运行在 video 上 disabled |
+| 新建弹窗        | Modal + Form            | maskClosable={false} |
+| 服务商下拉      | Select（optGroup）      | options 来自 crate 预置表，按 kind 过滤 |
+| 模型输入        | AutoComplete + Button   | 建议来自 preset.models[]，「获取」拉真实清单 |
+| extraFields     | Form.Item 动态渲染       | 🔴 遍历 preset.extraFields，不写死 |
+| 视频任务        | Progress + 取消按钮      | 仅 kind=video |
+| 删除            | Popconfirm              | 🔴 不可逆操作必须二次确认 |
+
+🔴 落地硬约束
+1. 颜色全改 antd token（colorPrimary / colorText / colorSplit / colorSuccess / colorError…），
+   不保留本原型的 Tailwind 自定义色 —— 四个应用 CSS 变量命名各异，只有 antd token 是共有适配层。
+2. kind 区块、extraFields、失败诊断动作 必须「遍历数据渲染」，不是 if/else。
+   判据：新增一种 kind 时前端零改动。
+3. 视频轮询实现放在 crate 内（各家协议不同），组件只消费最终状态。
+4. verify() 必须返回结构化错误（含 suggested_url / available_models 等字段），
+   否则「一键修正」做不出来。
+
+可用性自查（Nielsen）—— v2 修复项
+| # | 启发式      | v1  | v2 | 修复 |
+|---|-------------|-----|----|------|
+| 1 | 状态可见    | ⚠️  | ✅ | 验证结果常驻 + 五态齐全 |
+| 3 | 用户可控    | ❌  | ✅ | 视频任务可取消、删除二次确认 |
+| 4 | 一致性      | ❌  | ✅ | 四种 kind 验证按钮全量补齐 |
+| 5 | 防错        | ⚠️  | ✅ | 必填标星、缺字段禁用按钮、保存前可验证 |
+| 7 | 灵活高效    | ⚠️  | ✅ | 批量「全部验证」 |
+| 9 | 错误恢复    | ❌  | ✅ | 五类错误各带可操作动作 + 一键修正 |
+================================================================
+-->
+</body>
+</html>

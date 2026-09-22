@@ -1,0 +1,20 @@
+# Rust
+/target
+**/*.rs.bk
+# 库项目不锁定依赖版本（由下游应用决定）
+# 🔴 gitignore 不支持行内注释，注释必须单独成行
+Cargo.lock
+
+# Node（第二阶段的 npm 包）
+node_modules/
+dist/
+*.tsbuildinfo
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# 探活输出
+/xtask-report.json
