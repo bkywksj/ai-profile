@@ -1,0 +1,11 @@
+# 统一行尾为 LF。
+#
+# 本仓当前是干净的 LF（工作树、索引、历史均已核实）。这份文件是**预防性**的：
+# 贡献者的 core.autocrlf 各不相同，没有显式声明时，Windows 上一次提交就可能
+# 把整个文件变成 CRLF，diff 里全是无关行。显式声明后与本机 git 配置无关。
+* text=auto eol=lf
+
+# 二进制：不做任何行尾转换
+*.png binary
+*.jpg binary
+*.ico binary
