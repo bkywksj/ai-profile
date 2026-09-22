@@ -45,15 +45,81 @@ pub struct ModelOption {
     pub value: &'static str,
     /// 展示用标签；与 `value` 相同则调用方直接显示 `value`
     pub label: &'static str,
+    /// 上下文窗口（输入 + 输出总量）的**静态兜底值**，端点不报时用。
+    ///
+    /// 🔴 只在**官方文档明确写了**时填，且宁可保守 —— 猜大了会让裁历史裁不够，
+    /// 表现为「明明裁过还是超限」；猜小了只是浪费一点窗口，代价小得多。
+    ///
+    /// `None` = 不知道。调用方应当让用户手填，而不是自己兜一个默认值。
+    pub context_window: Option<u32>,
+    /// 单次输出上限的静态兜底值。同上，只填文档明确的。
+    pub max_output: Option<u32>,
 }
 
 impl ModelOption {
-    /// 标签与 id 相同的快捷构造（绝大多数情况）。
+    /// 标签与 id 相同、且不带限额信息的快捷构造。
+    ///
+    /// 绝大多数预置用它 —— 限额优先从端点实时取，静态值只给
+    /// 「端点不报 + 官方文档明确」的那些模型补。
     pub const fn plain(value: &'static str) -> Self {
         Self {
             value,
             label: value,
+            context_window: None,
+            max_output: None,
         }
+    }
+
+    /// 带静态限额兜底的构造。
+    ///
+    /// 用于 OpenAI 规范兼容端点 —— 它们的 `/models` 只返回
+    /// `{id, object, owned_by}`，一个限额字段都没有（DeepSeek / LM Studio /
+    /// Ollama 实测如此），不给静态值的话这个能力在那些端点上等于不存在。
+    ///
+    /// ⚠️ 这些数字**会过时**。DeepSeek V3 时代是 128K/8K，V4 已经是 1M/384K ——
+    /// 半年翻了八倍。所以：端点报了就用端点的，静态值只是端点沉默时的下限保证。
+    ///
+    /// ```
+    /// # use ai_profile::preset::ModelOption;
+    /// // DeepSeek V4 系官方标称：1M 上下文、384K 输出（2026-09-22 核对）
+    /// let m = ModelOption::with_limits("deepseek-flash", 1_000_000, 384_000);
+    /// assert_eq!(m.context_window, Some(1_000_000));
+    /// ```
+    pub const fn with_limits(value: &'static str, context_window: u32, max_output: u32) -> Self {
+        Self {
+            value,
+            label: value,
+            context_window: Some(context_window),
+            max_output: Some(max_output),
+        }
+    }
+
+    /// 只知道上下文窗口、不知道输出上限时用。
+    ///
+    /// 这种情况很常见：多数服务商文档会写「支持 200K 上下文」，
+    /// 却不单独说明单次输出上限。**不知道就是不知道**，别拿窗口大小去猜输出上限。
+    pub const fn with_context(value: &'static str, context_window: u32) -> Self {
+        Self {
+            value,
+            label: value,
+            context_window: Some(context_window),
+            max_output: None,
+        }
+    }
+
+    /// 这条模型的静态兜底限额；两者都没有时返回 `None`。
+    ///
+    /// 🔴 返回的 [`TokenLimits`](crate::limits::TokenLimits) 带
+    /// `source: Preset` 标记 —— 调用方据此知道这是**估计值**、该允许用户修改，
+    /// 而不是端点保证的事实。
+    pub fn preset_limits(&self) -> Option<crate::limits::TokenLimits> {
+        if self.context_window.is_none() && self.max_output.is_none() {
+            return None;
+        }
+        Some(crate::limits::TokenLimits::from_preset(
+            self.context_window,
+            self.max_output,
+        ))
     }
 }
 

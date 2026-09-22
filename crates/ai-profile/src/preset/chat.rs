@@ -123,8 +123,12 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         //    （V4 发布时公告的三个月过渡期到期）—— 它们曾留在预置里，表现为「点开即报错」。
         model: "deepseek-flash",
         models: &[
-            ModelOption::plain("deepseek-flash"),
-            ModelOption::plain("deepseek-v4-pro"),
+            // 🔴 静态兜底限额：DeepSeek 的 /models 只返回 {id, object, owned_by}，
+            //    一个限额字段都没有（OpenAI 规范里就没这东西），不给静态值的话
+            //    调用方在这家端点上永远拿不到窗口大小。
+            //    V4 系官方标称 1M 上下文 / 384K 输出（2026-09-22 核对）。
+            ModelOption::with_limits("deepseek-flash", 1_000_000, 384_000),
+            ModelOption::with_limits("deepseek-v4-pro", 1_000_000, 384_000),
         ],
         protocol: Protocol::OpenAiCompatible,
         match_hosts: &["api.deepseek.com"],
@@ -147,9 +151,12 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         base_url: Some("https://open.bigmodel.cn/api/paas/v4"),
         model: "glm-5.3",
         models: &[
+            // 智谱同样不在 /models 里报限额。只给查得到官方标称值的那几条；
+            // 查不到的留空 —— 宁可让调用方提示用户手填，也不编一个数字。
             ModelOption::plain("glm-5.3"),
             ModelOption::plain("glm-5.3-flash"),
-            ModelOption::plain("glm-5"),
+            // GLM-5 官方标称约 200K 上下文（2026-09-22 核对）；输出上限未查到
+            ModelOption::with_context("glm-5", 200_000),
             ModelOption::plain("glm-4.7"),
             ModelOption::plain("glm-4.6"),
         ],

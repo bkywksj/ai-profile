@@ -194,3 +194,85 @@ fn verifier_is_shareable_and_concurrent() {
     let cloned = verifier.clone();
     std::thread::spawn(move || drop(cloned)).join().unwrap();
 }
+
+/// 🔴 三层回退：端点上报 > 预置静态 > None，且三者可分辨。
+///
+/// 这是 `limits` 模块存在的全部理由。调研真实故障时几乎每一条都源于
+/// 「把猜的数字当成真的」——某网关丢掉元数据，客户端回落硬编码表，
+/// 512K 的模型被当成 131K 提前触发压缩，而**没有任何迹象**表明数字是猜的。
+///
+/// 所以这里不只验「能不能拿到数字」，更验「拿到的数字知不知道自己是哪来的」。
+#[cfg(feature = "client")]
+#[test]
+fn token_limits_three_layer_fallback() {
+    use ai_profile::client::parse_model_limits;
+    use ai_profile::{preset, LimitSource};
+
+    // ── 第 1 层：端点报了 → 用它，标记 Endpoint
+    let body = r#"{"data":[{"id":"x/y","context_length":262144,
+                  "top_provider":{"context_length":131072,"max_completion_tokens":32768}}]}"#;
+    let from_endpoint = parse_model_limits(body);
+    assert_eq!(from_endpoint.len(), 1);
+    let (id, l) = &from_endpoint[0];
+    assert_eq!(id, "x/y");
+    assert_eq!(l.source, LimitSource::Endpoint);
+    assert_eq!(
+        l.context_window,
+        Some(131_072),
+        "top_provider 是这家实际给的额度，优先级高于模型标称值"
+    );
+
+    // ── 第 2 层：端点是 OpenAI 裸规范（最常见）→ 空表，回落预置
+    let bare = r#"{"object":"list","data":[{"id":"deepseek-flash","object":"model","owned_by":"deepseek"}]}"#;
+    assert!(
+        parse_model_limits(bare).is_empty(),
+        "OpenAI 规范里没有 context 字段，这是常态不是异常"
+    );
+
+    let ds = preset::preset_by_key("deepseek").unwrap();
+    let flash = ds
+        .models
+        .iter()
+        .find(|m| m.value == "deepseek-flash")
+        .unwrap();
+    let preset_limits = flash.preset_limits().expect("DeepSeek 该有静态兜底");
+    assert_eq!(
+        preset_limits.source,
+        LimitSource::Preset,
+        "🔴 静态值必须标记成 Preset —— 界面据此允许用户修改"
+    );
+    assert!(preset_limits.context_window.is_some());
+
+    // ── 第 3 层：两层都没有 → None，让用户自己填，别猜
+    let anth = preset::preset_by_key("anthropic_official").unwrap();
+    let opus = anth
+        .models
+        .iter()
+        .find(|m| m.value == "claude-opus-5")
+        .unwrap();
+    assert!(
+        opus.preset_limits().is_none(),
+        "没查到官方数字的就该留空，而不是编一个"
+    );
+}
+
+/// 裁历史用的预算 = 窗口 − 本次输出预留，且不下溢。
+#[test]
+fn input_budget_is_usable_for_truncation() {
+    use ai_profile::TokenLimits;
+
+    let l = TokenLimits::from_preset(Some(200_000), Some(8192));
+    assert_eq!(l.input_budget(4096), Some(195_904));
+
+    // 预留比窗口还大 → 0，不是回绕成天文数字
+    assert_eq!(
+        TokenLimits::from_preset(Some(1024), None).input_budget(4096),
+        Some(0)
+    );
+
+    // 不知道窗口 → 不猜
+    assert_eq!(
+        TokenLimits::from_preset(None, None).input_budget(4096),
+        None
+    );
+}

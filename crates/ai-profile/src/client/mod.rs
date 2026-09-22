@@ -123,6 +123,19 @@ pub struct VerifyOk {
     pub dropped: usize,
     /// 当前填的 `model` 是否在清单里；`model` 为空或端点没返回清单时为 `true`
     pub model_in_list: bool,
+    /// 🔴 **当前填的那个模型**的限额，由端点上报（`source: Endpoint`）。
+    ///
+    /// `None` 有两种情况，调用方处理方式相同 —— 回落到
+    /// [`ModelOption::preset_limits`](crate::preset::ModelOption::preset_limits)：
+    ///
+    /// - 端点没报（OpenAI 规范里就没有 context 字段，是**常态**）
+    /// - 当前 `model` 不在端点返回的清单里
+    pub limits: Option<crate::limits::TokenLimits>,
+    /// 端点上报了限额的**全部**模型，`(id, 限额)`。
+    ///
+    /// 给「切换模型时立刻显示新窗口」这类场景用 —— 不必为换个模型再打一次端点。
+    /// 端点不报限额时是空表。
+    pub model_limits: Vec<(String, crate::limits::TokenLimits)>,
 }
 
 /// 交互式动作的超时 —— 用户正看着转圈，比对话请求短得多。
@@ -263,11 +276,23 @@ impl Verifier {
             || cleaned.models.is_empty()
             || cleaned.models.iter().any(|m| m == model);
 
+        // 顺手把端点自己报的限额带回来 —— 请求已经发了，不多花一分钱。
+        // 多数 OpenAI 兼容端点不报（规范里就没这字段），那就是空表，
+        // 调用方回落到预置静态值。
+        let model_limits = parse_model_limits(&body);
+        // 当前填的这个模型的限额，调用方最常用的就是它
+        let limits = model_limits
+            .iter()
+            .find(|(id, _)| id == model)
+            .map(|(_, l)| *l);
+
         Ok(VerifyOk {
             latency_ms,
             models: cleaned.models,
             dropped: cleaned.dropped,
             model_in_list,
+            limits,
+            model_limits,
         })
     }
 }
@@ -367,6 +392,37 @@ fn extract_error_message(body: &str) -> Option<String> {
     Some(msg.chars().take(300).collect())
 }
 
+/// 从 `/models` 响应里抽出「模型 id → 端点上报的限额」。
+///
+/// 与 [`parse_model_ids`] 并存而不是替换它：后者是公开 API，改签名是 major 变更，
+/// 而多数调用方只要一个 id 清单。
+///
+/// # 为什么值得单独抽一遍
+///
+/// crate 本来就在打这个端点。端点自己报的限额是**最可信**的来源 ——
+/// 它包含中转站的真实限制，而任何静态表都不可能知道这件事。
+/// 此前这些字段被 `parse_model_ids` 直接丢掉了，等于白打一次请求。
+///
+/// 只收录**报了限额**的模型：OpenAI 规范的裸响应（`{id, object, owned_by}`）
+/// 一条都不会进来，那是常态而非异常，调用方据此走静态兜底那一层。
+pub fn parse_model_limits(body: &str) -> Vec<(String, crate::limits::TokenLimits)> {
+    let Ok(v) = serde_json::from_str::<serde_json::Value>(body) else {
+        return Vec::new();
+    };
+    let arr = v
+        .get("data")
+        .and_then(|d| d.as_array())
+        .or_else(|| v.as_array());
+    let Some(arr) = arr else { return Vec::new() };
+    arr.iter()
+        .filter_map(|item| {
+            let id = item.get("id").and_then(|i| i.as_str())?;
+            let limits = crate::limits::parse_model_limits(item)?;
+            Some((id.to_string(), limits))
+        })
+        .collect()
+}
+
 /// 从 `/models` 响应里抽出模型 id 列表。
 ///
 /// 主流端点是 `{ "data": [{ "id": "…" }] }`；少数自建网关直接返回裸数组
@@ -433,6 +489,11 @@ mod tests {
             models: vec!["deepseek-flash".into()],
             dropped: 2,
             model_in_list: true,
+            limits: Some(crate::limits::TokenLimits::from_endpoint(
+                Some(128_000),
+                Some(8192),
+            )),
+            model_limits: Vec::new(),
         };
         let j = serde_json::to_string(&ok).unwrap();
         assert!(j.contains(r#""latencyMs":320"#), "前端读 latencyMs：{j}");
@@ -440,6 +501,10 @@ mod tests {
             j.contains(r#""modelInList":true"#),
             "前端读 modelInList：{j}"
         );
+        // 🔴 限额与来源标记是前端契约：界面要据此显示「端点上报 128K」
+        //    还是「预估 128K，可修改」。字段名变了会静默读到 undefined。
+        assert!(j.contains(r#""contextWindow":128000"#), "{j}");
+        assert!(j.contains(r#""source":"endpoint""#), "来源必须能分辨：{j}");
         assert!(
             j.contains(r#""dropped":2"#),
             "「已滤掉 N 个」的提示靠它：{j}"

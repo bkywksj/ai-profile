@@ -38,6 +38,7 @@
 pub mod endpoint;
 pub mod error;
 pub mod kind;
+pub mod limits;
 pub mod model_filter;
 pub mod preset;
 pub mod protocol;
@@ -47,6 +48,7 @@ pub mod client;
 
 pub use error::VerifyError;
 pub use kind::{Kind, Protocol};
+pub use limits::{LimitSource, TokenLimits};
 pub use preset::{preset_by_key, presets, presets_for, vendors, ProviderPreset, Vendor};
 pub use protocol::{parse_profile, to_profile, ParseError, ParsedProfile};
 
