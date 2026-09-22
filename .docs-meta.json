@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "docsProject": "ai-profile-docs",
+  "docsLocation": "sibling",
+  "docsPath": "../ai-profile-docs",
+  "themeColor": "#4f46e5",
+  "lastSyncCommit": "33bee8a",
+  "lastSyncTime": "2026-09-22T11:20:17Z",
+  "coveredSections": ["guide", "api", "reference"],
+  "notes": "providers.md 由 cargo xtask gen-docs 生成后，用文档仓库的 pnpm sync-providers 同步过去，不要手改",
+  "updateHistory": [
+    {
+      "commit": "33bee8a",
+      "time": "2026-09-22T11:20:17Z",
+      "type": "init",
+      "affectedDocs": [
+        "index.md",
+        "guide/introduction.md", "guide/installation.md", "guide/quick-start.md",
+        "guide/tauri-integration.md", "guide/frontend.md",
+        "api/preset.md", "api/verify.md", "api/protocol.md", "api/endpoint.md",
+        "reference/providers.md", "reference/errors.md",
+        "reference/versioning.md", "reference/add-provider.md"
+      ],
+      "sourceChanges": []
+    }
+  ]
+}
