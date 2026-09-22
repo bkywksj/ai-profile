@@ -4,7 +4,7 @@
 
 # 支持的服务商
 
-当前共 **16** 家服务商、**16** 条预置配置。
+当前共 **19** 家服务商、**19** 条预置配置。
 
 > `base_url` 一律是**服务商文档里的原文**（含版本段、不含端点后缀）。
 > 本 crate 原样使用它、不做任何推断 —— 所以各家的版本段不统一（多数 `/v1`、
@@ -24,10 +24,13 @@
 | 通义千问（阿里云百炼） | 对话 | `dashscope.aliyuncs.com` | 云端 |
 | 月之暗面 Kimi | 对话 | `api.moonshot.cn` | 云端 |
 | 硅基流动 SiliconFlow | 对话 | `api.siliconflow.cn` | 云端 |
+| 火山方舟（豆包） | 对话 | `ark.cn-beijing.volces.com` | 云端 |
+| 腾讯 TokenHub | 对话 | `tokenhub.tencentmaas.com` | 云端 |
 | OpenAI 官方 | 对话 | `api.openai.com` | 云端 |
 | OpenRouter | 对话 | `openrouter.ai` | 云端 |
 | Google Gemini（OpenAI 兼容层） | 对话 | `generativelanguage.googleapis.com` | 云端 |
 | Groq | 对话 | `api.groq.com` | 云端 |
+| xAI Grok | 对话 | `api.x.ai` | 云端 |
 | Ollama（本地） | 对话 | `localhost:11434` | 本地，需先启动服务 |
 | LM Studio（本地） | 对话 | `localhost:1234` | 本地，需先启动服务 |
 | vLLM / 自建推理服务 | 对话 | `localhost:8000` | 本地，需先启动服务 |
@@ -45,10 +48,13 @@
 | `qwen` | 通义千问（阿里云百炼） | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` | OpenAI 兼容 | 未核实 |
 | `moonshot` | 月之暗面 Kimi | `https://api.moonshot.cn/v1` | `kimi-k3` | OpenAI 兼容 | 未核实 |
 | `siliconflow` | 硅基流动 SiliconFlow | `https://api.siliconflow.cn/v1` | `deepseek-ai/DeepSeek-V3` | OpenAI 兼容 | 未核实 |
+| `volcengine_ark` | 火山方舟（豆包） | `https://ark.cn-beijing.volces.com/api/v3` | `doubao-seed-1-6-251015` | OpenAI 兼容 | 未核实 |
+| `tencent_tokenhub` | 腾讯 TokenHub | `https://tokenhub.tencentmaas.com/v1` | `hy3-preview` | OpenAI 兼容 | 未核实 |
 | `openai_official` | OpenAI 官方 | `https://api.openai.com/v1` | `gpt-5.6-terra` | OpenAI 兼容 | 未核实 |
 | `openrouter` | OpenRouter | `https://openrouter.ai/api/v1` | `anthropic/claude-sonnet-5` | OpenAI 兼容 | 未核实 |
 | `gemini` | Google Gemini（OpenAI 兼容层） | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-3.8-flash` | OpenAI 兼容 | 未核实 |
 | `groq` | Groq | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` | OpenAI 兼容 | 未核实 |
+| `xai` | xAI Grok | `https://api.x.ai/v1` | `grok-4.5` | OpenAI 兼容 | 未核实 |
 | `ollama` | Ollama（本地） | `http://localhost:11434/v1` | `qwen3:8b` | OpenAI 兼容 | 未核实 |
 | `lmstudio` | LM Studio（本地） | `http://localhost:1234/v1` | `—` | OpenAI 兼容 | 未核实 |
 | `vllm` | vLLM / 自建推理服务 | `http://localhost:8000/v1` | `—` | OpenAI 兼容 | 未核实 |

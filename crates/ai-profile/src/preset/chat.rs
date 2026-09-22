@@ -1,10 +1,15 @@
-//! 对话（chat）能力的 provider 预置 —— 16 家。
+//! 对话（chat）能力的 provider 预置 —— 19 家。
 //!
 //! 🔴 **数组顺序即下拉呈现顺序，同组必须连续。**
 //!
-//! 数据来源：sigil 2026-09-22 重写并验证过的那一份（16 家、1363 个测试全绿）。
-//! `verified_at` 只填**实际调通过**的，照搬来的一律留 `None` ——
+//! 数据来源：
+//!
+//! - 前 16 家来自 sigil 2026-09-22 重写并验证过的那一份（1363 个测试全绿）
+//! - 火山方舟 / 腾讯 TokenHub / xAI 三家于 2026-09-22 按各家官方文档补入，**未实际调通**
+//!
+//! `verified_at` 只填**实际调通过**的，照文档抄来的一律留 `None` ——
 //! 开源后别人提 PR 加 provider，没有这个字段就没法判断该不该信。
+//! `cargo xtask probe` 能验地址可达性，但验不了 model id 对不对（那要真实密钥）。
 
 use super::{
     ExtraField, ModelOption, ProviderPreset, GROUP_ANTHROPIC, GROUP_CHINA, GROUP_INTERNATIONAL,
@@ -233,6 +238,69 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         is_local: false,
         verified_at: None,
     },
+    ProviderPreset {
+        key: "volcengine_ark",
+        // 🔴 这个 vendor_id 是本 crate「同厂商共用一个密钥」设计的最佳例证：
+        //    火山方舟的 chat / image / video 走的是**同一个 base_url**
+        //    （https://ark.cn-beijing.volces.com/api/v3）。后续补 image / video 预置时
+        //    复用这个 vendor_id，用户配一次密钥就能三种能力全开。
+        vendor_id: "volcengine",
+        kind: Kind::Chat,
+        group_key: GROUP_CHINA.0,
+        group_label: GROUP_CHINA.1,
+        label_key: "providerTemplate.volcengineArk.label",
+        label: "火山方舟（豆包）",
+        hint_key: Some("providerTemplate.volcengineArk.hint"),
+        hint: Some("模型 id 带发布日期后缀，换代就变 —— 建议点「获取」拉当天真实清单"),
+        base_url: Some("https://ark.cn-beijing.volces.com/api/v3"),
+        // ⚠️ 豆包的 id 形如 doubao-seed-2-1-pro-260628，日期后缀是模型版本的一部分，
+        //    不是可省略的装饰。写死的这两条迟早过期，「获取」按钮才是主路径。
+        model: "doubao-seed-1-6-251015",
+        models: &[
+            ModelOption::plain("doubao-seed-2-1-pro-260628"),
+            ModelOption::plain("doubao-seed-1-6-251015"),
+        ],
+        protocol: Protocol::OpenAiCompatible,
+        match_hosts: &["ark.cn-beijing.volces.com"],
+        extra_fields: NO_EXTRA,
+        apply_url: Some("https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey"),
+        is_local: false,
+        verified_at: None,
+    },
+    ProviderPreset {
+        key: "tencent_tokenhub",
+        vendor_id: "tencent",
+        kind: Kind::Chat,
+        group_key: GROUP_CHINA.0,
+        group_label: GROUP_CHINA.1,
+        label_key: "providerTemplate.tencentTokenhub.label",
+        label: "腾讯 TokenHub",
+        hint_key: Some("providerTemplate.tencentTokenhub.hint"),
+        // 🔴 这条 hint 是有具体用处的：老用户手里多半是 api.hunyuan.cloud.tencent.com/v1 的
+        //    地址和密钥，直接填进来不会报错、但拿不到新模型。必须明说要换。
+        hint: Some(
+            "混元老地址 api.hunyuan.cloud.tencent.com 已停止新增模型，密钥需在 TokenHub 重新申请",
+        ),
+        base_url: Some("https://tokenhub.tencentmaas.com/v1"),
+        // TokenHub 是**聚合平台**而不是纯混元入口：同一个密钥下既有腾讯自家的 hy3，
+        // 也代理 deepseek / glm / kimi / minimax。注意同一个模型在不同平台 id 不同 ——
+        // DeepSeek 自家叫 deepseek-flash，这里叫 deepseek-v4-flash，所以不能跨预置共用常量。
+        model: "hy3-preview",
+        models: &[
+            ModelOption::plain("hy3-preview"),
+            ModelOption::plain("deepseek-v4-flash"),
+            ModelOption::plain("deepseek-v4-pro"),
+            ModelOption::plain("glm-5.1"),
+            ModelOption::plain("kimi-k2.6"),
+            ModelOption::plain("minimax-m2.7"),
+        ],
+        protocol: Protocol::OpenAiCompatible,
+        match_hosts: &["tokenhub.tencentmaas.com"],
+        extra_fields: NO_EXTRA,
+        apply_url: Some("https://console.cloud.tencent.com/tokenhub/apikey"),
+        is_local: false,
+        verified_at: None,
+    },
     // ── 组 3 · 国际 ──────────────────────────────────────────────
     ProviderPreset {
         key: "openai_official",
@@ -334,6 +402,34 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         match_hosts: &["api.groq.com"],
         extra_fields: NO_EXTRA,
         apply_url: Some("https://console.groq.com/keys"),
+        is_local: false,
+        verified_at: None,
+    },
+    ProviderPreset {
+        key: "xai",
+        vendor_id: "xai",
+        kind: Kind::Chat,
+        group_key: GROUP_INTERNATIONAL.0,
+        group_label: GROUP_INTERNATIONAL.1,
+        label_key: "providerTemplate.xai.label",
+        label: "xAI Grok",
+        hint_key: Some("providerTemplate.xai.hint"),
+        // 🔴 值得写进 hint：xAI 曾提供 Anthropic 协议兼容层，已于 2026-08-01 完全废弃。
+        //    照着老教程按 Anthropic 协议配会失败，且失败信息不会提这件事。
+        hint: Some("只支持 OpenAI 协议 —— Anthropic 兼容层已于 2026-08-01 下线"),
+        base_url: Some("https://api.x.ai/v1"),
+        // ⚠️ id 里的是**点号**不是连字符：grok-4.7，不是 grok-4-7。
+        //    这一家的命名与其它家相反，抄错了表现为「模型不存在」。
+        model: "grok-4.5",
+        models: &[
+            ModelOption::plain("grok-4.7"),
+            ModelOption::plain("grok-4.6"),
+            ModelOption::plain("grok-4.5"),
+        ],
+        protocol: Protocol::OpenAiCompatible,
+        match_hosts: &["api.x.ai"],
+        extra_fields: NO_EXTRA,
+        apply_url: Some("https://console.x.ai/"),
         is_local: false,
         verified_at: None,
     },
