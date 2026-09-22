@@ -51,7 +51,22 @@ pub use preset::{preset_by_key, presets, presets_for, vendors, ProviderPreset, V
 pub use protocol::{parse_profile, to_profile, ParseError, ParsedProfile};
 
 #[cfg(feature = "client")]
-pub use client::{verify, ServiceConfig, VerifyOk};
+pub use client::{verify, ServiceConfig, Verifier, VerifyOk};
+
+/// 重导出 `reqwest`，供 [`client::Verifier::from_builder`] 使用。
+///
+/// # 为什么要重导出
+///
+/// `from_builder` 收的是 `reqwest::ClientBuilder` —— 一个别人 crate 的类型。
+/// 下游若用自己依赖树里的 reqwest 建 builder，**版本对不上就编译不过**，
+/// 而且报错信息会是「expected ClientBuilder, found ClientBuilder」这种极难懂的形式。
+///
+/// 重导出之后下游写 `ai_profile::reqwest::Client::builder()`，版本必然匹配。
+///
+/// 🔴 代价要认：这让 reqwest 的大版本进入本 crate 的公开 API。
+/// 升到 reqwest 0.13 就是本 crate 的 **major** 变更，不是 patch。
+#[cfg(feature = "client")]
+pub use reqwest;
 
 // ⏸ 后续阶段（见 docs/tasks/active/ 的规划）：
 // - client::dry_run —— 真实调用（产生费用），按 kind 分实现

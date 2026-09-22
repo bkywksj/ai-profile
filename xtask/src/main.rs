@@ -47,44 +47,54 @@ fn gen_docs() -> Result<(), Box<dyn std::error::Error>> {
 /// 不带密钥 —— 目的是验**地址**是否还有效（DNS / 路由 / 路径），而不是验鉴权。
 /// 所以 401/403 算「地址没问题」，404 才是真问题。
 async fn probe() -> Result<(), Box<dyn std::error::Error>> {
-    use ai_profile::client::{verify, ServiceConfig};
+    use ai_profile::client::{ServiceConfig, Verifier};
     use ai_profile::VerifyError;
 
-    let mut bad = 0usize;
-    let mut skipped = 0usize;
+    // 🔴 一个 Verifier 复用给所有探测：reqwest::Client 内部持连接池，
+    //    每家现建一个等于每家都从 TCP + TLS 握手重来。
+    let verifier = Verifier::new()?;
 
-    for p in ai_profile::preset::presets() {
-        let Some(base) = p.base_url else {
-            skipped += 1;
-            continue;
-        };
-        if p.is_local {
-            // 本地服务没跑起来时必然连不上，探它没有意义
-            skipped += 1;
-            continue;
+    // 先筛出真正要探的，跳过的单独计数
+    let targets: Vec<_> = ai_profile::preset::presets()
+        .iter()
+        // 本地服务没跑起来时必然连不上，探它没有意义
+        .filter(|p| !p.is_local)
+        .filter_map(|p| p.base_url.map(|base| (p, base)))
+        .collect();
+    let skipped = ai_profile::preset::presets().len() - targets.len();
+
+    // 并发探测。串行时最坏情况是 家数 × 20 秒超时 —— 19 家就是 6 分钟，
+    // 而这些请求彼此无关，纯粹在等网络。
+    let results = futures_util::future::join_all(targets.into_iter().map(|(p, base)| {
+        let verifier = &verifier;
+        async move {
+            // ServiceConfig 带 #[non_exhaustive]，外部 crate 只能走 builder 构造
+            let cfg = ServiceConfig::new(p.protocol, base).with_preset(p.key);
+            (p.key, verifier.verify(cfg).await)
         }
+    }))
+    .await;
 
-        // 走 builder —— ServiceConfig 带 #[non_exhaustive]，外部 crate 不能用字面量构造
-        let cfg = ServiceConfig::new(p.protocol, base).with_preset(p.key);
-        match verify(cfg).await {
+    // 🔴 输出按预置顺序，不按完成顺序 —— 并发化不该让人每次看到不同的排列，
+    //    那样两次 probe 的输出没法直接 diff。
+    let mut bad = 0usize;
+    for (key, r) in results {
+        match r {
             Ok(ok) => println!(
                 "  ✅ {:<26} {:>5}ms  {} 个模型",
-                p.key,
+                key,
                 ok.latency_ms,
                 ok.models.len()
             ),
             // 没带密钥，鉴权失败恰恰说明地址是对的
             Err(VerifyError::AuthFailed { .. }) => {
-                println!(
-                    "  ✅ {:<26} 地址可达（未带密钥，返回鉴权失败属正常）",
-                    p.key
-                )
+                println!("  ✅ {key:<26} 地址可达（未带密钥，返回鉴权失败属正常）")
             }
             Err(e @ VerifyError::NotFound { .. }) => {
                 bad += 1;
-                println!("  ❌ {:<26} {e}", p.key);
+                println!("  ❌ {key:<26} {e}");
             }
-            Err(e) => println!("  ⚠️  {:<26} {e}", p.key),
+            Err(e) => println!("  ⚠️  {key:<26} {e}"),
         }
     }
 

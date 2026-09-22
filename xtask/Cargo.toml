@@ -8,3 +8,6 @@ edition.workspace = true
 [dependencies]
 ai-profile = { path = "../crates/ai-profile", features = ["client", "chat"] }
 tokio = { version = "1", features = ["full"] }
+# probe 并发探测用 join_all。不用 tokio::JoinSet 是因为它要求 future 为 'static，
+# 而这些 future 借用同一个 Verifier（共享连接池正是并发化的意义所在）。
+futures-util = { version = "0.3", default-features = false, features = ["std", "async-await"] }

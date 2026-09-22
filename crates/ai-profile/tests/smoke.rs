@@ -9,7 +9,7 @@ use ai_profile::{preset, protocol, Kind, Protocol};
 fn public_api_is_usable_from_outside() {
     // 1. 拿全部预置
     let all = preset::presets();
-    assert!(all.len() >= 16, "chat 预置应有 16 家，实际 {}", all.len());
+    assert!(all.len() >= 19, "chat 预置应有 19 家，实际 {}", all.len());
 
     // 2. 按 kind 过滤
     let chat: Vec<_> = preset::presets_for(Kind::Chat).collect();
@@ -156,4 +156,41 @@ fn required_fields_check_is_public() {
     use ai_profile::client::check_required_fields;
     assert!(check_required_fields(Some("deepseek"), &[]).is_ok());
     assert!(check_required_fields(None, &[]).is_ok());
+}
+
+/// 🔴 `Verifier` 必须能从外部建、能跨线程共享、能并发调用。
+///
+/// 这条守的是本类型存在的全部意义：**复用连接池**。桌面应用会把它存进全局状态
+/// （Tauri 的 `AppState`、`OnceLock`…），那就要求 `Send + Sync + 'static`；
+/// 「全部验证」那种批量按钮要 `join_all`，那就要求 `verify` 只借 `&self`。
+///
+/// 任何一条被破坏（比如给结构体加了 `RefCell`、把 `verify` 改成 `&mut self`），
+/// 这个测试会直接编译失败 —— 而不是等下游应用升级时才炸。
+#[cfg(feature = "client")]
+#[test]
+fn verifier_is_shareable_and_concurrent() {
+    use ai_profile::client::{ServiceConfig, Verifier};
+    use ai_profile::Protocol;
+
+    fn assert_send_sync_static<T: Send + Sync + 'static>() {}
+    assert_send_sync_static::<Verifier>();
+
+    let verifier = Verifier::new().expect("默认 Verifier 应当建得起来");
+
+    // 只借 &self —— 同一个实例能同时持有多个未完成的验证 future。
+    // 这里不真的发请求（不 await），要的就是「这段能编译」：
+    // 两个 future 同时持有 &verifier，改成 &mut self 就会在这里报错。
+    let a = verifier.verify(ServiceConfig::new(
+        Protocol::OpenAiCompatible,
+        "https://a.example/v1",
+    ));
+    let b = verifier.verify(ServiceConfig::new(
+        Protocol::OpenAiCompatible,
+        "https://b.example/v1",
+    ));
+    drop((a, b));
+
+    // Clone 是浅拷贝（内部 Arc），克隆出来的共用同一个连接池
+    let cloned = verifier.clone();
+    std::thread::spawn(move || drop(cloned)).join().unwrap();
 }

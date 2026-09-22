@@ -16,6 +16,24 @@
 | 改 `preset.key` | **major** | 🔴 见下 |
 | 改 `ai.profile` 的**规范**字段名 | **major** | 见下 |
 
+### 🔴 reqwest 的大版本在公开 API 里
+
+`Verifier::from_builder` 收 `reqwest::ClientBuilder`，`lib.rs` 重导出了 `reqwest`。
+后果是 **reqwest 的大版本升级 = 本 crate 的 major 变更**，不是 patch：
+
+| 改动 | 版本位 |
+|---|---|
+| reqwest `0.12.x` → `0.12.y` | patch（补丁版本不破坏 API） |
+| reqwest `0.12` → `0.13` | **major** 🔴 |
+
+这是**刻意付的代价**。不重导出的话，下游用自己依赖树里的 reqwest 建 builder，
+版本一旦不同就编译失败，报错还是「expected `ClientBuilder`, found `ClientBuilder`」
+这种看不懂的形式。宁可把耦合写进版本号，也不要让下游撞上这种错误。
+
+替代方案（未采用）：自己定义一个 `ProxyConfig` 结构体做中间层。否决理由是
+代理配置各家差异极大 —— sigil 用的是 `reqwest::Proxy::custom(闭包)` 按 URL 动态路由，
+任何简化的中间层都覆盖不了，最后还是要开逃生口。
+
 ## 🔴 两个特别危险的改动
 
 ### 1. `preset.key` 是存量配置的锚

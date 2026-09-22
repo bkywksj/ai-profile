@@ -114,6 +114,164 @@ pub struct VerifyOk {
 /// 交互式动作的超时 —— 用户正看着转圈，比对话请求短得多。
 const VERIFY_TIMEOUT_SECS: u64 = 20;
 
+/// 持有一个可复用的 HTTP 客户端。
+///
+/// # 为什么要有这个类型
+///
+/// `reqwest::Client` **内部持有连接池**，官方明确要求复用。每次验证都现建一个，
+/// 连接池就永远是空的 —— 每次都要重新做 TCP + TLS 握手，跨境端点尤其贵。
+/// 「全部验证」这种一次点四下的按钮会连做四次完整握手。
+///
+/// 建一次、存起来、反复用：
+///
+/// ```no_run
+/// # use ai_profile::client::{Verifier, ServiceConfig};
+/// # use ai_profile::Protocol;
+/// # async fn f() -> Result<(), Box<dyn std::error::Error>> {
+/// let verifier = Verifier::new()?;          // 应用启动时建一次
+/// let cfg = ServiceConfig::new(Protocol::OpenAiCompatible, "https://api.deepseek.com/v1");
+/// let ok = verifier.verify(cfg).await?;     // 之后反复用
+/// # Ok(())
+/// # }
+/// ```
+#[derive(Debug, Clone)]
+pub struct Verifier {
+    client: reqwest::Client,
+}
+
+impl Verifier {
+    /// 用默认配置建一个。
+    pub fn new() -> Result<Self, VerifyError> {
+        Self::from_builder(reqwest::Client::builder())
+    }
+
+    /// 从调用方自备的 builder 建 —— 代理、自定义证书、UA 都在这里配。
+    ///
+    /// 存在的理由：代理配置各家差异很大。sigil 用的是
+    /// `reqwest::Proxy::custom(闭包)` 做按 URL 动态路由，不是一个静态代理地址，
+    /// 任何「传一个代理 URL 字符串」的简化 API 都覆盖不了它。
+    ///
+    /// # 🔴 安全默认值由本函数强制施加，调用方覆盖不掉
+    ///
+    /// 超时与**禁重定向**是在你的配置**之后**加的（reqwest 的 builder 后写覆盖先写）。
+    /// 禁重定向不容商量：跨 host 跳转时 reqwest 只剥 `Authorization` 等标准头，
+    /// **不剥自定义头** —— Anthropic 的 `x-api-key` 会被原样发往跳转目标。
+    ///
+    /// 用本 crate 重导出的 [`crate::reqwest`] 来建 builder，版本必然匹配：
+    ///
+    /// ```no_run
+    /// # use ai_profile::client::Verifier;
+    /// # fn apply_proxy(b: ai_profile::reqwest::ClientBuilder) -> ai_profile::reqwest::ClientBuilder { b }
+    /// # fn f() -> Result<(), Box<dyn std::error::Error>> {
+    /// let v = Verifier::from_builder(apply_proxy(ai_profile::reqwest::Client::builder()))?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn from_builder(builder: reqwest::ClientBuilder) -> Result<Self, VerifyError> {
+        let client = builder
+            .timeout(Duration::from_secs(VERIFY_TIMEOUT_SECS))
+            .connect_timeout(Duration::from_secs(10))
+            // 🔴 放在最后 = 调用方覆盖不掉。理由见上方文档
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .map_err(|e| VerifyError::Malformed {
+                detail: format!("构造 HTTP 客户端失败: {e}"),
+            })?;
+        Ok(Self { client })
+    }
+
+    /// 零成本验证：只打端点的模型列表接口，**不产生任何生成费用**。
+    ///
+    /// 四种 kind 都可调 —— 与 `dry_run`（真实调用，产生费用）分开正是因为
+    /// 四者的调用成本差几个数量级。
+    ///
+    /// 本方法只借用 `&self`，可以并发调用（`reqwest::Client` 自身是 `Send + Sync`
+    /// 且内部共享连接池），批量验证多家服务商时直接 `join_all` 即可。
+    ///
+    /// # 错误
+    ///
+    /// 每个 [`VerifyError`] 变体都对应一个调用方应当给出的动作，见该类型文档。
+    pub async fn verify(&self, cfg: ServiceConfig<'_>) -> Result<VerifyOk, VerifyError> {
+        // 1. 必填的专有字段 —— 不发请求就能判
+        check_required_fields(cfg.preset_key, cfg.extra)?;
+
+        // 2. 定端点：表单填的优先，空则用预置的
+        let base = if cfg.base_url.trim().is_empty() {
+            cfg.preset_key
+                .and_then(preset_by_key)
+                .and_then(|p| p.base_url)
+                .unwrap_or("")
+        } else {
+            cfg.base_url.trim()
+        };
+        if base.is_empty() {
+            return Err(VerifyError::MissingExtraField {
+                key: "base_url".to_string(),
+            });
+        }
+        let url = join_api_path(base, "models");
+
+        // 3. 发请求 —— 复用 self.client 的连接池
+        let key = cfg.api_key.trim();
+        let mut req = self.client.get(&url);
+        req = match cfg.protocol {
+            Protocol::Anthropic => {
+                let r = req.header("anthropic-version", "2023-06-01");
+                if key.is_empty() {
+                    r
+                } else {
+                    r.header("x-api-key", key)
+                }
+            }
+            // 本地服务（Ollama / vLLM）常常不校验密钥，空密钥也要允许发出去
+            _ if key.is_empty() => req,
+            _ => req.bearer_auth(key),
+        };
+
+        let started = std::time::Instant::now();
+        let resp = req.send().await.map_err(|_| VerifyError::Unreachable {
+            proxy_hint: needs_proxy_hint(&url),
+        })?;
+        let latency_ms = started.elapsed().as_millis().min(u128::from(u32::MAX)) as u32;
+
+        let status = resp.status().as_u16();
+        let body = resp.text().await.unwrap_or_default();
+
+        if !(200..300).contains(&status) {
+            return Err(diagnose(status, &body, &url, base));
+        }
+
+        // 4. 成功：清洗清单 + 校验当前 model 是否在里面
+        let ids = parse_model_ids(&body);
+        let cleaned = clean_fetched_models(ids);
+        let model = cfg.model.trim();
+        let model_in_list = model.is_empty()
+            || cleaned.models.is_empty()
+            || cleaned.models.iter().any(|m| m == model);
+
+        Ok(VerifyOk {
+            latency_ms,
+            models: cleaned.models,
+            model_in_list,
+        })
+    }
+}
+
+/// 进程级共享的默认 [`Verifier`]，供自由函数 [`verify`] 使用。
+///
+/// 存 `Result` 而不是在失败时 panic：建客户端失败（TLS 后端初始化不了）是环境问题，
+/// 应当作为错误返回给调用方，而不是把整个应用带崩。
+static DEFAULT_VERIFIER: std::sync::OnceLock<Result<Verifier, String>> = std::sync::OnceLock::new();
+
+fn default_verifier() -> Result<&'static Verifier, VerifyError> {
+    DEFAULT_VERIFIER
+        .get_or_init(|| Verifier::new().map_err(|e| e.to_string()))
+        .as_ref()
+        .map_err(|detail| VerifyError::Malformed {
+            detail: detail.clone(),
+        })
+}
+
 /// 校验预置要求的必填 `extra_fields` 是否都给了。
 ///
 /// 🔴 调用方应当在**发起验证之前**就调它，用于禁用按钮 ——
@@ -225,92 +383,24 @@ fn needs_proxy_hint(url: &str) -> bool {
         "generativelanguage.googleapis.com",
         "openrouter.ai",
         "api.groq.com",
+        "api.x.ai",
     ];
     let u = url.to_ascii_lowercase();
     BLOCKED.iter().any(|h| u.contains(h))
 }
 
-/// 零成本验证：只打端点的模型列表接口，**不产生任何生成费用**。
+/// 零成本验证 —— 用进程级共享的默认 [`Verifier`]。
 ///
-/// 四种 kind 都可调 —— 与 `dry_run`（真实调用，产生费用）分开正是因为
-/// 四者的调用成本差几个数量级。
+/// 一次性、图省事的场景用它就够了，连接池仍然是复用的。
+///
+/// **需要代理就不能用它** —— 默认客户端没有任何代理配置。
+/// 桌面应用应当自己建一个 [`Verifier::from_builder`] 存进全局状态。
 ///
 /// # 错误
 ///
 /// 每个 [`VerifyError`] 变体都对应一个调用方应当给出的动作，见该类型文档。
 pub async fn verify(cfg: ServiceConfig<'_>) -> Result<VerifyOk, VerifyError> {
-    // 1. 必填的专有字段 —— 不发请求就能判
-    check_required_fields(cfg.preset_key, cfg.extra)?;
-
-    // 2. 定端点：表单填的优先，空则用预置的
-    let base = if cfg.base_url.trim().is_empty() {
-        cfg.preset_key
-            .and_then(preset_by_key)
-            .and_then(|p| p.base_url)
-            .unwrap_or("")
-    } else {
-        cfg.base_url.trim()
-    };
-    if base.is_empty() {
-        return Err(VerifyError::MissingExtraField {
-            key: "base_url".to_string(),
-        });
-    }
-    let url = join_api_path(base, "models");
-
-    // 3. 发请求
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(VERIFY_TIMEOUT_SECS))
-        .connect_timeout(Duration::from_secs(10))
-        // 🔴 禁重定向：跨 host 跳转时 reqwest 不剥自定义头，
-        //    Anthropic 的 x-api-key 会被原样发往跳转目标
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .map_err(|e| VerifyError::Malformed {
-            detail: format!("构造 HTTP 客户端失败: {e}"),
-        })?;
-
-    let key = cfg.api_key.trim();
-    let mut req = client.get(&url);
-    req = match cfg.protocol {
-        Protocol::Anthropic => {
-            let r = req.header("anthropic-version", "2023-06-01");
-            if key.is_empty() {
-                r
-            } else {
-                r.header("x-api-key", key)
-            }
-        }
-        // 本地服务（Ollama / vLLM）常常不校验密钥，空密钥也要允许发出去
-        _ if key.is_empty() => req,
-        _ => req.bearer_auth(key),
-    };
-
-    let started = std::time::Instant::now();
-    let resp = req.send().await.map_err(|_| VerifyError::Unreachable {
-        proxy_hint: needs_proxy_hint(&url),
-    })?;
-    let latency_ms = started.elapsed().as_millis().min(u128::from(u32::MAX)) as u32;
-
-    let status = resp.status().as_u16();
-    let body = resp.text().await.unwrap_or_default();
-
-    if !(200..300).contains(&status) {
-        return Err(diagnose(status, &body, &url, base));
-    }
-
-    // 4. 成功：清洗清单 + 校验当前 model 是否在里面
-    let ids = parse_model_ids(&body);
-    let cleaned = clean_fetched_models(ids);
-    let model = cfg.model.trim();
-    let model_in_list =
-        model.is_empty() || cleaned.models.is_empty() || cleaned.models.iter().any(|m| m == model);
-
-    Ok(VerifyOk {
-        latency_ms,
-        models: cleaned.models,
-        model_in_list,
-    })
+    default_verifier()?.verify(cfg).await
 }
 
 #[cfg(test)]

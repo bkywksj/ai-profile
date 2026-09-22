@@ -122,7 +122,7 @@ xtask/                cargo xtask probe —— 手动探活，不进 CI
 3. `model` 选够用档；`models[]` 只放**核对过**的 id
 4. 填 `verified_at`（YYYY-MM-DD）—— 没实际调通过就留 `None`
 5. `vendor_id`：已有厂商用同一个（如硅基流动的 chat/image 共用 `siliconflow`）
-6. 跑 `cargo test`，七个守卫测试必须全绿
+6. 跑 `cargo test`，九个守卫测试必须全绿
 7. 更新 `docs/providers.md`（或跑生成命令）
 8. 版本按上方策略 bump —— 加 provider 是 **patch**
 
@@ -131,7 +131,7 @@ xtask/                cargo xtask probe —— 手动探活，不进 CI
 ## 常用命令
 
 ```bash
-cargo test --workspace          # 含七个守卫测试
+cargo test --workspace          # 含九个守卫测试
 cargo clippy --workspace --all-targets
 cargo fmt --check
 cargo xtask probe               # 🔴 手动探活，打所有预置端点；不进 CI
@@ -142,7 +142,7 @@ cargo xtask probe               # 🔴 手动探活，打所有预置端点；�
 
 ---
 
-## 🔴 守卫测试（七个，不能删）
+## 🔴 守卫测试（九个，不能删）
 
 | 测试 | 防什么 |
 |---|---|
@@ -153,6 +153,8 @@ cargo xtask probe               # 🔴 手动探活，打所有预置端点；�
 | `endpoint_never_infers_version` | 防止有人「好心」把版本段推断加回来 |
 | `protocol_roundtrip` | ai.profile 解析→生成→解析 不丢字段 |
 | `providers_md_in_sync` | 防止文档变成又一份会漂移的副本 |
+| `service_config_builder_is_usable_from_outside` | 🔴 集成测试。`non_exhaustive` 的入参类型缺 builder 时下游报 E0639，单元测试抓不到 |
+| `verifier_is_shareable_and_concurrent` | 🔴 集成测试。`Verifier` 必须 `Send + Sync + 'static` 且 `verify(&self)`，否则批量验证与全局状态都用不了 |
 
 ---
 
