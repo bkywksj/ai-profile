@@ -112,6 +112,15 @@ pub struct VerifyOk {
     pub latency_ms: u32,
     /// 端点返回的可对话模型清单（已去重 + 清洗）
     pub models: Vec<String>,
+    /// 清洗时滤掉的条数（向量 / 重排 / 语音 / OCR 等非对话模型）。
+    ///
+    /// 用途是「已滤掉 N 个向量 / 重排 / 语音等」这类提示文案 —— 让用户知道
+    /// 清单被处理过，而不是以为这个端点就这么几个模型。聚合平台上这个数字很大
+    /// （OpenRouter 实测 433 条里滤掉相当一部分），不说明会让人以为拉漏了。
+    ///
+    /// 全被滤光时本字段为 0 且 `models` 是未过滤的原始清单 —— 那说明特征词
+    /// 在这个端点上判错了，此时宁可把原始清单摆给用户看，也不给他一个空下拉。
+    pub dropped: usize,
     /// 当前填的 `model` 是否在清单里；`model` 为空或端点没返回清单时为 `true`
     pub model_in_list: bool,
 }
@@ -257,6 +266,7 @@ impl Verifier {
         Ok(VerifyOk {
             latency_ms,
             models: cleaned.models,
+            dropped: cleaned.dropped,
             model_in_list,
         })
     }
@@ -421,6 +431,7 @@ mod tests {
         let ok = VerifyOk {
             latency_ms: 320,
             models: vec!["deepseek-flash".into()],
+            dropped: 2,
             model_in_list: true,
         };
         let j = serde_json::to_string(&ok).unwrap();
@@ -428,6 +439,10 @@ mod tests {
         assert!(
             j.contains(r#""modelInList":true"#),
             "前端读 modelInList：{j}"
+        );
+        assert!(
+            j.contains(r#""dropped":2"#),
+            "「已滤掉 N 个」的提示靠它：{j}"
         );
     }
 
