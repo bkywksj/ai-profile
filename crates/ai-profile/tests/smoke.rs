@@ -3,7 +3,7 @@
 //! 单元测试在模块内部，能访问私有项；这里只用 `pub` 接口 —— 等价于下游应用的视角。
 //! 忘了 `pub use` 某个类型、或把某项设成 `pub(crate)`，单元测试照样绿，这里会红。
 
-use ai_profile::{preset, Kind, Protocol};
+use ai_profile::{preset, protocol, Kind, Protocol};
 
 #[test]
 fn public_api_is_usable_from_outside() {
@@ -78,4 +78,49 @@ fn presets_without_base_url_have_guidance() {
             p.key
         );
     }
+}
+
+/// 🔴 协议的真正用途：A 应用生成 → B 应用解析，字段一个不丢。
+///
+/// 这是 `ai.profile` 存在的全部理由。调研时发现四份既有实现里有一份漏了
+/// `baseUrl` 别名 —— 两边都自认为"实现了本协议"，实际互导会静默丢字段。
+#[test]
+fn cross_app_interop() {
+    // A 应用：用户配好一条，分享出去
+    let shared = protocol::to_profile(
+        "公司 DeepSeek",
+        Protocol::OpenAiCompatible,
+        "https://api.deepseek.com/v1",
+        "sk-shared-secret",
+        "deepseek-flash",
+    );
+
+    // B 应用：粘贴导入。default_model 传自己的预置默认值
+    let ds = preset::preset_by_key("deepseek").unwrap();
+    let got = protocol::parse_profile(&shared, ds.model).expect("应能解析 A 生成的配置");
+
+    assert_eq!(got.name, "公司 DeepSeek");
+    assert_eq!(got.base_url, "https://api.deepseek.com/v1");
+    assert_eq!(got.api_key, "sk-shared-secret");
+    assert_eq!(got.model, "deepseek-flash");
+    assert!(!got.model_fallback, "来源给了 model，不该标记为兜底");
+
+    // B 应用还能把它认回对应的预置模板
+    assert_eq!(
+        preset::infer_preset_key(got.protocol, Some(&got.base_url)),
+        "deepseek"
+    );
+}
+
+/// 来源软件用了非规范拼写时，接收方仍要认得 —— 这是宽进的意义。
+#[test]
+fn tolerates_foreign_spellings() {
+    let foreign = r#"{"kind":"ai.profile","v":1,"data":{
+        "name":"来自某软件","provider":"custom",
+        "baseUrl":"https://cc.example.cn/v1","api_key":"sk-x","model":"claude-opus-5"}}"#;
+    let got = protocol::parse_profile(foreign, "fallback").expect("非规范拼写也应接受");
+    assert_eq!(got.base_url, "https://cc.example.cn/v1");
+    assert_eq!(got.api_key, "sk-x");
+    // provider 写的是 custom，但 model 名暴露了它其实要走 Anthropic 端点
+    assert_eq!(got.protocol, Protocol::Anthropic);
 }
