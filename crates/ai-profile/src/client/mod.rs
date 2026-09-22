@@ -100,7 +100,12 @@ impl<'a> ServiceConfig<'a> {
 }
 
 /// 验证成功的结果。
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// 带 `Serialize` 是为了能直接从 Tauri Command 返回 —— 与 [`crate::VerifyError`]
+/// 成对，调用方的成功/失败两条路径都不必再写一遍 DTO。
+/// 字段名转 camelCase，与 [`crate::ProviderPreset`] 等喂给界面的类型保持一致。
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct VerifyOk {
     /// 往返耗时 —— UI 显示「正常 · 320ms」，中转站慢不慢一眼看出
@@ -406,6 +411,25 @@ pub async fn verify(cfg: ServiceConfig<'_>) -> Result<VerifyOk, VerifyError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 🔴 `VerifyOk` 的线格式是前端契约 —— 字段名变了下游界面会静默读到 undefined。
+    ///
+    /// 与 `VerifyError`（snake_case + code 标签）刻意不同：喂给界面渲染的数据走
+    /// camelCase，带判别标签的错误协议走 snake_case。两套并存是有意的，所以钉住。
+    #[test]
+    fn verify_ok_serializes_camel_case() {
+        let ok = VerifyOk {
+            latency_ms: 320,
+            models: vec!["deepseek-flash".into()],
+            model_in_list: true,
+        };
+        let j = serde_json::to_string(&ok).unwrap();
+        assert!(j.contains(r#""latencyMs":320"#), "前端读 latencyMs：{j}");
+        assert!(
+            j.contains(r#""modelInList":true"#),
+            "前端读 modelInList：{j}"
+        );
+    }
 
     /// 🔴 只在看不到版本段时给建议 —— 已有版本段却 404 是别的问题，
     /// 乱给建议会把用户引向另一个错误答案。

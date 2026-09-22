@@ -47,7 +47,14 @@ pub const AI_PROFILE_KIND: &str = "ai.profile";
 pub const AI_PROFILE_VERSION: u32 = 1;
 
 /// 解析成功的结果。
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// 带 `Serialize` 是为了能直接从 Tauri Command 返回给「粘贴导入」表单。
+///
+/// 🔴 **它含 `api_key` 明文** —— 序列化后会经 IPC 到达前端。这是粘贴导入这个
+/// 功能本身的要求（表单要把密钥填进去），但因此：**不要把整个结构体写进日志**，
+/// 也不要把它存进任何缓存。
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct ParsedProfile {
     /// 配置名；来源没给时为空串，调用方可用 provider 名兜底
@@ -257,6 +264,21 @@ pub fn to_profile(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 🔴 `ParsedProfile` 的线格式是「粘贴导入」表单的契约。
+    #[test]
+    fn parsed_profile_serializes_camel_case() {
+        let p = parse_profile(
+            r#"{"kind":"ai.profile","v":1,"data":{"name":"x","baseURL":"https://a/v1","apiKey":"sk-1"}}"#,
+            "fallback-model",
+        )
+        .unwrap();
+        let j = serde_json::to_string(&p).unwrap();
+        assert!(j.contains(r#""baseUrl":"https://a/v1""#), "{j}");
+        assert!(j.contains(r#""apiKey":"sk-1""#), "{j}");
+        assert!(j.contains(r#""modelFallback":true"#), "来源没给 model：{j}");
+        assert!(j.contains(r#""rawProvider""#), "{j}");
+    }
 
     const CANONICAL: &str = r#"{
       "kind":"ai.profile","v":1,
