@@ -116,8 +116,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         group_label: GROUP_CHINA.1,
         label_key: "providerTemplate.deepseek.label",
         label: "DeepSeek",
-        hint_key: None,
-        hint: None,
+        hint_key: Some("providerTemplate.deepseek.hint"),
+        hint: Some("deepseek-flash / v4-pro；国内直连，不需要代理"),
         base_url: Some("https://api.deepseek.com/v1"),
         // 🔴 老别名 deepseek-chat / deepseek-reasoner 官方已于 2026-07-24 下线
         //    （V4 发布时公告的三个月过渡期到期）—— 它们曾留在预置里，表现为「点开即报错」。
@@ -141,8 +141,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         group_label: GROUP_CHINA.1,
         label_key: "providerTemplate.zhipu.label",
         label: "智谱 GLM",
-        hint_key: None,
-        hint: None,
+        hint_key: Some("providerTemplate.zhipu.hint"),
+        hint: Some("端点是 /v4 不是 /v1 —— 照抄预填地址即可"),
         // 🔴 智谱的版本段是 v4 不是 v1 —— 端点拼接一旦"好心"补 /v1 就是 404
         base_url: Some("https://open.bigmodel.cn/api/paas/v4"),
         model: "glm-5.3",
@@ -195,8 +195,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         group_label: GROUP_CHINA.1,
         label_key: "providerTemplate.moonshot.label",
         label: "月之暗面 Kimi",
-        hint_key: None,
-        hint: None,
+        hint_key: Some("providerTemplate.moonshot.hint"),
+        hint: Some("国内站 api.moonshot.cn；国际站把 .cn 换成 .ai"),
         // 国内站；国际站是 api.moonshot.ai
         base_url: Some("https://api.moonshot.cn/v1"),
         // legacy 的 moonshot-v1-8k/32k/128k 按上下文长度分档，已被 K 系的统一上下文
@@ -310,8 +310,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         group_label: GROUP_INTERNATIONAL.1,
         label_key: "providerTemplate.openaiOfficial.label",
         label: "OpenAI 官方",
-        hint_key: None,
-        hint: None,
+        hint_key: Some("providerTemplate.openaiOfficial.hint"),
+        hint: Some("国内访问需要代理"),
         base_url: Some("https://api.openai.com/v1"),
         // 默认取 5.6-terra（日常主力）而非 gpt-6-astra（四倍价）
         model: "gpt-5.6-terra",
@@ -389,8 +389,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         group_label: GROUP_INTERNATIONAL.1,
         label_key: "providerTemplate.groq.label",
         label: "Groq",
-        hint_key: None,
-        hint: None,
+        hint_key: Some("providerTemplate.groq.hint"),
+        hint: Some("推理速度快；国内访问通常需要代理"),
         base_url: Some("https://api.groq.com/openai/v1"),
         model: "llama-3.3-70b-versatile",
         models: &[
