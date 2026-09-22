@@ -39,12 +39,13 @@ pub mod endpoint;
 pub mod error;
 pub mod kind;
 pub mod model_filter;
+pub mod preset;
 
 pub use error::VerifyError;
 pub use kind::{Kind, Protocol};
+pub use preset::{preset_by_key, presets, presets_for, vendors, ProviderPreset, Vendor};
 
 // ⏸ 后续阶段（见 docs/tasks/active/ 的规划）：
-// pub mod preset;      // ProviderPreset / vendor 聚合
 // pub mod protocol;    // ai.profile 解析 / 生成
 // #[cfg(feature = "client")]
 // pub mod client;      // verify / dry_run / fetch_models
