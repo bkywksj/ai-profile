@@ -42,11 +42,16 @@ pub mod model_filter;
 pub mod preset;
 pub mod protocol;
 
+#[cfg(feature = "client")]
+pub mod client;
+
 pub use error::VerifyError;
 pub use kind::{Kind, Protocol};
 pub use preset::{preset_by_key, presets, presets_for, vendors, ProviderPreset, Vendor};
 pub use protocol::{parse_profile, to_profile, ParseError, ParsedProfile};
 
+#[cfg(feature = "client")]
+pub use client::{verify, ServiceConfig, VerifyOk};
+
 // ⏸ 后续阶段（见 docs/tasks/active/ 的规划）：
-// #[cfg(feature = "client")]
-// pub mod client;      // verify / dry_run / fetch_models
+// - client::dry_run —— 真实调用（产生费用），按 kind 分实现

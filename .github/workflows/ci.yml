@@ -27,15 +27,21 @@ jobs:
       - name: clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
-      # 默认 feature（chat）
-      - name: test
-        run: cargo test --workspace
+      # 🔴 必须用 -p 而不是 --workspace：xtask 依赖 ai-profile 的 client feature，
+      #    workspace 级命令会触发 feature unification，让 ai-profile 永远带上 client
+      #    —— 那样「不带 client 能否编译」这条就永远测不到（实测踩过）
+      - name: test (default features, no client)
+        run: cargo test -p ai-profile
 
-      # 🔴 多模态 feature 必须单独验一遍：kind.rs 里有 #[cfg(feature)] 分支，
-      #    只跑默认 feature 的话，image/video/tts 的 match 臂根本没被编译过
+      # 纯配置形态：无默认 feature、只开 chat。移动端 / 不需要 HTTP 的接入方用这个
+      - name: test (chat only, no client)
+        run: cargo test -p ai-profile --no-default-features --features chat
+
+      # 开 client：verify 的错误映射等一批测试只在这个组合下编译
+      - name: test (with client)
+        run: cargo test -p ai-profile --features client
+
+      # 🔴 多模态 feature 单独验：kind.rs 里有 #[cfg(feature)] 分支，
+      #    不开的话 image/video/tts 的 match 臂根本没被编译过
       - name: test (all features)
         run: cargo test --workspace --all-features
-
-      # 只开 chat、不开 client 时也要能编 —— 这是移动端 / 纯配置场景的形态
-      - name: build (no default features)
-        run: cargo build -p ai-profile --no-default-features --features chat
