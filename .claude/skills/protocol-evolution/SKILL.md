@@ -23,7 +23,7 @@ description: |
   "data": { "name": "", "provider": "", "baseURL": "", "apiKey": "", "model": "", "hints": { "toolId": "" } } }
 ```
 
-生产方与消费方分布在十几个项目里（sigil、reeve、knowledge_base、story_loom、ai-station，
+生产方与消费方分布在十几个项目里（sigil、reeve、knowledge_base、story_loom、onestop，
 以及 tauri-cc 等不接入 crate 的项目）。**我们改不动别人的实现，只能保证自己宽进严出。**
 
 ## 三条原则

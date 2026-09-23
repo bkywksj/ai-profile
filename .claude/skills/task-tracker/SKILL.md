@@ -158,7 +158,7 @@ description: |
 - [ ] `CHANGELOG.md`「未发布」
 - [ ] 推送 → 技能 `downstream-sync`（文档站、下游、登记表）
 
-### B. 一个下游的接入（reeve / ai-station / knowledge_base / story_loom）
+### B. 一个下游的接入（reeve / knowledge_base / onestop / story_loom）
 
 - [ ] 读 `docs/downstream.md` 该项目的「接入时必须处理」
 - [ ] 存量数据修正（如自动补 `/v1` 的旧地址），用该项目自己的旧规则，修完删旧逻辑

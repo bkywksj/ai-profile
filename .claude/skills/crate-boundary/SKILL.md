@@ -64,7 +64,7 @@ Anthropic ↔ OpenAI 消息格式互转、SSE 解析确实每家都要写，但�
 
 ### 3. 迁移代码永远不进 crate
 
-reeve / knowledge_base / ai-station 旧逻辑会自动补 `/v1`，接入时要修正存量地址。
+reeve / knowledge_base 旧逻辑会自动补 `/v1`，接入时修正了存量地址（后续已发布的下游同理）。
 这段修正用的是**各家自己的旧规则**，写在应用里，修完即删。crate 只有「绝不推断」一条规则。
 
 ## 发现下游有重复实现时

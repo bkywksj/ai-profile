@@ -73,7 +73,7 @@ npx tsc --noEmit
 
 1. 在本仓库 `docs/tasks/active/` 建任务文档（技能 `task-tracker`），写清接入范围
 2. 读 `docs/downstream.md` 该项目的「接入时必须处理」—— 尤其 **存量地址修正**：
-   reeve / ai-station / knowledge_base 旧逻辑自动补 `/v1`，已发布过，必须先用它们自己的
+   reeve / knowledge_base 旧逻辑自动补 `/v1`，已发布过，必须先用它们自己的
    旧规则把存量 `base_url` 规范好，再切换到 crate
 3. 按技能 `crate-boundary` 删掉该项目的本地副本（不是「不再调用」，是删掉）
 4. 给该项目加 `ai-profile-integration` 技能：模板在 `docs/downstream/integration-skill-template.md`

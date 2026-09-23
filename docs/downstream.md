@@ -28,10 +28,9 @@
 
 | 顺序 | 项目 | 现状（2026-09-23 盘点） | 接入时必须处理 |
 |---|---|---|---|
-| 1 | **ai-station** | 预置写死在 `src/components/settings/ProfileEditModal.tsx`（6 项，模型停在旧代）；ai.profile TS `src/lib/aiProfile.ts`；**无验证 / 获取** | ① `providers/mod.rs::build_endpoint` 强制拼 `/v1`，智谱 `/v4` 当前就是坏的 ② reqwest 开了默认 feature + `blocking`，与 crate 的 feature 合并后要确认 TLS 后端 |
-| 2 | **story_loom** | chat 预置 TS `src/lib/providerPresets.ts`（9 家）+ **生图 5 / 视频 9 / 配音 4**；ai.profile 只导入（`services/ai/provider_share.rs`） | 多模态的种子：先把它的 image / video / tts 预置**反向搬进** crate（开 `image` / `video` / `tts` feature），再接入 |
+| 1 | **story_loom** | chat 预置 TS `src/lib/providerPresets.ts`（9 家）+ **生图 5 / 视频 9 / 配音 4**；ai.profile 只导入（`services/ai/provider_share.rs`） | 多模态的种子：先把它的 image / video / tts 预置**反向搬进** crate（开 `image` / `video` / `tts` feature），再接入 |
 
-### 🔴 存量地址修正（ai-station 还要做；reeve、knowledge_base 已做完，可作范例）
+### 🔴 存量地址修正（已发布过的下游都要做；reeve、knowledge_base 已做完，可作范例）
 
 这三家的旧逻辑会**自动补 `/v1`**（reeve、knowledge_base 末尾加 `#` 可以禁止补），
 crate 的规则是**原样使用、绝不推断**。三家都已发布过，用户存下的配置里一定有不带 `/v1` 的地址 ——
@@ -57,6 +56,7 @@ crate 的规则是**原样使用、绝不推断**。三家都已发布过，用�
 | 项目 | 原因 | 决定时间 |
 |---|---|---|
 | tauri-cc（智码 AICoder） | 模型服务与登录 / 账号体系耦合；**完全不接**，包括 ai.profile 协议层 | 2026-09-23 |
+| ai-station | 项目**不再维护**，不接入（原计划排第 1） | 2026-09-24 |
 
 ## 未登记的 ai.profile 实现
 
