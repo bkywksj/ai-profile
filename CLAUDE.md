@@ -121,7 +121,7 @@ crates/ai-profile/src/
 ├── protocol.rs       ai.profile 解析 / 生成（宽进严出）
 ├── preset/
 │   ├── mod.rs        ProviderPreset / ModelOption / ExtraField + 查询函数 + model_limits
-│   ├── chat.rs       🔴 对话预置（25 家）—— 加一家只碰这一个文件
+│   ├── chat.rs       🔴 对话预置（26 家）—— 加一家只碰这一个文件
 │   ├── vendor.rs     vendor_id 聚合（服务商目录用）
 │   └── docgen.rs     生成 docs/providers.md
 └── client/mod.rs     feature = "client"：Verifier（零成本验证）+ 诊断纯函数

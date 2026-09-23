@@ -65,6 +65,11 @@
 - 下游升级时要补 6 家的 `providerTemplate.*` 翻译（sigil `check-preset-i18n.py`、
   reeve 守卫 `ai_profile_preset_i18n_keys_exist` 会报缺）
 
+### 新增聚合站预置（2026-09-24）
+- 中宇AI智行（`ipsunion`，聚合中转）：随 onestop 接入搬入，共 26 家；地址实测可达（未带密钥返回 401），
+  model id 取自 onestop 已发布的预置，未经真实密钥验证。`vendor_id` 留给以后的生图预置复用（同一个密钥）
+- 下游升级时要补 `providerTemplate.ipsunion.*` 翻译
+
 ### 文档与工具
 - `docs/providers.md` —— 由 `cargo xtask gen-docs` 生成，
   守卫测试 `providers_md_in_sync` 保证与代码一致

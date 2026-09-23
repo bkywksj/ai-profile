@@ -4,7 +4,7 @@
 
 # 支持的服务商
 
-当前共 **25** 家服务商、**25** 条预置配置。
+当前共 **26** 家服务商、**26** 条预置配置。
 
 > `base_url` 一律是**服务商文档里的原文**（含版本段、不含端点后缀）。
 > 本 crate 原样使用它、不做任何推断 —— 所以各家的版本段不统一（多数 `/v1`、
@@ -31,6 +31,7 @@
 | 阶跃星辰 | 对话 | `api.stepfun.com` | 自定义端点 |
 | 百川智能 | 对话 | `api.baichuan-ai.com` | 自定义端点 |
 | 小米 MiMo | 对话 | `api.xiaomimimo.com` | 自定义端点 |
+| 中宇AI智行（聚合） | 对话 | `api.ipsunion.com` | 自定义端点 |
 | OpenAI 官方 | 对话 | `api.openai.com` | 云端 |
 | OpenRouter | 对话 | `openrouter.ai` | 云端 |
 | Google Gemini（OpenAI 兼容层） | 对话 | `generativelanguage.googleapis.com` | 云端 |
@@ -61,6 +62,7 @@
 | `stepfun` | 阶跃星辰 | `https://api.stepfun.com/v1` | `step-1-flash` | OpenAI 兼容 | 未核实 |
 | `baichuan` | 百川智能 | `https://api.baichuan-ai.com/v1` | `Baichuan4-Turbo` | OpenAI 兼容 | 未核实 |
 | `mimo` | 小米 MiMo | `https://api.xiaomimimo.com/v1` | `mimo-v2-flash` | OpenAI 兼容 | 未核实 |
+| `ipsunion` | 中宇AI智行（聚合） | `https://api.ipsunion.com/v1` | `deepseek-v3.2` | OpenAI 兼容 | 未核实 |
 | `openai_official` | OpenAI 官方 | `https://api.openai.com/v1` | `gpt-5.6-terra` | OpenAI 兼容 | 未核实 |
 | `openrouter` | OpenRouter | `https://openrouter.ai/api/v1` | `anthropic/claude-sonnet-5` | OpenAI 兼容 | 未核实 |
 | `gemini` | Google Gemini（OpenAI 兼容层） | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-3.8-flash` | OpenAI 兼容 | 未核实 |

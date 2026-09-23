@@ -9,7 +9,7 @@ use ai_profile::{preset, protocol, Kind, Protocol};
 fn public_api_is_usable_from_outside() {
     // 1. 拿全部预置
     let all = preset::presets();
-    assert!(all.len() >= 25, "chat 预置应有 25 家，实际 {}", all.len());
+    assert!(all.len() >= 26, "chat 预置应有 26 家，实际 {}", all.len());
 
     // 2. 按 kind 过滤
     let chat: Vec<_> = preset::presets_for(Kind::Chat).collect();
