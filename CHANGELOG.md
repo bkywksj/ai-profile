@@ -55,6 +55,7 @@
 - 兼容智码已发出去的打包写法：`data.api_profiles` + snake_case 档案 + 顶层 `tool_id`；
   `auth_type = "oauth"` 的条目跳过并计入 `skipped`（OAuth 凭据与设备绑定）
 - `ParseError::EmptyBundle` —— 打包里没有一条可导入的配置
+- 修：`parse_profiles` 先认 `kind` 再要 `data`，粘了别的 JSON 时报 `not_ai_profile` 而不是 `missing_data`（reeve 测试抓到）
 
 ### 新增 6 家服务商（2026-09-23）
 - MiniMax / 百度千帆 / 阶跃星辰 / 百川 / 小米 MiMo / Together，随 knowledge_base 接入搬入

@@ -252,6 +252,11 @@ pub fn parse_profile(text: &str, default_model: &str) -> Result<ParsedProfile, P
 /// `default_model` 的含义同 [`parse_profile`]，对每一条生效。
 pub fn parse_profiles(text: &str, default_model: &str) -> Result<ParsedProfiles, ParseError> {
     let env = read_envelope(text)?;
+    // 🔴 先认 kind 再要 data：粘了一段别的 JSON（没有 data）时该说「不是 ai.profile」，
+    //    而不是「缺少 data」—— 后者会让用户以为自己粘的是一条残缺的配置
+    if env.kind != AI_PROFILE_KIND && env.kind != AI_PROFILE_BUNDLE_KIND {
+        return Err(ParseError::NotAiProfile { found: env.kind });
+    }
     let data = env.data.ok_or(ParseError::MissingData)?;
     match env.kind.as_str() {
         AI_PROFILE_KIND => Ok(ParsedProfiles {
@@ -597,6 +602,16 @@ mod tests {
         assert!(matches!(
             parse_profiles(future, "m"),
             Err(ParseError::UnsupportedVersion { found: 99, .. })
+        ));
+        // 🔴 不是 ai.profile 的 JSON（没有 data）要报 not_ai_profile，不能报 missing_data ——
+        //    reeve 的测试抓到过：先查 data 再认 kind，粘错东西时提示成了「缺少 data」
+        assert!(matches!(
+            parse_profiles(r#"{"kind":"other"}"#, "m"),
+            Err(ParseError::NotAiProfile { .. })
+        ));
+        assert!(matches!(
+            parse_profiles(r#"{"kind":"ai.profile.bundle","v":1}"#, "m"),
+            Err(ParseError::MissingData)
         ));
         // 🔴 只认单条的入口遇到打包要明确拒绝，而不是误读成一条
         assert!(matches!(
