@@ -12,9 +12,12 @@
 |---|---|---|---|---|---|---|
 | sigil | `E:/my/桌面软件tauri/sigil` | git rev（`src-tauri/Cargo.toml`） | `685b0dd` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 | `ai-profile-integration` |
 | knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | git rev（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `2a32261` | 2026-09-23 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用） | `ai-profile-integration` |
+| onestop | `E:/my/backend_tauri/onestop` | git rev（`src-tauri/Cargo.toml`，chat + client）；只有桌面端碰模型服务 | `63589a6` | 2026-09-24 | 聊天预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别（对话协议、工具循环、多模态预置、历史组装留在应用） | `ai-profile-integration` |
 | reeve | `E:/my/桌面软件tauri/reeve` | git rev，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `685b0dd` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
 
-> ⏳ 三家的界面改动都**尚未实机验证**；代码测试全绿。
+> ⏳ 四家的界面改动都**尚未实机验证**；代码测试全绿。
+>
+> onestop 在 `63589a6`（接入时新增 `dropped_models`）；**只本地提交、未推送**，发版节奏由它自己定。
 >
 > sigil / reeve 已升到 `685b0dd`，粘贴导入改用 `parse_profiles`，支持智码一次分享的多条打包。
 > knowledge_base 仍在 `2a32261`：落后的只有 `685b0dd` 这个修复（粘了别的 JSON 时错误提示更准），不影响使用，下次升级时带上。
@@ -28,8 +31,7 @@
 
 | 顺序 | 项目 | 现状（2026-09-23 盘点） | 接入时必须处理 |
 |---|---|---|---|
-| 1 | **onestop**（一站通，`E:/my/backend_tauri/onestop`） | 预置 TS `src/providerPresets.ts`（14 项，含生图 / 视频 / 配音 / 聚合站）；端点 `chat/mod.rs::join_endpoint`（只有主机名时补 `/v1`）；ai.profile `provider/share.rs`（导入一律当 OpenAI）；**v0.1.1 已发布** | ① 存量地址修正（只有主机名的补 `/v1`，含 `https://api.anthropic.com`）② 一条配置挂多个模型，限额按模型存 ③ 多模态预置暂留本地，随 story_loom 一起搬进 crate。任务文档 `task-20260924-000000-onestop接入.md` |
-| 2 | **story_loom** | chat 预置 TS `src/lib/providerPresets.ts`（9 家）+ **生图 5 / 视频 9 / 配音 4**；ai.profile 只导入（`services/ai/provider_share.rs`） | 多模态的种子：先把它的 image / video / tts 预置**反向搬进** crate（开 `image` / `video` / `tts` feature），再接入 |
+| 1 | **story_loom** | chat 预置 TS `src/lib/providerPresets.ts`（9 家）+ **生图 5 / 视频 9 / 配音 4**；ai.profile 只导入（`services/ai/provider_share.rs`） | 多模态的种子：先把它的 image / video / tts 预置**反向搬进** crate（开 `image` / `video` / `tts` feature），再接入 |
 
 ### 🔴 存量地址修正（已发布过的下游都要做；reeve、knowledge_base 已做完，可作范例）
 
@@ -42,6 +44,7 @@ crate 的规则是**原样使用、绝不推断**。三家都已发布过，用�
 
 - 修正逻辑留在应用侧，**不进 crate**：它是各家历史包袱，不是通用知识
 - sigil 没做这一步，是因为它当时还没发布过（未发布期不加迁移代码）
+- onestop 的旧规则最简单（只有主机名时补 `/v1`），见 `src-tauri/src/provider/legacy_base_url.rs`，入口是 schema v16
 - knowledge_base 的做法见 `src-tauri/src/services/legacy_api_url.rs`（它的旧规则把 `v1.5` 也算版本段，与 reeve 不同 ——
   **各家要冻结自己的旧规则**，不能共用一份）
 - **reeve 的做法可直接照搬**（`reeve-core/src/legacy_base_url.rs`）：
