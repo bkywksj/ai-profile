@@ -16,7 +16,7 @@
 //!
 //! 所以 client 层**按 kind 分 trait**，不强求一个统一接口。
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// 模型服务提供的能力类型。
 ///
@@ -83,14 +83,53 @@ impl Kind {
 }
 
 /// 对话接口协议：决定走 `/v1/messages` 还是 `/v1/chat/completions`。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "snake_case")]
+///
+/// 🔴 线格式是 `"anthropic"` / `"openai_compatible"`，与 [`Protocol::as_str`] 同一套拼写。
+/// 此前靠 `rename_all = "snake_case"` 自动推出 `"open_ai_compatible"`，
+/// 下游存的是 `openai_compatible`，前端不得不写一层转换 —— 两种拼写并存，
+/// 迟早有一处直接透传而静默错配。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Protocol {
     /// Anthropic 原生：`/v1/messages` + `x-api-key`
+    #[serde(rename = "anthropic")]
     Anthropic,
     /// OpenAI 兼容：`/v1/chat/completions` + `Authorization: Bearer`
+    #[serde(rename = "openai_compatible")]
     OpenAiCompatible,
+}
+
+impl Protocol {
+    /// 规范字符串，与 serde 线格式一致。调用方持久化协议时用它。
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Protocol::Anthropic => "anthropic",
+            Protocol::OpenAiCompatible => "openai_compatible",
+        }
+    }
+
+    /// 从字符串解析；认不出返回 `None`。
+    ///
+    /// 只收规范拼写 —— 这是给「读自己存的值」用的，存进去的一定是 [`Self::as_str`]。
+    /// 解析别人家分享来的配置（`"openai"` / `"custom"` 之类）请用
+    /// [`crate::protocol::parse_profile`]，那边有宽松的别名映射。
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim() {
+            "anthropic" => Some(Protocol::Anthropic),
+            "openai_compatible" => Some(Protocol::OpenAiCompatible),
+            _ => None,
+        }
+    }
+
+    /// 用户没填 base_url 时的官方端点。
+    ///
+    /// 🔴 带版本段：[`crate::endpoint`] 原样拼接、不做推断，少一段就是 404。
+    pub const fn default_base_url(self) -> &'static str {
+        match self {
+            Protocol::Anthropic => "https://api.anthropic.com/v1",
+            Protocol::OpenAiCompatible => "https://api.openai.com/v1",
+        }
+    }
 }
 
 #[cfg(test)]
@@ -106,5 +145,36 @@ mod tests {
             !Kind::Video.supports_dry_run(),
             "视频单次约 90 秒且费用高，不提供试运行"
         );
+    }
+
+    /// 🔴 serde 线格式、`as_str`、`parse` 三者必须是同一套拼写。
+    ///
+    /// 不一致的后果是静默的：前端拿 serde 的值去比对后端存的 `as_str`，永远不相等。
+    #[test]
+    fn protocol_spellings_agree() {
+        for p in [Protocol::Anthropic, Protocol::OpenAiCompatible] {
+            let wire = serde_json::to_value(p).unwrap();
+            assert_eq!(wire, p.as_str(), "serde 线格式与 as_str 不一致");
+            assert_eq!(Protocol::parse(p.as_str()), Some(p));
+            let back: Protocol = serde_json::from_value(wire).unwrap();
+            assert_eq!(back, p);
+        }
+        assert_eq!(
+            Protocol::parse("open_ai_compatible"),
+            None,
+            "旧拼写不再接受"
+        );
+    }
+
+    /// 默认端点必须带版本段 —— endpoint 模块不再替调用方补。
+    #[test]
+    fn default_base_url_has_version_segment() {
+        for p in [Protocol::Anthropic, Protocol::OpenAiCompatible] {
+            assert!(
+                crate::endpoint::ends_with_version_segment(p.default_base_url()),
+                "{} 缺版本段",
+                p.default_base_url()
+            );
+        }
     }
 }

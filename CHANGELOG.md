@@ -27,6 +27,13 @@
     超时与禁重定向由本 crate 在其后强制施加，调用方覆盖不掉
   - 自由函数 `client::verify` 仍在，走进程级共享的默认实例；**需要代理就不能用它**
 
+### 限额分层与协议拼写（2026-09-23）
+- ⚠️ `Protocol` 线格式由 `"open_ai_compatible"` 改为 `"openai_compatible"`，
+  并新增 `as_str` / `parse` / `default_base_url` —— 线格式、持久化、默认端点收成一处
+- `LimitSource::User` + `TokenLimits::from_user` / `with_source` / `or`（逐字段回退）
+- `preset::model_limits(protocol, base_url, model)` —— 查预置静态限额
+- 修：`infer_preset_key` 把带 `/v1` 的 Anthropic 官方地址误判成中转档
+
 ### 文档与工具
 - `docs/providers.md` —— 由 `cargo xtask gen-docs` 生成，
   守卫测试 `providers_md_in_sync` 保证与代码一致

@@ -267,7 +267,10 @@ pub fn infer_preset_key(protocol: Protocol, base_url: Option<&str>) -> &'static 
     let url = base_url.unwrap_or("").trim().to_ascii_lowercase();
 
     if protocol == Protocol::Anthropic {
-        if url.is_empty() || url.trim_end_matches('/') == "https://api.anthropic.com" {
+        // 按 host 判，不按全串：官方地址带不带 `/v1` 都是官方档。
+        // 此前全串比较 `https://api.anthropic.com`，而默认端点已改成带 `/v1` 的写法，
+        // 用户照抄官方文档填进来就会被误判成「Claude Code 中转」档。
+        if url.is_empty() || url.contains("://api.anthropic.com") {
             return "anthropic_official";
         }
         return "claude_code";
@@ -284,6 +287,37 @@ pub fn infer_preset_key(protocol: Protocol, base_url: Option<&str>) -> &'static 
         }
     }
     CUSTOM_PRESET_KEY
+}
+
+/// 一条已存配置的模型在预置里登记的静态限额（`source: Preset`）。
+///
+/// 先按 [`infer_preset_key`] 找到预置，再按 model id 精确匹配。
+/// 查不到返回 `None` —— 自定义端点、预置外的模型都是这种情况，**不猜**。
+///
+/// 这是分层回退里的第 2 层；调用方把用户设置 / 端点上报用
+/// [`TokenLimits::or`](crate::limits::TokenLimits::or) 叠在它上面。
+///
+/// ```
+/// # use ai_profile::{preset, Protocol};
+/// let l = preset::model_limits(
+///     Protocol::OpenAiCompatible,
+///     Some("https://api.deepseek.com/v1"),
+///     "deepseek-flash",
+/// ).unwrap();
+/// assert!(l.context_window.is_some());
+/// assert!(preset::model_limits(Protocol::OpenAiCompatible, None, "whatever").is_none());
+/// ```
+pub fn model_limits(
+    protocol: Protocol,
+    base_url: Option<&str>,
+    model: &str,
+) -> Option<crate::limits::TokenLimits> {
+    let model = model.trim();
+    preset_by_key(infer_preset_key(protocol, base_url))?
+        .models
+        .iter()
+        .find(|m| m.value == model)
+        .and_then(ModelOption::preset_limits)
 }
 
 #[cfg(test)]
@@ -370,6 +404,11 @@ mod tests {
         );
         assert_eq!(
             infer_preset_key(Protocol::Anthropic, None),
+            "anthropic_official"
+        );
+        // 🔴 官方文档写法带 /v1，同样是官方档（此前被误判成中转）
+        assert_eq!(
+            infer_preset_key(Protocol::Anthropic, Some("https://api.anthropic.com/v1")),
             "anthropic_official"
         );
         // 中转站 → Claude Code 档

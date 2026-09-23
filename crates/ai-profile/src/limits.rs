@@ -11,13 +11,16 @@
 //!
 //! 本模块只回答一个具体问题：**「发这次请求之前，该按多大的窗口裁历史？」**
 //!
-//! # 三层回退，且来源可分辨
+//! # 分层回退，且来源可分辨
 //!
 //! ```text
+//! 0. 用户手填       ← 用户明确说了算，压过一切（端点报错、中转站另有限制时的出口）
 //! 1. 端点实时上报   ← 最准：中转站报的就是它自己的真实限额
 //! 2. 预置静态兜底   ← 端点不报时用；只写「保守够用」而非追新
 //! 3. 都没有 → None  ← 让用户自己填，别猜
 //! ```
+//!
+//! 合并用 [`TokenLimits::or`]，**逐字段**回退：用户只填了窗口，输出上限照样能从下一层拿。
 //!
 //! 🔴 **三者必须能被调用方分辨**，这是本模块最重要的设计。
 //!
@@ -38,23 +41,49 @@
 //! |---|---|
 //! | OpenRouter | ✅ `context_length` 100% 覆盖，还有 `top_provider.max_completion_tokens` |
 //! | DeepSeek | ✅ `context_window` + `max_output_tokens`（2026-09-23 真实密钥实测） |
-//! | LM Studio / Ollama 的兼容层 | ❌ 同上（原生 `/api/v1/models` 才有） |
+//! | LM Studio / Ollama 的兼容层 | ❌ 只有 `{id, object, owned_by}`（原生 `/api/v1/models` 才有） |
 //!
 //! 所以静态兜底不是可选项 —— 不做的话，多数端点上这个能力等于不存在。
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// 限额数字的来源。
 ///
 /// 🔴 调用方**必须**据此区别对待：端点上报的可以直接用，静态兜底的应当让用户能改。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum LimitSource {
+    /// 用户在界面上手填的 —— 优先级最高。
+    ///
+    /// 端点报的也可能不对（中转站按套餐另有限制却照抄模型标称值），
+    /// 这时唯一的出口是让用户改；改了就必须压过端点值，否则改了等于没改。
+    User,
     /// 端点在 `/models` 响应里自己报的 —— 最可信，包含中转站的真实限制
     Endpoint,
     /// 本 crate 的预置静态值 —— 保守估计，可能过时，应允许用户覆盖
     Preset,
+}
+
+impl LimitSource {
+    /// 规范字符串，与 serde 线格式一致。调用方持久化来源时用它。
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            LimitSource::User => "user",
+            LimitSource::Endpoint => "endpoint",
+            LimitSource::Preset => "preset",
+        }
+    }
+
+    /// 从 [`Self::as_str`] 的产物解析回来；认不出返回 `None`。
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim() {
+            "user" => Some(LimitSource::User),
+            "endpoint" => Some(LimitSource::Endpoint),
+            "preset" => Some(LimitSource::Preset),
+            _ => None,
+        }
+    }
 }
 
 /// 一个模型的 token 限额。
@@ -95,6 +124,62 @@ impl TokenLimits {
             context_window,
             max_output,
             source: LimitSource::Preset,
+        }
+    }
+
+    /// 用户手填的限额。
+    pub const fn from_user(context_window: Option<u32>, max_output: Option<u32>) -> Self {
+        Self {
+            context_window,
+            max_output,
+            source: LimitSource::User,
+        }
+    }
+
+    /// 按来源构造 —— 调用方从存储里读回 `(窗口, 输出, 来源)` 时用。
+    pub const fn with_source(
+        context_window: Option<u32>,
+        max_output: Option<u32>,
+        source: LimitSource,
+    ) -> Self {
+        Self {
+            context_window,
+            max_output,
+            source,
+        }
+    }
+
+    /// 逐字段回退：自己缺的字段从 `fallback` 补。
+    ///
+    /// `source` 取**自己的**（只要自己至少有一个字段）—— 它标的是优先级最高、
+    /// 真正起作用的那一层。自己全空时整个换成 `fallback`。
+    ///
+    /// 🔴 为什么要逐字段：用户常常只知道窗口大小（文档写了），不知道输出上限。
+    /// 整条替换的话，填了窗口就丢了预置里的输出上限，等于填了反而变差。
+    ///
+    /// ```
+    /// # use ai_profile::limits::{LimitSource, TokenLimits};
+    /// let user = TokenLimits::from_user(Some(64_000), None);
+    /// let preset = TokenLimits::from_preset(Some(128_000), Some(8192));
+    /// let l = user.or(preset);
+    /// assert_eq!(l.context_window, Some(64_000)); // 用户的
+    /// assert_eq!(l.max_output, Some(8192));       // 预置补的
+    /// assert_eq!(l.source, LimitSource::User);
+    /// ```
+    pub const fn or(self, fallback: TokenLimits) -> TokenLimits {
+        if self.is_empty() {
+            return fallback;
+        }
+        TokenLimits {
+            context_window: match self.context_window {
+                Some(v) => Some(v),
+                None => fallback.context_window,
+            },
+            max_output: match self.max_output {
+                Some(v) => Some(v),
+                None => fallback.max_output,
+            },
+            source: self.source,
         }
     }
 
@@ -241,6 +326,38 @@ mod tests {
         assert_eq!(l.context_window, Some(1_048_576));
         assert_eq!(l.max_output, Some(393_216));
         assert_eq!(l.source, LimitSource::Endpoint);
+    }
+
+    /// 逐字段回退 + 来源取高优先级那层；自己全空时整条换成 fallback。
+    #[test]
+    fn or_merges_field_by_field() {
+        let endpoint = TokenLimits::from_endpoint(None, Some(32_000));
+        let preset = TokenLimits::from_preset(Some(128_000), Some(8192));
+        let l = endpoint.or(preset);
+        assert_eq!(l.context_window, Some(128_000), "端点没报窗口，由预置补");
+        assert_eq!(l.max_output, Some(32_000), "端点报了的不被覆盖");
+        assert_eq!(l.source, LimitSource::Endpoint);
+
+        let empty = TokenLimits::from_user(None, None);
+        assert_eq!(
+            empty.or(preset),
+            preset,
+            "空的用户设置不能把来源冒充成 User"
+        );
+    }
+
+    /// 来源的持久化字符串必须能原样读回，且与 serde 线格式一致。
+    #[test]
+    fn limit_source_roundtrip() {
+        for s in [
+            LimitSource::User,
+            LimitSource::Endpoint,
+            LimitSource::Preset,
+        ] {
+            assert_eq!(LimitSource::parse(s.as_str()), Some(s));
+            assert_eq!(serde_json::to_value(s).unwrap(), s.as_str());
+        }
+        assert_eq!(LimitSource::parse("guess"), None);
     }
 
     /// 0 不是「上限为 0」，是「未知」。
