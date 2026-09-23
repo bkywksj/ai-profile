@@ -51,7 +51,9 @@ pub use error::VerifyError;
 pub use kind::{Kind, Protocol};
 pub use limits::{LimitSource, TokenLimits};
 pub use preset::{preset_by_key, presets, presets_for, vendors, ProviderPreset, Vendor};
-pub use protocol::{parse_profile, to_profile, ParseError, ParsedProfile};
+pub use protocol::{
+    parse_profile, parse_profiles, to_profile, ParseError, ParsedProfile, ParsedProfiles,
+};
 
 #[cfg(feature = "client")]
 pub use client::{verify, ServiceConfig, Verifier, VerifyOk};

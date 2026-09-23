@@ -49,6 +49,13 @@
 - `preset::model_limits(protocol, base_url, model)` —— 查预置静态限额
 - 修：`infer_preset_key` 把带 `/v1` 的 Anthropic 官方地址误判成中转档
 
+### 多条打包（2026-09-23）
+- `parse_profiles` —— 单条与 `ai.profile.bundle` 统一返回列表（`ParsedProfiles`）；
+  `parse_profile` 签名不变，遇到打包仍报 `not_ai_profile`（minor）
+- 兼容智码已发出去的打包写法：`data.api_profiles` + snake_case 档案 + 顶层 `tool_id`；
+  `auth_type = "oauth"` 的条目跳过并计入 `skipped`（OAuth 凭据与设备绑定）
+- `ParseError::EmptyBundle` —— 打包里没有一条可导入的配置
+
 ### 文档与工具
 - `docs/providers.md` —— 由 `cargo xtask gen-docs` 生成，
   守卫测试 `providers_md_in_sync` 保证与代码一致

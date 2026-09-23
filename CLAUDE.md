@@ -150,6 +150,7 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 | `default_base_url_has_version_segment` | 默认端点缺版本段 = 404 |
 | `protocol_roundtrip` / `cross_app_interop` | ai.profile 解析→生成→解析不丢字段；与别家的写法互通 |
 | `accepts_older_version_rejects_newer` | 只拒绝更高版本，老软件的配置必须能导 |
+| `parses_tauri_cc_bundle` / `bundle_edge_cases` | 多条打包兼容智码已发出去的写法；OAuth 档案跳过；单条入口不误读打包 |
 | `nested_top_provider_wins` / `deepseek_shape_is_parsed` | 真实端点返回形状，防止限额解析退化 |
 | `or_merges_field_by_field` | 限额逐字段合并；空的用户设置不能冒充 User |
 | `never_starts_with_orphan_tool_result` / `extreme_budget_still_respects_tool_pairing` | 裁剪绝不留下残缺的 tool 配对（发出去必被拒） |
