@@ -121,6 +121,11 @@ pub struct VerifyOk {
     /// 全被滤光时本字段为 0 且 `models` 是未过滤的原始清单 —— 那说明特征词
     /// 在这个端点上判错了，此时宁可把原始清单摆给用户看，也不给他一个空下拉。
     pub dropped: usize,
+    /// 被滤掉的模型 id（端点顺序），`len() == dropped`。
+    ///
+    /// 只给「一个配置同时挂对话与生图 / 配音 / 向量模型」的调用方用 —— 把它们接在
+    /// `models` 后面，而不是丢掉。只做对话的调用方忽略它即可。
+    pub dropped_models: Vec<String>,
     /// 当前填的 `model` 是否在清单里；`model` 为空或端点没返回清单时为 `true`
     pub model_in_list: bool,
     /// 🔴 **当前填的那个模型**的限额，由端点上报（`source: Endpoint`）。
@@ -290,6 +295,7 @@ impl Verifier {
             latency_ms,
             models: cleaned.models,
             dropped: cleaned.dropped,
+            dropped_models: cleaned.dropped_models,
             model_in_list,
             limits,
             model_limits,
@@ -488,6 +494,7 @@ mod tests {
             latency_ms: 320,
             models: vec!["deepseek-flash".into()],
             dropped: 2,
+            dropped_models: vec!["bge-m3".into(), "tts-1".into()],
             model_in_list: true,
             limits: Some(crate::limits::TokenLimits::from_endpoint(
                 Some(128_000),
@@ -508,6 +515,10 @@ mod tests {
         assert!(
             j.contains(r#""dropped":2"#),
             "「已滤掉 N 个」的提示靠它：{j}"
+        );
+        assert!(
+            j.contains(r#""droppedModels":["bge-m3","tts-1"]"#),
+            "多模态调用方靠它把非对话模型接回清单：{j}"
         );
     }
 

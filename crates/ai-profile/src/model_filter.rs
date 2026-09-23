@@ -66,6 +66,11 @@ pub struct CleanedModels {
     pub models: Vec<String>,
     /// 被滤掉的条数，供「已滤掉 N 个向量 / 重排 / 语音等」这类提示文案使用
     pub dropped: usize,
+    /// 被滤掉的模型 id（保持端点返回的顺序），`len() == dropped`。
+    ///
+    /// 给「一个配置同时挂对话与生图 / 配音 / 向量模型」的调用方用（onestop）：
+    /// 它们要的不是"只留能聊天的"，而是"能聊天的排前面、其余也别丢"。
+    pub dropped_models: Vec<String>,
 }
 
 /// 去重 + 过滤。中转站偶尔返回重复 id，先去重再过滤。
@@ -97,12 +102,17 @@ where
         return CleanedModels {
             models: unique,
             dropped: 0,
+            dropped_models: Vec::new(),
         };
     }
-    let dropped = unique.len() - kept.len();
+    let dropped_models: Vec<String> = unique
+        .into_iter()
+        .filter(|s| !is_chat_model_id(s))
+        .collect();
     CleanedModels {
         models: kept,
-        dropped,
+        dropped: dropped_models.len(),
+        dropped_models,
     }
 }
 
@@ -124,6 +134,11 @@ mod tests {
             vec!["deepseek-flash", "Qwen/Qwen3-VL-32B-Instruct"]
         );
         assert_eq!(r.dropped, 3);
+        assert_eq!(
+            r.dropped_models,
+            vec!["BAAI/bge-large-zh-v1.5", "FunAudioLLM/CosyVoice2-0.5B", "Kwai-Kolors/Kolors"],
+            "被滤掉的 id 要原样带回，顺序同端点"
+        );
     }
 
     #[test]
@@ -139,6 +154,7 @@ mod tests {
         let r = clean_fetched_models(["bge-m3", "text-embedding-3-large"]);
         assert_eq!(r.models.len(), 2, "宁可摆出原始清单，也不能给空下拉");
         assert_eq!(r.dropped, 0);
+        assert!(r.dropped_models.is_empty(), "已放回 models，不能再算一遍");
     }
 
     /// 多模态模型不能误伤 —— 这是加特征词时最容易犯的错。

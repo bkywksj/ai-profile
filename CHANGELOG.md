@@ -70,6 +70,12 @@
   model id 取自 onestop 已发布的预置，未经真实密钥验证。`vendor_id` 留给以后的生图预置复用（同一个密钥）
 - 下游升级时要补 `providerTemplate.ipsunion.*` 翻译
 
+### 被滤掉的模型 id 也带回（2026-09-24）
+- `VerifyOk::dropped_models` / `CleanedModels::dropped_models`：清洗时滤掉的非对话模型 id（端点顺序），
+  `len() == dropped`（minor，两个结构都是 `non_exhaustive`）
+- 起因是 onestop：一条配置同时挂对话与生图 / 配音 / 向量模型，要的是「能聊天的排前面、其余也别丢」，
+  而此前只拿得到条数、拿不到 id。只做对话的调用方忽略它即可
+
 ### 文档与工具
 - `docs/providers.md` —— 由 `cargo xtask gen-docs` 生成，
   守卫测试 `providers_md_in_sync` 保证与代码一致
