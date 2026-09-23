@@ -28,7 +28,8 @@
 
 | 顺序 | 项目 | 现状（2026-09-23 盘点） | 接入时必须处理 |
 |---|---|---|---|
-| 1 | **story_loom** | chat 预置 TS `src/lib/providerPresets.ts`（9 家）+ **生图 5 / 视频 9 / 配音 4**；ai.profile 只导入（`services/ai/provider_share.rs`） | 多模态的种子：先把它的 image / video / tts 预置**反向搬进** crate（开 `image` / `video` / `tts` feature），再接入 |
+| 1 | **onestop**（一站通，`E:/my/backend_tauri/onestop`） | 预置 TS `src/providerPresets.ts`（14 项，含生图 / 视频 / 配音 / 聚合站）；端点 `chat/mod.rs::join_endpoint`（只有主机名时补 `/v1`）；ai.profile `provider/share.rs`（导入一律当 OpenAI）；**v0.1.1 已发布** | ① 存量地址修正（只有主机名的补 `/v1`，含 `https://api.anthropic.com`）② 一条配置挂多个模型，限额按模型存 ③ 多模态预置暂留本地，随 story_loom 一起搬进 crate。任务文档 `task-20260924-000000-onestop接入.md` |
+| 2 | **story_loom** | chat 预置 TS `src/lib/providerPresets.ts`（9 家）+ **生图 5 / 视频 9 / 配音 4**；ai.profile 只导入（`services/ai/provider_share.rs`） | 多模态的种子：先把它的 image / video / tts 预置**反向搬进** crate（开 `image` / `video` / `tts` feature），再接入 |
 
 ### 🔴 存量地址修正（已发布过的下游都要做；reeve、knowledge_base 已做完，可作范例）
 
