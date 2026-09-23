@@ -34,7 +34,8 @@ description: |
 
 ## ① 推送本仓库
 
-凭据走 Sigil（`git_push`，凭据 `github1`，remote `github`）。仓库公开，下游 CI 可直接拉取。
+凭据走 Sigil `git_push`，**三个远程都推**：`github`（`github1`，公开主仓，下游与 CI 从这里拉，必须先推）、
+`gitee`（`gitee`）、`gitcode`（`gitcode`）。远程清单见技能 `git-workflow`。
 
 ## ② 同步文档站
 
@@ -44,6 +45,9 @@ pnpm sync-providers        # 把 docs/providers.md 同步到 reference/providers
 pnpm build                 # 必须构建通过
 pnpm check-links           # 站内链接
 ```
+
+提交后文档仓库同样**三个远程都推**（`github` / `gitee` / `gitcode`）。
+🔴 **上线由 Gitee 触发**：只推 GitHub 的话线上文档不会更新。
 
 API / 限额 / 协议有变 → 同步改对应页（`api/*.md`、`guide/frontend.md` 的 TS 类型）。
 **同步完回到本仓库更新 `.docs-meta.json`**：`lastSyncCommit` + 追加一条 `updateHistory`。

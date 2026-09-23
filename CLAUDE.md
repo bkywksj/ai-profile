@@ -18,7 +18,8 @@
 | 维度 | 本项目 |
 |---|---|
 | 形态 | Rust crate（npm UI 包是后续阶段） |
-| 可见性 | **公开**（github `bkywksj/ai-profile`） |
+| 可见性 | **GitHub 主仓公开**（`bkywksj/ai-profile`，下游按提交号拉取）；Gitee / GitCode 私有镜像 |
+| 远程 | `github` / `gitee` / `gitcode` 三个都要推；文档站同样三个，**上线由 Gitee 触发**（见下方「仓库与推送」） |
 | 分发 | 目前下游按 **git 提交号**引用；三个下游接入、API 稳定后再发 crates.io |
 | 下游 | 见 `docs/downstream.md`（**唯一权威清单**，本文件不重复列） |
 | License | MIT |
@@ -81,6 +82,25 @@
 展开可用清单 / 切协议档 / 验证前禁用按钮）。
 
 **加错误变体前先想清楚：调用方拿到它能做什么动作？** 做不出动作的变体不该加。
+
+---
+
+## 仓库与推送
+
+本 crate 与文档站（同级 `../ai-profile-docs`）各维护三个远程，推送一律走 Sigil `git_push`，逐个 remote 推：
+
+| 仓库 | remote | 平台 / 地址 | 可见性 | 凭据 | 作用 |
+|---|---|---|---|---|---|
+| 本 crate | `github` | `github.com/bkywksj/ai-profile` | **公开** | `github1` | 🔴 主仓：下游 `Cargo.toml` 按提交号从这里拉，CI 也从这里拉 |
+| 本 crate | `gitee` | `gitee.com/bkywksj/ai-profile` | 私有 | `gitee` | 镜像 |
+| 本 crate | `gitcode` | `gitcode.com/zhuawashi/ai-profile` | 私有 | `gitcode` | 镜像 |
+| 文档站 `../ai-profile-docs` | `github` | `github.com/bkywksj/ai-profile-docs` | 私有 | `github1` | 镜像 |
+| 文档站 | `gitee` | `gitee.com/bkywksj/ai-profile-docs` | 私有 | `gitee` | 🔴 **上线触发源**：推到这里才会重新构建部署 |
+| 文档站 | `gitcode` | `gitcode.com/zhuawashi/ai-profile-docs` | 私有 | `gitcode` | 镜像 |
+
+- 🔴 crate **先推 `github`**：下游只认 GitHub 的提交号
+- 🔴 文档站**必须推 `gitee`**：线上部署由 Gitee 触发，漏了线上不更新
+- 细节见技能 `git-workflow`
 
 ---
 

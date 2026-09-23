@@ -17,7 +17,7 @@ description: |
 
 本仓库**没有**打 tag 触发 CI 构建安装包那一套（那是 sigil 的 `release-publish`）。
 目前也不发 crates.io（等至少三个下游接入后再发，见 `docs/downstream.md`）。
-「发布」= 推送到 GitHub，下游按提交号引用。
+「发布」= 推送（三个远程都要推），下游按 GitHub 上的提交号引用。
 
 ## 提交说明
 
@@ -43,11 +43,25 @@ Conventional Commits，中文正文：
 - 预置数据变更与 API 变更分开 —— 前者是 patch，后者可能是 minor / major，分开便于判定与回溯
 - 逐个 `git add <文件>`，不用 `git add -A` / `git add .`
 
-## 推送
+## 推送：三个远程都要推
 
-- 一律走 Sigil：`git_push`，凭据 `github1`，remote `github`
+本 crate 与文档站各维护 GitHub / Gitee / GitCode 三个远程（2026-09-23 起）：
+
+| 仓库 | remote | 平台 / 地址 | 可见性 | 凭据 | 作用 |
+|---|---|---|---|---|---|
+| 本 crate | `github` | `github.com/bkywksj/ai-profile` | **公开** | `github1` | 🔴 主仓：下游 `Cargo.toml` 按提交号从这里拉，CI 也从这里拉 |
+| 本 crate | `gitee` | `gitee.com/bkywksj/ai-profile` | 私有 | `gitee` | 镜像 |
+| 本 crate | `gitcode` | `gitcode.com/zhuawashi/ai-profile` | 私有 | `gitcode` | 镜像 |
+| 文档站 `../ai-profile-docs` | `github` | `github.com/bkywksj/ai-profile-docs` | 私有 | `github1` | 镜像 |
+| 文档站 | `gitee` | `gitee.com/bkywksj/ai-profile-docs` | 私有 | `gitee` | 🔴 **上线触发源**：推到这里才会重新构建部署 |
+| 文档站 | `gitcode` | `gitcode.com/zhuawashi/ai-profile-docs` | 私有 | `gitcode` | 镜像 |
+
+- 一律走 Sigil `git_push`，**逐个 remote 推**，凭据按上表（`username` 不用传）
+- 🔴 **crate 先推 `github`**：下游只认 GitHub 的提交号，漏推它等于没发布；Gitee / GitCode 是镜像，随后补上
+- 🔴 **文档站必须推 `gitee`**：上线部署由 Gitee 触发，只推 GitHub 的话线上文档不会更新
 - 不跑本地 `git push` / `fetch` / `pull`（会弹凭据窗卡死）
 - 推送后看返回的 `pushed` 字段，区分「真推上去」与「远端已是最新」
+- 新建镜像仓库用 `git_repo_create`，只能建私有；GitHub 主仓要保持**公开**（下游 CI 拉取不带凭据）
 - 推送完走技能 `downstream-sync`
 
 ## 提交前
