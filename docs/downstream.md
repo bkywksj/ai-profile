@@ -10,14 +10,14 @@
 
 | 项目 | 仓库路径 | 引用方式 | 当前引用 | 最后同步 | 接入范围 | 本项目侧技能 |
 |---|---|---|---|---|---|---|
-| sigil | `E:/my/桌面软件tauri/sigil` | git rev（`src-tauri/Cargo.toml`） | `2b03e8d` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 | `ai-profile-integration` |
+| sigil | `E:/my/桌面软件tauri/sigil` | git rev（`src-tauri/Cargo.toml`） | `6ef686a` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 | `ai-profile-integration` |
 | knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | git rev（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `2a32261` | 2026-09-23 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用） | `ai-profile-integration` |
-| reeve | `E:/my/桌面软件tauri/reeve` | git rev，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `2b03e8d` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
+| reeve | `E:/my/桌面软件tauri/reeve` | git rev，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `6ef686a` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
 
 > ⏳ 三家的界面改动都**尚未实机验证**；代码测试全绿。
 >
-> ⚠️ sigil / reeve 仍停在 `2b03e8d`，落后 `2a32261` 两处：`parse_profiles`（多条打包）与新增 6 家服务商。
-> 升级时要补这 6 家的 `providerTemplate.*` 翻译（sigil `check-preset-i18n.py`、reeve 守卫 `ai_profile_preset_i18n_keys_exist` 会报缺）。
+> sigil / reeve 已升到 `6ef686a`（只补了 6 家新服务商的翻译，零代码改动）。它们的粘贴导入仍只用 `parse_profile`（单条）；
+> 要支持导入智码的多条打包，改用 `parse_profiles` 即可，属于应用侧的功能取舍，未排期。
 
 > 升级一个下游 = 改它 `Cargo.toml` 里的 `rev` → 在该项目跑全量测试 → 按它自己的节奏发版 →
 > **回来改上表的「当前引用」和「最后同步」**。漏了最后一步，下次就不知道它落后多少。
