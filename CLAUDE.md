@@ -40,8 +40,9 @@
 | provider 预置、模型候选、静态限额 | 配置的增删改与持久化 |
 | 协议拼写（`Protocol::as_str/parse`）、默认端点 | 密钥加密与解密 |
 | 端点拼接（不推断版本段） | 对话协议适配、SSE 解析、工具调用 |
-| 模型清单清洗 | 历史裁剪（crate 只给 `input_budget`） |
+| 模型清单清洗 | 被动重试的循环（重新发请求） |
 | 零成本验证 + 结构化错误 | 真实对话测试（花 token） |
+| 历史裁剪、上下文超长识别（`history`） | 各自的消息类型（实现 `HistoryMessage` 两行） |
 | 限额分层合并（`TokenLimits::or`） | 表单界面、应用自己的默认值 |
 | `ai.profile` 解析与生成 | 存量数据迁移（各家历史包袱） |
 
@@ -91,6 +92,7 @@ crates/ai-profile/src/
 ├── kind.rs           Kind（按 feature 切分）+ Protocol（as_str / parse / default_base_url）
 ├── error.rs          VerifyError（结构化，serde tag = code）
 ├── limits.rs         TokenLimits / LimitSource：User > Endpoint > Preset > 未知，逐字段 or
+├── history.rs        历史裁剪（不拆 tool 配对）+ 上下文超长识别 + 被动重试预算
 ├── endpoint.rs       join_api_path / join_chat_endpoint（不推断版本段）
 ├── model_filter.rs   拉回清单的清洗（排除法）
 ├── protocol.rs       ai.profile 解析 / 生成（宽进严出）
@@ -150,6 +152,9 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 | `accepts_older_version_rejects_newer` | 只拒绝更高版本，老软件的配置必须能导 |
 | `nested_top_provider_wins` / `deepseek_shape_is_parsed` | 真实端点返回形状，防止限额解析退化 |
 | `or_merges_field_by_field` | 限额逐字段合并；空的用户设置不能冒充 User |
+| `never_starts_with_orphan_tool_result` / `extreme_budget_still_respects_tool_pairing` | 裁剪绝不留下残缺的 tool 配对（发出去必被拒） |
+| `oversized_first_user_is_not_forced_back` | 首条消息超大时不强行补回，否则会话永远降不下来 |
+| `detects_real_overflow_errors` / `does_not_misfire` | 超长识别：真实报错必须命中；限流、输出上限太大绝不能误判 |
 | `providers_md_in_sync` | 防止文档变成又一份会漂移的副本 |
 | `service_config_builder_is_usable_from_outside` | 🔴 集成测试：`non_exhaustive` 入参缺 builder 时下游报 E0639 |
 | `verifier_is_shareable_and_concurrent` | 🔴 集成测试：`Verifier` 必须 `Send + Sync + 'static` |

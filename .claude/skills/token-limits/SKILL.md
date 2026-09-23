@@ -74,6 +74,20 @@ description: |
 `reserve_output` 传**本次请求实际的 max_tokens**，不是模型的输出上限 —— 用上限会把预算压得过小。
 窗口未知返回 `None`：调用方**不裁**，不要自己兜一个默认值。
 
+## 历史裁剪（`history` 模块）
+
+两道防线：
+
+| 场景 | 做法 |
+|---|---|
+| 窗口已知 | 发送前主动裁：`history_budget(limits, max_tokens)` → `trim_history` |
+| 窗口未知 | 🔴 不猜，照常发；`is_context_overflow(status, body)` 为真 → `retry_budget` 裁一半重试 |
+
+- 重试循环写在应用里，**上限 3 次**，`dropped == 0` 时停（裁无可裁）
+- `dropped` 要显示给用户（「已裁掉 N 条」），否则用户只会觉得模型变笨
+- 超长识别宁可漏判不可误判：`429` 限流、「max_tokens 太大」（输出上限）都不算
+- 首条 user 消息（任务描述）先预留位置，但只在不超过预算一半时 —— 超大首条不强行保留
+
 ## 推理模型的坑
 
 推理模型（deepseek-flash 等）的思考 token 也计入 max_tokens。实测 max_tokens=16 时正文为空、

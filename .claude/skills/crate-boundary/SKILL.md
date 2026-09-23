@@ -33,11 +33,12 @@ sigil 两个月后才发现「点开即报错」）。
 | 模型清单清洗 | crate | `model_filter::clean_fetched_models` |
 | 零成本验证 + 结构化错误 | crate | `client::Verifier` / `VerifyError` |
 | 限额分层合并与输入预算 | crate | `TokenLimits::or / input_budget` |
+| 历史裁剪、上下文超长识别、重试预算 | crate | `history::trim_history / is_context_overflow / retry_budget` |
 | ai.profile 解析与生成 | crate | `parse_profile` / `to_profile` |
 | 配置增删改、激活态、持久化 | 应用 | 各家存储差异极大（sigil 是 SQLCipher 金库） |
 | 密钥加密与解密 | 应用 | 同上；crate 只接收用完即弃的明文 |
 | 对话协议适配、SSE 解析、工具调用 | 应用 | 与各自的消息结构、Agent 循环深度耦合 |
-| 历史裁剪算法 | 应用 | 依赖应用的消息类型；crate 只给 `input_budget` |
+| 被动重试的循环 | 应用 | 要重新发请求；crate 只判断「是不是超长」和「裁到多少」 |
 | 真实对话测试（花 token） | 应用 | 要用应用存的密钥与对话实现 |
 | 表单界面、文案 | 应用 | npm UI 包是后续阶段 |
 | 存量数据迁移 | 应用 | 各家历史包袱，不是通用知识 |
@@ -56,6 +57,10 @@ crate 只提供可以客观回答的部分（`infer_preset_key` 按 host 找预�
 Anthropic ↔ OpenAI 消息格式互转、SSE 解析确实每家都要写，但它们和各自的工具调用、
 流式事件结构绑死。搬进来 crate 就成了 LLM SDK，和 async-openai / genai 重叠、定位变糊。
 **判据：等第二个下游也要对话能力、且消息结构能对齐时再评估**，不要为一个使用方抽象。
+
+对照：**历史裁剪就是按这条判据收进来的** —— reeve 接入时出现第二个使用方，且两边消息结构
+完全一致（`{ role, content }` Anthropic 风格），才从 sigil 搬入 `history`。
+各应用只实现 `HistoryMessage` 两行，数据结构不用改。
 
 ### 3. 迁移代码永远不进 crate
 

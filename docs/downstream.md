@@ -12,6 +12,8 @@
 |---|---|---|---|---|---|---|
 | sigil | `E:/my/桌面软件tauri/sigil` | git rev（`src-tauri/Cargo.toml`） | `428340b` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 | `ai-profile-integration` |
 
+> ⏳ sigil 待跟进：crate 新增 `history` 后，删 `llm_trim.rs` 改用 crate 并接上超长被动重试（reeve 任务的 S1 步）。
+
 > 升级一个下游 = 改它 `Cargo.toml` 里的 `rev` → 在该项目跑全量测试 → 按它自己的节奏发版 →
 > **回来改上表的「当前引用」和「最后同步」**。漏了最后一步，下次就不知道它落后多少。
 
