@@ -7,7 +7,7 @@
 //!
 //! | | 内容 | 归属 |
 //! |---|---|---|
-//! | ✅ | 预置清单、协议、端点拼接、模型清洗、验证与结构化错误 | 本 crate |
+//! | ✅ | 预置清单、协议、端点拼接、模型清洗、验证与结构化错误、token 限额、历史裁剪 | 本 crate |
 //! | ❌ | **密钥存储与加密** | 留给应用（各家差异极大） |
 //! | ❌ | 数据库 / CRUD / 激活态管理 | 同上 |
 //!
@@ -37,6 +37,7 @@
 
 pub mod endpoint;
 pub mod error;
+pub mod history;
 pub mod kind;
 pub mod limits;
 pub mod model_filter;

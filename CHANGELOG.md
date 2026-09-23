@@ -27,6 +27,14 @@
     超时与禁重定向由本 crate 在其后强制施加，调用方覆盖不掉
   - 自由函数 `client::verify` 仍在，走进程级共享的默认实例；**需要代理就不能用它**
 
+### 历史裁剪（2026-09-23）
+- 新增 `history` 模块（不依赖 client，移动端可用）：`HistoryMessage` trait、`trim_history`、
+  `history_budget`、`estimate_tokens`、`retry_budget`、`is_context_overflow`
+  - 从 sigil 的 `llm_trim.rs` 收入 —— reeve 接入时出现第二个消息结构一致的使用方
+  - **修正**：首条 user 消息此前无条件补回，它本身超预算时结果永远降不下来、被动重试也救不了；
+    现在先为它预留位置，且只在不超过预算一半时预留
+  - 新增「窗口未知」时的被动防线：识别各家「上下文超长」报错，按估算的一半重试
+
 ### 新机型（2026-09-23）
 - Claude Opus 5.5（`claude-opus-5-5`）：加入 Anthropic 官方 / Claude Code 中转两档；
   官方档默认改为它（更强且更便宜），中转档默认仍是 Opus 5（中转上新滞后）
