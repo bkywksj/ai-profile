@@ -56,6 +56,14 @@
   `auth_type = "oauth"` 的条目跳过并计入 `skipped`（OAuth 凭据与设备绑定）
 - `ParseError::EmptyBundle` —— 打包里没有一条可导入的配置
 
+### 新增 6 家服务商（2026-09-23）
+- MiniMax / 百度千帆 / 阶跃星辰 / 百川 / 小米 MiMo / Together，随 knowledge_base 接入搬入
+  （地址与模型取自它已发布的预置表），共 25 家；`probe` 实测地址均可达，model id 未经真实密钥验证
+- 没有搬的两家：腾讯混元（老地址已停止上新模型，引导走 TokenHub）、
+  零一万物（`probe` 返回「Model service has been discontinued」）
+- 下游升级时要补 6 家的 `providerTemplate.*` 翻译（sigil `check-preset-i18n.py`、
+  reeve 守卫 `ai_profile_preset_i18n_keys_exist` 会报缺）
+
 ### 文档与工具
 - `docs/providers.md` —— 由 `cargo xtask gen-docs` 生成，
   守卫测试 `providers_md_in_sync` 保证与代码一致
