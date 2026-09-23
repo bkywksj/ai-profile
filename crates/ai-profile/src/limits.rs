@@ -37,7 +37,7 @@
 //! | 端点 | `/models` 是否带上下文 |
 //! |---|---|
 //! | OpenRouter | ✅ `context_length` 100% 覆盖，还有 `top_provider.max_completion_tokens` |
-//! | DeepSeek | ❌ 只有 `{id, object, owned_by}` |
+//! | DeepSeek | ✅ `context_window` + `max_output_tokens`（2026-09-23 真实密钥实测） |
 //! | LM Studio / Ollama 的兼容层 | ❌ 同上（原生 `/api/v1/models` 才有） |
 //!
 //! 所以静态兜底不是可选项 —— 不做的话，多数端点上这个能力等于不存在。
@@ -214,14 +214,33 @@ mod tests {
         assert_eq!(l.max_output, None, "没报就是没报，不猜");
     }
 
-    /// 🔴 OpenAI 规范的裸响应 —— DeepSeek / LM Studio / Ollama 都是这样。
+    /// 🔴 OpenAI 规范的裸响应 —— LM Studio / Ollama 的兼容层都是这样。
     ///
     /// 这是**最常见**的情况，不是边角料：OpenAI 的 /v1/models 规范里根本没有
     /// context 字段。返回 None 才能让调用方走静态兜底那一层。
     #[test]
     fn bare_openai_shape_yields_none() {
-        let item = json!({ "id": "deepseek-flash", "object": "model", "owned_by": "deepseek" });
+        let item = json!({ "id": "qwen3-8b", "object": "model", "owned_by": "organization_owner" });
         assert!(parse_model_limits(&item).is_none());
+    }
+
+    /// DeepSeek `/models` 的真实结构（2026-09-23 真实密钥实测）：
+    /// 顶层直接带 `context_window` + `max_output_tokens`，没有 top_provider。
+    ///
+    /// 此前曾误以为 DeepSeek 不报限额，这条用实测形状钉住，防止再次误判。
+    #[test]
+    fn deepseek_shape_is_parsed() {
+        let item = json!({
+            "id": "deepseek-flash",
+            "object": "model",
+            "owned_by": "deepseek",
+            "context_window": 1_048_576,
+            "max_output_tokens": 393_216
+        });
+        let l = parse_model_limits(&item).unwrap();
+        assert_eq!(l.context_window, Some(1_048_576));
+        assert_eq!(l.max_output, Some(393_216));
+        assert_eq!(l.source, LimitSource::Endpoint);
     }
 
     /// 0 不是「上限为 0」，是「未知」。

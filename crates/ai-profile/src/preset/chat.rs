@@ -123,10 +123,10 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         //    （V4 发布时公告的三个月过渡期到期）—— 它们曾留在预置里，表现为「点开即报错」。
         model: "deepseek-flash",
         models: &[
-            // 🔴 静态兜底限额：DeepSeek 的 /models 只返回 {id, object, owned_by}，
-            //    一个限额字段都没有（OpenAI 规范里就没这东西），不给静态值的话
-            //    调用方在这家端点上永远拿不到窗口大小。
-            //    V4 系官方标称 1M 上下文 / 384K 输出（2026-09-22 核对）。
+            // 静态兜底限额：DeepSeek 的 /models 其实会报 context_window /
+            // max_output_tokens（2026-09-23 实测 1048576 / 393216），这里的静态值
+            // 只在对话路径（不打 /models）与端点临时不可达时兜底，故取略保守的整数。
+            // V4 系官方标称 1M 上下文 / 384K 输出（2026-09-22 核对）。
             ModelOption::with_limits("deepseek-flash", 1_000_000, 384_000),
             ModelOption::with_limits("deepseek-v4-pro", 1_000_000, 384_000),
         ],

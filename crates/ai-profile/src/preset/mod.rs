@@ -73,7 +73,7 @@ impl ModelOption {
     /// 带静态限额兜底的构造。
     ///
     /// 用于 OpenAI 规范兼容端点 —— 它们的 `/models` 只返回
-    /// `{id, object, owned_by}`，一个限额字段都没有（DeepSeek / LM Studio /
+    /// `{id, object, owned_by}`，一个限额字段都没有（LM Studio /
     /// Ollama 实测如此），不给静态值的话这个能力在那些端点上等于不存在。
     ///
     /// ⚠️ 这些数字**会过时**。DeepSeek V3 时代是 128K/8K，V4 已经是 1M/384K ——
