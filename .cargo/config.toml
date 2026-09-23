@@ -1,0 +1,6 @@
+# `cargo xtask <子命令>` 的别名 —— CLAUDE.md / 技能 / 文档里写的都是这个形式。
+#
+# 没有它时 `cargo xtask gen-docs` 直接报 `no such command`，
+# 只能写成 `cargo run -p xtask -- gen-docs`；文档与实际命令对不上，照着做就卡住。
+[alias]
+xtask = "run --quiet --package xtask --"

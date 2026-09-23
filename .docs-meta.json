@@ -4,10 +4,10 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "33bee8a",
-  "lastSyncTime": "2026-09-22T11:20:17Z",
+  "lastSyncCommit": "428340b",
+  "lastSyncTime": "2026-09-23T04:05:00Z",
   "coveredSections": ["guide", "api", "reference"],
-  "notes": "providers.md 由 cargo xtask gen-docs 生成后，用文档仓库的 pnpm sync-providers 同步过去，不要手改",
+  "notes": "providers.md 由 cargo xtask gen-docs 生成后，用文档仓库的 pnpm sync-providers 同步过去，不要手改。同步完必须回来更新 lastSyncCommit —— 否则下次增量更新会从错误的起点算 diff",
   "updateHistory": [
     {
       "commit": "33bee8a",
@@ -22,6 +22,27 @@
         "reference/versioning.md", "reference/add-provider.md"
       ],
       "sourceChanges": []
+    },
+    {
+      "commit": "99397f2",
+      "time": "2026-09-23T02:20:00Z",
+      "type": "incremental",
+      "affectedDocs": ["api/verify.md"],
+      "sourceChanges": ["crates/ai-profile/src/limits.rs", "crates/ai-profile/src/preset/chat.rs"]
+    },
+    {
+      "commit": "f317649",
+      "time": "2026-09-23T03:10:00Z",
+      "type": "incremental",
+      "affectedDocs": ["api/verify.md", "guide/frontend.md"],
+      "sourceChanges": ["crates/ai-profile/src/limits.rs", "crates/ai-profile/src/kind.rs", "crates/ai-profile/src/preset/mod.rs"]
+    },
+    {
+      "commit": "428340b",
+      "time": "2026-09-23T04:05:00Z",
+      "type": "incremental",
+      "affectedDocs": ["reference/providers.md"],
+      "sourceChanges": ["crates/ai-profile/src/preset/chat.rs", "docs/providers.md"]
     }
   ]
 }
