@@ -100,6 +100,9 @@
 
 - 🔴 crate **先推 `github`**：下游只认 GitHub 的提交号
 - 🔴 文档站**必须推 `gitee`**：线上部署由 Gitee 触发，漏了线上不更新
+- 🔴 EdgeOne Pages 项目关联的是 **`bkywksj/ai-profile-docs`**，不是本 crate 仓库：安装 `pnpm install`、
+  构建 `pnpm build`、输出目录 `docs/.vitepress/dist`、根目录 `/`。关联错成 `ai-profile` 的表现是
+  `ERR_PNPM_NO_PKG_MANIFEST No package.json found`（2026-09-23 踩过）
 - 细节见技能 `git-workflow`
 
 ---
