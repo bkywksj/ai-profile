@@ -10,9 +10,10 @@
 
 | 项目 | 仓库路径 | 引用方式 | 当前引用 | 最后同步 | 接入范围 | 本项目侧技能 |
 |---|---|---|---|---|---|---|
-| sigil | `E:/my/桌面软件tauri/sigil` | git rev（`src-tauri/Cargo.toml`） | `428340b` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 | `ai-profile-integration` |
+| sigil | `E:/my/桌面软件tauri/sigil` | git rev（`src-tauri/Cargo.toml`） | `2b03e8d` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 | `ai-profile-integration` |
+| reeve | `E:/my/桌面软件tauri/reeve` | git rev，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `2b03e8d` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
 
-> ⏳ sigil 待跟进：crate 新增 `history` 后，删 `llm_trim.rs` 改用 crate 并接上超长被动重试（reeve 任务的 S1 步）。
+> ⏳ 两家的界面改动（表单限额框、测试连接、粘贴导入）都**尚未实机验证**；代码测试全绿。
 
 > 升级一个下游 = 改它 `Cargo.toml` 里的 `rev` → 在该项目跑全量测试 → 按它自己的节奏发版 →
 > **回来改上表的「当前引用」和「最后同步」**。漏了最后一步，下次就不知道它落后多少。
@@ -23,12 +24,11 @@
 
 | 顺序 | 项目 | 现状（2026-09-23 盘点） | 接入时必须处理 |
 |---|---|---|---|
-| 1 | **reeve** | 预置 Rust `src-tauri/reeve-core/src/llm_presets.rs`（16 家）；ai.profile Rust 导出 + TS `src/lib/aiProfile.ts` 解析；验证 / 获取在 `src-tauri/src/services/llm.rs` | ① **存量地址修正**（见下）② 移动端 `mobile/src-tauri` 是**独立 workspace**，有一份重复的 `join_api_path`（`mobile/src-tauri/src/services/llm.rs`），也要一起换 |
-| 2 | **ai-station** | 预置写死在 `src/components/settings/ProfileEditModal.tsx`（6 项，模型停在旧代）；ai.profile TS `src/lib/aiProfile.ts`；**无验证 / 获取** | ① `providers/mod.rs::build_endpoint` 强制拼 `/v1`，智谱 `/v4` 当前就是坏的 ② reqwest 开了默认 feature + `blocking`，与 crate 的 feature 合并后要确认 TLS 后端 |
-| 3 | **knowledge_base** | 预置 TS `src/lib/aiProviderPresets.ts`（约 23 家，桌面与移动共用）；ai.profile TS `src/lib/configShare.ts`（**支持多条打包**）；验证 / 获取与限额在 `src-tauri/src/services/ai.rs` | ① **crate 先补 ai.profile 多条打包**（技能 `protocol-evolution`）② 存量地址修正 ③ 它自带的上下文预算 / 历史降档逻辑保留在应用侧，只把限额来源换成 crate |
-| 4 | **story_loom** | chat 预置 TS `src/lib/providerPresets.ts`（9 家）+ **生图 5 / 视频 9 / 配音 4**；ai.profile 只导入（`services/ai/provider_share.rs`） | 多模态的种子：先把它的 image / video / tts 预置**反向搬进** crate（开 `image` / `video` / `tts` feature），再接入 |
+| 1 | **ai-station** | 预置写死在 `src/components/settings/ProfileEditModal.tsx`（6 项，模型停在旧代）；ai.profile TS `src/lib/aiProfile.ts`；**无验证 / 获取** | ① `providers/mod.rs::build_endpoint` 强制拼 `/v1`，智谱 `/v4` 当前就是坏的 ② reqwest 开了默认 feature + `blocking`，与 crate 的 feature 合并后要确认 TLS 后端 |
+| 2 | **knowledge_base** | 预置 TS `src/lib/aiProviderPresets.ts`（约 23 家，桌面与移动共用）；ai.profile TS `src/lib/configShare.ts`（**支持多条打包**）；验证 / 获取与限额在 `src-tauri/src/services/ai.rs` | ① **crate 先补 ai.profile 多条打包**（技能 `protocol-evolution`）② 存量地址修正 ③ 它自带的上下文预算 / 历史降档逻辑保留在应用侧，只把限额来源换成 crate |
+| 3 | **story_loom** | chat 预置 TS `src/lib/providerPresets.ts`（9 家）+ **生图 5 / 视频 9 / 配音 4**；ai.profile 只导入（`services/ai/provider_share.rs`） | 多模态的种子：先把它的 image / video / tts 预置**反向搬进** crate（开 `image` / `video` / `tts` feature），再接入 |
 
-### 🔴 存量地址修正（reeve / ai-station / knowledge_base 都要）
+### 🔴 存量地址修正（ai-station / knowledge_base 都要；reeve 已做完，可作范例）
 
 这三家的旧逻辑会**自动补 `/v1`**（reeve、knowledge_base 末尾加 `#` 可以禁止补），
 crate 的规则是**原样使用、绝不推断**。三家都已发布过，用户存下的配置里一定有不带 `/v1` 的地址 ——
@@ -39,6 +39,13 @@ crate 的规则是**原样使用、绝不推断**。三家都已发布过，用�
 
 - 修正逻辑留在应用侧，**不进 crate**：它是各家历史包袱，不是通用知识
 - sigil 没做这一步，是因为它当时还没发布过（未发布期不加迁移代码）
+- **reeve 的做法可直接照搬**（`reeve-core/src/legacy_base_url.rs`）：
+  - 对照测试里冻结一份旧拼接规则，断言「旧规则(原值) == crate(修正值)」—— 以它为判据
+  - 🔴 修正函数必须**幂等**：带 `#` 的地址原样保留（去掉 `#` 再修一次会被补成 `…/v1`）
+  - 🔴 只对**旧来源**修正：升级迁移一次；备份恢复看备份清单的 schema 版本；
+    跨端同步看载荷标记。新数据再修正会把用户刻意不带版本段的地址错补 `/v1`
+  - 默认端点若是不带 `/v1` 的根地址，也要改用 `Protocol::default_base_url`
+  - 应用若在「留空」时把默认地址写进库（reeve 移动端就是），迁移也要覆盖它
 
 ## 不接入
 
