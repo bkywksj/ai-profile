@@ -1,8 +1,8 @@
 # 任务：knowledge_base 接入 ai-profile
 
-**状态**: 🟢 进行中（C0、C1 完成）
+**状态**: 🔵 代码已完成（C0、C1、K1–K7）；待界面实机验证后归档
 **创建时间**: 2026-09-23 20:00:00
-**更新时间**: 2026-09-23 21:30:00
+**更新时间**: 2026-09-23 22:30:00
 **下游仓库**: `E:/my/桌面软件tauri/knowledge_base`（master，v1.64.0，**已发布，有真实用户**）
 **参照**: reeve 接入（`task-20260923-140000-reeve接入.md`，存量地址修正的范例在 `reeve-core/src/legacy_base_url.rs`）
 
@@ -102,8 +102,18 @@ knowledge_base 的模型服务（预置、端点拼接、获取模型、ai.profi
 
 - [x] C0 crate 多条打包 `parse_profiles`（`fc13b02`）
 - [x] C1 crate 新增 6 家服务商（`93711bc`）
-- [ ] 推送 crate；sigil / reeve 升级时补 6 家翻译
-- [ ] K1 … K7
+- [x] 推送 crate（`2a32261`）
+- [x] K1 + K2 存量修正（schema v62）+ 端点拼接换 crate（`5e2ec4f`）
+- [x] bug 1 编辑模型不带窗口时被重置（`f400c44`）；bug 2 选 Claude 时系统提示词丢失（`a9377ab`）
+- [x] JSON 模式白名单改用 crate key（`029d473`）—— 迁移改了 provider 取值，漏改会静默关掉两家的 JSON 模式
+- [x] K3–K6 预置 / 获取 / 限额 / ai.profile / 旧配置导入（`39d39c1`）
+- [x] K7 技能 + CLAUDE.md（`d2a11b1`）
+- [ ] 用户实机验证：设置页双行下拉、「获取」（含 404 一键改地址）、窗口留空与自动填入、Ollama 对话与 5 个非流式功能、导入旧导出的配置与智码打包
+- [ ] sigil / reeve 升到 `2a32261`（补 6 家翻译）
+
+**验证**：Rust 874 个测试中 872 通过，2 个失败与本次无关（`tags::tag_path_segments_independent_namespace`
+项目已记录的老问题；`dataview_recent_notes_orders_by_updated_at` 时间戳精确到秒导致的不稳定）；
+tsc 通过；vitest 436 通过；新增测试 26 个全部实际跑到
 
 ## ⚠️ 待核实
 
@@ -111,6 +121,14 @@ knowledge_base 的模型服务（预置、端点拼接、获取模型、ai.profi
   也可能地址有问题。crate 原有预置，与本次接入无关；需真实密钥确认
 
 ## 💬 变更记录
+
+### 2026-09-23 22:30
+**变更类型**: 进度更新（代码完成）
+
+- 发现 JSON 模式白名单按旧厂商 id 写死，迁移后 `openai` / `kimi` 两家会被静默关掉 JSON 模式 —— 单独修
+- `max_context` 保持 NOT NULL，用 0 表示未设置（避免重建表；代码里 `<= 0` 本来就按未知处理）
+- 「获取」改走 crate `Verifier` 后，Ollama 也走它的 OpenAI 兼容层 `/v1/models`，不再用原生 `/api/tags`；本机服务绕开系统代理
+- `chat_stream_with_skills` 仍不接 `trim_history`（OpenAI 消息结构，配对规则对不上），记在技能里
 
 ### 2026-09-23 21:30
 **变更类型**: 决策确认 + 进度
