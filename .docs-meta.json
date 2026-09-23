@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "8b27040",
-  "lastSyncTime": "2026-09-23T11:10:00Z",
+  "lastSyncCommit": "5f57e24",
+  "lastSyncTime": "2026-09-23T14:40:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -82,6 +82,23 @@
       ],
       "sourceChanges": [
         "crates/ai-profile/src/history.rs"
+      ]
+    },
+    {
+      "commit": "5f57e24",
+      "time": "2026-09-23T14:40:00Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "api/protocol.md",
+        "reference/providers.md",
+        "index.md",
+        "api/verify.md",
+        "reference/add-provider.md"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/protocol.rs",
+        "crates/ai-profile/src/preset/chat.rs",
+        "docs/providers.md"
       ]
     }
   ]
