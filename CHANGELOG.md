@@ -27,6 +27,13 @@
     超时与禁重定向由本 crate 在其后强制施加，调用方覆盖不掉
   - 自由函数 `client::verify` 仍在，走进程级共享的默认实例；**需要代理就不能用它**
 
+### 新机型（2026-09-23）
+- Claude Opus 5.5（`claude-opus-5-5`）：加入 Anthropic 官方 / Claude Code 中转两档；
+  官方档默认改为它（更强且更便宜），中转档默认仍是 Opus 5（中转上新滞后）
+- GPT-6 Sol / Luna（`gpt-6-sol` / `gpt-6-luna`）：加入 OpenAI 官方与 Codex 档；
+  Codex 档补齐 GPT-6 三款，默认仍是 `gpt-5.6-terra`（GPT-6 仍在分批放量）
+- OpenRouter 补 `anthropic/claude-opus-5.5`、`openai/gpt-6-sol`、`openai/gpt-6-luna`
+
 ### 限额分层与协议拼写（2026-09-23）
 - ⚠️ `Protocol` 线格式由 `"open_ai_compatible"` 改为 `"openai_compatible"`，
   并新增 `as_str` / `parse` / `default_base_url` —— 线格式、持久化、默认端点收成一处

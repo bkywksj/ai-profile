@@ -26,7 +26,12 @@ const NO_EXTRA: &[ExtraField] = &[];
 /// **全漏**，而不是「有的下拉有、有的没有」。
 ///
 /// 保留 4.x：中转站常常只带旧型号，用户也可能刻意锁版本。
+///
+/// Opus 5.5（2026-09-22 发布）不带静态限额：官方端点是 1M，但经中转时 Claude Code
+/// 按 200k 算、要显式 `[1m]` 且网关支持才有 1M —— 同一个 id 两种窗口，
+/// 这份清单又被官方档和中转档共用，填哪个都会对其中一档说错。交给端点上报或用户手填。
 const CLAUDE_MODELS: &[ModelOption] = &[
+    ModelOption::plain("claude-opus-5-5"),
     ModelOption::plain("claude-opus-5"),
     ModelOption::plain("claude-sonnet-5"),
     ModelOption::plain("claude-fable-5-1"),
@@ -53,7 +58,9 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         hint: Some("密钥以 sk-ant- 开头；固定走 https://api.anthropic.com"),
         // 官方档不填 base_url —— 调用方据此隐藏输入框
         base_url: None,
-        model: "claude-opus-5",
+        // Opus 5.5 比 Opus 5 更强且更便宜（$4/$20 vs $5/$25 每百万 token），
+        // 「够用档」原则下没有理由再默认旧的那个
+        model: "claude-opus-5-5",
         models: CLAUDE_MODELS,
         protocol: Protocol::Anthropic,
         match_hosts: &["api.anthropic.com"],
@@ -73,6 +80,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         hint_key: Some("providerTemplate.claudeCode.hint"),
         hint: Some("走 /v1/messages 端点；适合密钥限定此端点的中转 / 代理服务"),
         base_url: None,
+        // 🔴 中转档默认仍是 Opus 5：中转站上新型号往往滞后，默认填一个它还不认的 id，
+        //    用户建档后第一次对话就报 model not found。5.5 在下拉里随时可选。
         model: "claude-opus-5",
         models: CLAUDE_MODELS,
         protocol: Protocol::Anthropic,
@@ -94,8 +103,13 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         hint_key: Some("providerTemplate.codex.hint"),
         hint: Some("走 /v1/chat/completions；适合密钥限定 Codex 端点的中转服务"),
         base_url: None,
+        // 默认仍是 5.6-terra：GPT-6 系列 2026-09-22 起对 Codex 账号分批放量，
+        // 没轮到的账号（及其背后的中转）选了会被拒
         model: "gpt-5.6-terra",
         models: &[
+            ModelOption::plain("gpt-6-sol"),
+            ModelOption::plain("gpt-6-astra"),
+            ModelOption::plain("gpt-6-luna"),
             ModelOption::plain("gpt-5.6-terra"),
             ModelOption::plain("gpt-5.6-sol"),
             ModelOption::plain("gpt-5.6-luna"),
@@ -322,8 +336,11 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         base_url: Some("https://api.openai.com/v1"),
         // 默认取 5.6-terra（日常主力）而非 gpt-6-astra（四倍价）
         model: "gpt-5.6-terra",
+        // GPT-6 Sol / Luna 2026-09-22 发布：Sol $2/$10 编码主力，Luna $0.10/$0.50 轻量档
         models: &[
             ModelOption::plain("gpt-6-astra"),
+            ModelOption::plain("gpt-6-sol"),
+            ModelOption::plain("gpt-6-luna"),
             ModelOption::plain("gpt-5.6-sol"),
             ModelOption::plain("gpt-5.6-terra"),
             ModelOption::plain("gpt-5.6-luna"),
@@ -350,7 +367,11 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         model: "anthropic/claude-sonnet-5",
         models: &[
             ModelOption::plain("anthropic/claude-sonnet-5"),
+            // OpenRouter 的 Anthropic id 用点号：是 claude-opus-5.5 不是 claude-opus-5-5
+            ModelOption::plain("anthropic/claude-opus-5.5"),
             ModelOption::plain("openai/gpt-6-astra"),
+            ModelOption::plain("openai/gpt-6-sol"),
+            ModelOption::plain("openai/gpt-6-luna"),
             ModelOption::plain("moonshotai/kimi-k3"),
         ],
         protocol: Protocol::OpenAiCompatible,

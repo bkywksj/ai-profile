@@ -40,7 +40,7 @@
 
 | 预置 key | 名称 | Base URL | 默认模型 | 协议 | 核实于 |
 |---|---|---|---|---|---|
-| `anthropic_official` | Anthropic 官方 | `—` | `claude-opus-5` | Anthropic | 未核实 |
+| `anthropic_official` | Anthropic 官方 | `—` | `claude-opus-5-5` | Anthropic | 未核实 |
 | `claude_code` | Claude Code 客户端（自定义接口地址） | `—` | `claude-opus-5` | Anthropic | 2026-09-22 |
 | `codex` | Codex 客户端（自定义接口地址） | `—` | `gpt-5.6-terra` | OpenAI 兼容 | 未核实 |
 | `deepseek` | DeepSeek | `https://api.deepseek.com/v1` | `deepseek-flash` | OpenAI 兼容 | 2026-09-17 |
