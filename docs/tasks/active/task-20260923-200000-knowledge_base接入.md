@@ -113,7 +113,7 @@ knowledge_base 的模型服务（预置、端点拼接、获取模型、ai.profi
 
 **验证**：Rust 874 个测试中 872 通过，2 个失败与本次无关（`tags::tag_path_segments_independent_namespace`
 项目已记录的老问题；`dataview_recent_notes_orders_by_updated_at` 时间戳精确到秒导致的不稳定）；
-tsc 通过；vitest 436 通过；新增测试 26 个全部实际跑到
+tsc 通过；vitest 436 通过；新增测试 23 个（knowledge_base Rust 15、前端 4，crate 4）全部实际跑到
 
 ## ⚠️ 待核实
 
