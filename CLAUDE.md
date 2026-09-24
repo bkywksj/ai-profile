@@ -46,6 +46,12 @@
 | 历史裁剪、上下文超长识别（`history`） | 各自的消息类型（实现 `HistoryMessage` 两行） |
 | 限额分层合并（`TokenLimits::or`） | 表单界面、应用自己的默认值 |
 | `ai.profile` 解析与生成 | 存量数据迁移（各家历史包袱） |
+| 生图 / 视频 / 配音协议实现（`media`） | 视频任务编排（轮询循环、取消、落盘、进度事件） |
+| 公共预置 + 定制接口（`PresetCatalog`、`ProviderPreset::new` 构造器） | **只属于本应用的预置**（合作渠道、内网网关）、按自身能力删减 / 筛选 |
+
+🔴 **某家服务商只有个别应用要用 → 不进 crate**，那个应用用 `PresetCatalog::new().extend(&LOCAL)` 自己加。
+协议是通用的，品牌不是：私有条目只换地址和模型名，需要显式协议的用 `with_default_extra`（如 `video_api=newapi`），
+crate 代码里不按域名认品牌（2026-09-24 中宇AI智行就是这样撤出去的）。
 
 判不准、或发现下游有重复实现时 → 技能 `crate-boundary`。
 

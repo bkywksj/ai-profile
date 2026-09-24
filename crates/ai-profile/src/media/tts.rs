@@ -31,7 +31,7 @@ pub fn voice_catalog(model: &str) -> Vec<VoiceOption> {
     if m.contains("volcano") || m.contains("volc") {
         return volc_voice_catalog();
     }
-    // 智谱 glm-tts（中宇智行等 OpenAI 兼容聚合站）：固定枚举音色（tongtong 等）
+    // 智谱 glm-tts（OpenAI 兼容聚合站）：固定枚举音色（tongtong 等）
     if m.contains("glm") {
         return glm_voice_catalog();
     }
@@ -72,7 +72,7 @@ pub fn voice_timbre_hint(id: &str) -> &'static str {
         "bella" => "青年女声·激情有力",
         "claire" => "青年女声·温柔",
         "diana" => "青年女声·欢快",
-        // ── 智谱 glm-tts（中宇智行）音色 ──
+        // ── 智谱 glm-tts音色 ──
         "tongtong" => "少女声·甜美童真·清亮",
         "jieyu" => "青年女声·知性温婉",
         "tianmeng_shaonv" => "少女声·甜萌·元气",
@@ -108,7 +108,7 @@ fn cosyvoice_voice_catalog() -> Vec<VoiceOption> {
     ])
 }
 
-/// 智谱 glm-tts 音色（中宇智行聚合站实测枚举，2026-07）。
+/// 智谱 glm-tts 音色（聚合站实测枚举，2026-07）。
 /// voice 为固定枚举名（不可自定义克隆），只出 wav/pcm（见 SiliconFlowTtsProvider is_glm 分支）。
 /// gender 按音色名义推断供 AI 选角匹配；jingdian_yueyu 为粤语音色，供角色设定粤语时选用。
 fn glm_voice_catalog() -> Vec<VoiceOption> {
@@ -253,7 +253,7 @@ impl TtsProvider for SiliconFlowTtsProvider {
         if params.text.trim().is_empty() {
             return Err(MediaError::InvalidInput("配音文本为空".into()));
         }
-        // 智谱 glm-tts（中宇智行等聚合站）与 CosyVoice 同走 OpenAI /audio/speech，但两点不同，故先分派：
+        // 智谱 glm-tts（聚合站）与 CosyVoice 同走 OpenAI /audio/speech，但两点不同，故先分派：
         // ① response_format 仅支持 wav/pcm（不出 mp3，发 mp3 直接 400）；
         // ② voice 为固定枚举音色名（tongtong 等），不用 CosyVoice 的 `<model>:<speaker>` 拼法。
         let is_glm = self.config.model.to_ascii_lowercase().contains("glm");
@@ -850,7 +850,7 @@ mod dispatch_tests {
             TtsProtocol::OpenAi
         );
         assert_eq!(
-            TtsProtocol::detect("https://api.ipsunion.com/v1"),
+            TtsProtocol::detect("https://relay.example.com/v1"),
             TtsProtocol::OpenAi
         );
     }

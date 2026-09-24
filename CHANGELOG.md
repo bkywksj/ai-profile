@@ -70,6 +70,13 @@
   不该出现在所有下游的服务商下拉里。需要它的应用（onestop、StoryLoom）在本地补这几条
 - 对话预置回到 25 家；此前升级到 `844a755`～`ee1731e` 的下游若补过 `providerTemplate.ipsunion.*` 翻译，可以删掉
 
+### 下游定制目录（2026-09-24）
+- `preset::PresetCatalog`：在 crate 预置上 `remove` / `retain` / `map` / `extend`（同 key 覆盖、新条目插到同 kind 同分组末尾）后 `build`
+- `ProviderPreset::new` + `with_*` 一组 `const fn`：下游不能写字面量（`non_exhaustive`），靠它写自己的静态预置表
+- `ProviderPreset::default_extra`：预置定死的 extra 键值，新建配置时写进调用方 `extra`（线格式 `[[key, value], …]`）
+- ⚠️ 行为变化：视频 New API 协议**只认** `extra.video_api=newapi`，不再按域名（原先 `ipsunion`）兜底；
+  依赖它的存量配置由下游迁移补标记（StoryLoom v31）
+
 ### 被滤掉的模型 id 也带回（2026-09-24）
 - `VerifyOk::dropped_models` / `CleanedModels::dropped_models`：清洗时滤掉的非对话模型 id（端点顺序），
   `len() == dropped`（minor，两个结构都是 `non_exhaustive`）

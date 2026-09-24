@@ -27,6 +27,7 @@ use crate::kind::{Kind, Protocol};
 
 pub mod vendor;
 
+pub mod catalog;
 mod chat;
 mod docgen;
 #[cfg(feature = "image")]
@@ -36,6 +37,7 @@ mod tts;
 #[cfg(feature = "video")]
 mod video;
 
+pub use catalog::PresetCatalog;
 pub use docgen::render_providers_markdown;
 pub use vendor::{vendors, vendors_all, Vendor};
 
@@ -213,6 +215,14 @@ pub struct ProviderPreset {
     /// 专有协议的额外配置字段
     pub extra_fields: &'static [ExtraField],
 
+    /// 用这条预置新建配置时，自动写进调用方 `extra` 的固定键值（用户不用填、也不该改）。
+    ///
+    /// 用途是**显式指定协议**，让 crate 不必认识品牌：比如某 New API 视频中转站带
+    /// `("video_api", "newapi")`，[`crate::media::video::VideoProtocol::detect`] 就按 New API 处理。
+    /// 与 [`Self::extra_fields`] 的区别：那是让用户**填**的，这是预置**定死**的。
+    /// 线格式是 `[[key, value], …]`。
+    pub default_extra: &'static [(&'static str, &'static str)],
+
     /// API Key 申请页；`None` = 本地服务，不需要申请
     pub apply_url: Option<&'static str>,
 
@@ -226,6 +236,101 @@ pub struct ProviderPreset {
     ///
     /// `None` = 未核实，仅供参考。调用方可对久未核实的预置给一个淡色提示。
     pub verified_at: Option<&'static str>,
+}
+
+/// 下游自建预置用的 const 构造器（crate 自己的预置照旧写字面量）。
+///
+/// `ProviderPreset` 是 `#[non_exhaustive]`，下游不能写字面量；这组 `const fn` 让下游照样能写**静态表**，
+/// 再交给 [`PresetCatalog::extend`] 合并进目录。见 [`catalog`] 模块文档。
+///
+/// 缺省值：`vendor_id` = key、分组「本地 / 自建」、OpenAI 兼容协议、无模型、无 i18n key（`label_key` 为空，
+/// 接了 i18n 的调用方遇到空 key 应直接显示 `label`）。
+impl ProviderPreset {
+    /// 最小构造：key、能力、名字、地址（`None` = 让用户自填）。
+    pub const fn new(
+        key: &'static str,
+        kind: Kind,
+        label: &'static str,
+        base_url: Option<&'static str>,
+    ) -> Self {
+        Self {
+            key,
+            vendor_id: key,
+            kind,
+            group_key: GROUP_LOCAL.0,
+            group_label: GROUP_LOCAL.1,
+            label_key: "",
+            label,
+            hint_key: None,
+            hint: None,
+            base_url,
+            model: "",
+            models: &[],
+            protocol: Protocol::OpenAiCompatible,
+            match_hosts: &[],
+            extra_fields: &[],
+            default_extra: &[],
+            apply_url: None,
+            is_local: false,
+            verified_at: None,
+        }
+    }
+    /// 服务商聚合 id（同一家多种能力共用；缺省 = key）
+    pub const fn with_vendor(mut self, vendor_id: &'static str) -> Self {
+        self.vendor_id = vendor_id;
+        self
+    }
+    /// 分组（传 `GROUP_CHINA` 等常量）
+    pub const fn with_group(mut self, group: (&'static str, &'static str)) -> Self {
+        self.group_key = group.0;
+        self.group_label = group.1;
+        self
+    }
+    /// 下拉第二行的要点
+    pub const fn with_hint(mut self, hint: &'static str) -> Self {
+        self.hint = Some(hint);
+        self
+    }
+    /// 默认模型 + 候选清单
+    pub const fn with_models(
+        mut self,
+        model: &'static str,
+        models: &'static [ModelOption],
+    ) -> Self {
+        self.model = model;
+        self.models = models;
+        self
+    }
+    /// 对话协议（缺省 OpenAI 兼容）
+    pub const fn with_protocol(mut self, protocol: Protocol) -> Self {
+        self.protocol = protocol;
+        self
+    }
+    /// 反推模板用的主机名片段
+    pub const fn with_match_hosts(mut self, hosts: &'static [&'static str]) -> Self {
+        self.match_hosts = hosts;
+        self
+    }
+    /// 让用户填的专有字段
+    pub const fn with_extra_fields(mut self, fields: &'static [ExtraField]) -> Self {
+        self.extra_fields = fields;
+        self
+    }
+    /// 预置定死的 extra 键值（如 `("video_api", "newapi")`）
+    pub const fn with_default_extra(mut self, kv: &'static [(&'static str, &'static str)]) -> Self {
+        self.default_extra = kv;
+        self
+    }
+    /// 密钥申请页
+    pub const fn with_apply_url(mut self, url: &'static str) -> Self {
+        self.apply_url = Some(url);
+        self
+    }
+    /// 本地推理服务（需用户先把服务跑起来）
+    pub const fn local(mut self) -> Self {
+        self.is_local = true;
+        self
+    }
 }
 
 /// 分组 key —— 声明顺序与预置数组里的出现顺序一致。

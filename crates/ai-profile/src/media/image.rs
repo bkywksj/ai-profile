@@ -188,7 +188,7 @@ impl ImageProvider for OpenAiImageProvider {
                     truncate(&text, 200)
                 )));
             }
-            // new-api 中转站（如中宇 ipsunion）把上游真因吞成固定 fail_to_fetch_task/4xx，
+            // new-api 中转站把上游真因吞成固定 fail_to_fetch_task/4xx，
             // 这里按状态码+关键词翻译成可操作提示（内容审核 / 余额 / 限流），避免误判成程序 bug。
             return Err(MediaError::Failed(explain_image_http_error(
                 status.as_u16(),
@@ -202,7 +202,7 @@ impl ImageProvider for OpenAiImageProvider {
             .map_err(|e| MediaError::Failed(format!("解析出图响应失败: {e}")))?;
 
         // 取第一张（images 优先，其次 OpenAI 风格 data）
-        // 返回 2xx 但 data 为空：new-api 中转站（如中宇）在**内容审核拦截**或额度异常时常如此，
+        // 返回 2xx 但 data 为空：new-api 中转站在**内容审核拦截**或额度异常时常如此，
         // 给出可操作提示而非笼统"未返回图片"，避免用户误以为程序坏了。
         let item = parsed
             .images
@@ -480,7 +480,7 @@ impl AnyImageProvider {
     }
 }
 
-/// 把生图供应商（尤其 new-api 中转站，如中宇 ipsunion）的 HTTP 错误翻译成可操作中文提示。
+/// 把生图供应商（尤其 new-api 中转站）的 HTTP 错误翻译成可操作中文提示。
 ///
 /// new-api 把上游真因吞成固定的 `fail_to_fetch_task / upstream returned status N`，
 /// 用户看不出原因。按「状态码 + body 关键词」分类：
@@ -526,7 +526,7 @@ pub const MIN_IMAGE_BYTES: usize = 1024;
 
 /// 校验拿到的字节确实是一张图，**杜绝「空图落盘却标成功」**。
 ///
-/// 为什么必须校验（真实事故）：中转站（new-api 系，如中宇 ipsunion）在上游异常时会返回
+/// 为什么必须校验（真实事故）：中转站（new-api 系）在上游异常时会返回
 /// `200 + 空 body`，图 URL 回源失败时 CDN 也可能给 `200 + 0 字节`。原先代码不校验直接
 /// `fs::write`，于是 0 字节文件落盘 → 分镜标 `done` → 任务记录绿色「完成」，但前端 `<img>`
 /// 读到的是空 data URL，表现为「显示成功却没有图」，且重进也不自愈。

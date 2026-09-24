@@ -868,13 +868,13 @@ impl VideoProvider for ZhipuVideoProvider {
     }
 }
 
-/// New API 中转站统一视频协议（如 ipsunion 等 new-api / one-api 系聚合站）。异步两段式：
+/// New API 中转站统一视频协议（new-api / one-api 系聚合站）。异步两段式：
 ///   - 提交 POST {base}/video/generations  body {model, prompt, image(首帧 base64/url，图生视频), duration}
 ///     → {id, task_id, status:"queued", ...}。**轮询要用返回的 `id`（task_xxx），不是 uuid 的 `task_id`**。
 ///   - 查询 GET {base}/video/generations/{id} → {status, progress, metadata:{url}}
 ///     status: queued / in_progress / completed / failed
 ///
-/// 端点形如 https://api.ipsunion.com/v1（与该站 chat/image 共用同一 base + Bearer Key）。
+/// 端点形如 https://relay.example.com/v1（与该站 chat/image 共用同一 base + Bearer Key）。
 /// 注：纯文生视频时 image 为空不下发；图生视频时 image 作首帧，输出画幅随首帧比例（无需额外传 size）。
 pub struct NewApiVideoProvider {
     client: reqwest::Client,
@@ -1060,12 +1060,12 @@ fn newapi_video_dimensions(ratio: &str, resolution: &str) -> (u32, u32) {
     }
 }
 
-/// 把 new-api 中转站（如中宇 ipsunion）的提交失败响应翻译成可操作的中文提示。
+/// 把 new-api 中转站的提交失败响应翻译成可操作的中文提示。
 ///
 /// 背景：new-api 的视频中继**只透传上游 HTTP 状态码、丢弃上游错误正文**，
 /// 失败时永远回固定的 `{"code":"fail_to_fetch_task","message":"...upstream returned status N..."}`，
 /// 用户看不出真实原因。这里按「状态码 + body 关键词」把它翻译成人话，避免误判成程序 bug。
-/// 实测结论（doubao-seedance via ipsunion）：图生视频 400 绝大多数是**首帧图触发上游内容安全审核**
+/// 实测结论（doubao-seedance via 某 new-api 中转站）：图生视频 400 绝大多数是**首帧图触发上游内容安全审核**
 /// （躺卧/露肤/暗光等易误判）；403 多为网关余额不足；413 为请求体过大；429 为限流。
 fn explain_newapi_submit_error(status: u16, body: &str) -> String {
     let low = body.to_ascii_lowercase();
@@ -1181,7 +1181,7 @@ impl VideoProtocol {
     ///
     /// 顺序有讲究：302.AI 这类聚合站走透传地址（`api.302.ai/minimaxi/…`），靠路径子串命中对应厂商协议；
     /// New API 中转站排在厂商子串**之后**判，与 StoryLoom 原分发顺序一致。
-    /// `extra` 里 `{"video_api":"newapi"}` 可显式指定走 New API（适配任意 new-api / one-api 系聚合站）。
+    /// New API 中转站**只能**靠 `extra` 里 `{"video_api":"newapi"}` 显式指定（不按域名猜，见 `is_newapi`）。
     pub fn detect(endpoint: &str, extra: &str) -> Self {
         let ep = endpoint.to_ascii_lowercase();
         if ep.contains("minimaxi") {
@@ -1200,14 +1200,20 @@ impl VideoProtocol {
     }
 }
 
-/// 是否走 New API 中转站协议：`extra` 显式标记，或已知聚合站 host（ipsunion）兜底。
-fn is_newapi(endpoint: &str, extra: &str) -> bool {
-    if let Ok(v) = serde_json::from_str::<serde_json::Value>(extra) {
-        if v.get("video_api").and_then(|x| x.as_str()) == Some("newapi") {
-            return true;
-        }
-    }
-    endpoint.to_ascii_lowercase().contains("ipsunion")
+/// 是否走 New API 中转站协议：**只认 `extra` 显式标记** `{"video_api":"newapi"}`。
+///
+/// 🔴 不按域名猜：New API / one-api 是通用的中转架构，站点千千万，写死某家域名等于让 crate 认识品牌。
+/// 需要它的预置用 [`crate::preset::ProviderPreset::with_default_extra`] 带上这个标记（新建配置时写进 extra），
+/// 存量配置由应用自己迁移补标记。
+fn is_newapi(_endpoint: &str, extra: &str) -> bool {
+    serde_json::from_str::<serde_json::Value>(extra)
+        .ok()
+        .and_then(|v| {
+            v.get("video_api")
+                .and_then(|x| x.as_str())
+                .map(|s| s == "newapi")
+        })
+        .unwrap_or(false)
 }
 
 /// 当前视频供应商是否支持「首尾帧」（给起点图 + 终点图，AI 补中间过程）。
@@ -1332,6 +1338,19 @@ mod dispatch_tests {
     use super::*;
 
     /// 各预置地址识别到的协议（302.AI 靠透传路径命中厂商协议）。
+    /// 🔴 crate 不按域名认 New API：没有 extra 标记的中转站地址按兜底（火山方舟）处理。
+    #[test]
+    fn newapi_requires_explicit_extra() {
+        assert_eq!(
+            VideoProtocol::detect("https://relay.example.com/v1", ""),
+            VideoProtocol::Ark
+        );
+        assert_eq!(
+            VideoProtocol::detect("https://relay.example.com/v1", r#"{"video_api":"newapi"}"#),
+            VideoProtocol::NewApi
+        );
+    }
+
     #[test]
     fn detect_by_endpoint() {
         let cases = [
@@ -1345,7 +1364,6 @@ mod dispatch_tests {
             ("https://open.bigmodel.cn/api/paas/v4", VideoProtocol::Zhipu),
             ("https://api.302.ai/zhipu/api/paas/v4", VideoProtocol::Zhipu),
             ("https://api.siliconflow.cn/v1", VideoProtocol::SiliconFlow),
-            ("https://api.ipsunion.com/v1", VideoProtocol::NewApi),
             ("https://unknown.example/v1", VideoProtocol::Ark),
         ];
         for (ep, want) in cases {
@@ -1409,8 +1427,8 @@ mod dispatch_tests {
             "硅基流动"
         );
         assert!(
-            !supports_last_frame("https://api.ipsunion.com/v1", ""),
-            "ipsunion 中转站"
+            !supports_last_frame("https://relay.example.com/v1", r#"{"video_api":"newapi"}"#),
+            "new-api 中转站"
         );
         assert!(
             !supports_last_frame("https://any-relay.example/v1", r#"{"video_api":"newapi"}"#),
@@ -1424,7 +1442,10 @@ mod dispatch_tests {
             "https://relay.example/minimaxi/v1",
             r#"{"video_api":"newapi"}"#
         ));
-        assert!(!supports_last_frame("https://ipsunion.com/zhipu/v1", ""));
+        assert!(!supports_last_frame(
+            "https://relay.example/zhipu/v1",
+            r#"{"video_api":"newapi"}"#
+        ));
     }
 
     #[test]
