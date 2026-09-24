@@ -16,10 +16,13 @@ authors.workspace = true
 default = ["chat"]
 chat = []
 image = []
-video = []
+# 视频带一个图像解码库：New API 中转站的请求体有限额，大首帧要先压成 JPEG（见 media::video）。
+# 只有开了视频的下游才编译它；只要视频预置数据、不做调用的下游若嫌重，再拆 feature。
+video = ["dep:img"]
 tts = []
 # 真实 HTTP 调用（verify / dry_run / fetch_models）。拉 reqwest，按需开启。
-client = ["dep:reqwest", "dep:tokio"]
+# 开了 image / video / tts 时还会带上多模态调用（crate::media）；base64 给配音 / 生图解码响应
+client = ["dep:reqwest", "dep:tokio", "dep:base64", "dep:log"]
 
 [dependencies]
 serde = { workspace = true }
@@ -27,3 +30,11 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 reqwest = { version = "0.12", optional = true, default-features = false, features = ["json", "rustls-tls"] }
 tokio = { version = "1", optional = true, features = ["time"] }
+base64 = { version = "0.22", optional = true }
+log = { version = "0.4", optional = true }
+# 依赖改名为 img：包名 image 与本 crate 的 `image` feature 重名
+img = { package = "image", version = "0.25", optional = true, default-features = false, features = ["png", "jpeg", "webp"] }
+
+[dev-dependencies]
+# 异步单测（media 分发层的防呆断言）
+tokio = { version = "1", features = ["macros", "rt"] }

@@ -47,6 +47,13 @@ pub mod protocol;
 #[cfg(feature = "client")]
 pub mod client;
 
+/// 生图 / 视频 / 配音的真实调用。要同时开 `client` 与对应 kind 的 feature。
+#[cfg(all(
+    feature = "client",
+    any(feature = "image", feature = "video", feature = "tts")
+))]
+pub mod media;
+
 pub use error::VerifyError;
 pub use kind::{Kind, Protocol};
 pub use limits::{LimitSource, TokenLimits};

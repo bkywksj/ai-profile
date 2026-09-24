@@ -76,6 +76,20 @@
 - 起因是 onestop：一条配置同时挂对话与生图 / 配音 / 向量模型，要的是「能聊天的排前面、其余也别丢」，
   而此前只拿得到条数、拿不到 id。只做对话的调用方忽略它即可
 
+### 多模态：生图 / 视频 / 配音（2026-09-24，随 StoryLoom 接入反向搬入）
+- 预置：生图 6、视频 9、配音 5 条（含各自「自定义」档），挂 `image` / `video` / `tts` feature；
+  `vendor_id` 与同 host 的对话预置共用。只开 `chat` 的下游不受影响（`presets()` 仍是静态数组）
+- ⚠️ 行为变化：`infer_preset_key` 只在对话预置里反推（开了多模态后不会把对话配置认成生图档）；
+  分组连续性守卫改为按 kind 判
+- 调用：新增 `media` 模块（要同时开 `client` 与对应 kind），整体搬自 StoryLoom v0.9.0 的生产实现，只做机械替换：
+  - `media::image`：OpenAI `/images/generations` 兼容 + 通义万相 DashScope 异步；`AnyImageProvider::from_config`
+  - `media::video`：火山方舟 / 海螺 / Vidu / 智谱 / 硅基流动 / New API 六套 submit + poll；
+    `VideoProtocol::detect`、`AnyVideoProvider`、`supports_last_frame`、`explain_error`
+  - `media::tts`：火山语音专有协议 + OpenAI `/audio/speech`；`TtsProtocol::detect`、`synthesize`、音色目录 `voice_catalog`
+  - 错误类型 `MediaError`，`Display` 与 StoryLoom 原 `AppError` 逐字一致
+  - **任务编排不进 crate**：轮询循环、取消、落盘、进度事件归调用方
+- 依赖：`client` 新增 `base64`、`log`；`video` 带图像解码库（依赖名 `img`，New API 中转站要先压缩大首帧）
+
 ### 文档与工具
 - `docs/providers.md` —— 由 `cargo xtask gen-docs` 生成，
   守卫测试 `providers_md_in_sync` 保证与代码一致
