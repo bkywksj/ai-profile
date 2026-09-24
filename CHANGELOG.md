@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [0.1.1] - 2026-09-24
+
+### 修复
+- docs.rs 按全部 feature 构建文档（`[package.metadata.docs.rs] all-features = true`）。
+  0.1.0 在 docs.rs 上只有默认的 `chat`，`client` 与 `media` 整块缺失
+
+## [0.1.0] - 2026-09-24
+
+首个 crates.io 版本。以下为 0.1.0 之前的开发记录。
+
 ### 骨架
 - 建仓：workspace + `crates/ai-profile` + `xtask`
 - `endpoint` —— base_url 原样拼接，**不推断版本段**（含 4 个守卫测试）

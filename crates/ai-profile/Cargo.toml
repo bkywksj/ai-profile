@@ -11,6 +11,11 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
+# 🔴 docs.rs 默认只用默认 feature（chat）构建：不开的话 client（验证）与 media（生图 / 视频 / 配音）
+# 在文档站上整块消失 —— 0.1.0 就漏了这条，只能补发 0.1.1
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 # 🔴 默认只给纯数据 + 纯函数：零重依赖，能编到 Android / iOS。
 # 不用的 kind 不编进下游的二进制。
