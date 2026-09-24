@@ -22,7 +22,7 @@
 > 应用侧纯函数测试（`legacy_endpoint` / `provider_share`）是在临时 crate 里 `#[path]` 引入实跑的。
 >
 > 🔴 **只属于个别应用的服务商不进 crate**（2026-09-24 撤回中宇AI智行）：那个应用用 `PresetCatalog::new().extend(&LOCAL)` 自己加，
-> onestop（对话一条）、story_loom（四种能力各一条，视频带 `video_api=newapi`）都在各自的 `local_presets.rs`。
+> 目前只有 story_loom 在用（`local_presets.rs`，四种能力各一条，视频带 `video_api=newapi`）；onestop 不接中宇，它的 `local_presets.rs` 是空表。
 >
 > onestop 的多模态预置已改用 crate（`850eb77`）。它自己的生图 / 视频 / 配音调用只支持三种协议，所以预置按协议过滤；
 > 要支持海螺 / Vidu / 火山语音等，得先把调用换成 `media`（StoryLoom 在用），再放开过滤。
