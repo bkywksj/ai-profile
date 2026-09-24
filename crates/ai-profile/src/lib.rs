@@ -80,5 +80,5 @@ pub use client::{verify, ServiceConfig, Verifier, VerifyOk};
 #[cfg(feature = "client")]
 pub use reqwest;
 
-// ⏸ 后续阶段（见 docs/tasks/active/ 的规划）：
+// ⏸ 后续阶段（见 docs/tasks/archive/2026-09/ 的规划，已归档）：
 // - client::dry_run —— 真实调用（产生费用），按 kind 分实现

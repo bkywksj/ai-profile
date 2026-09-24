@@ -216,6 +216,6 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 ## 相关文档
 
 - 下游登记表：`docs/downstream.md`
-- 规划与设计决策：`docs/tasks/active/task-20260922-070704-模型服务公共库规划.md`
+- 规划与设计决策：`docs/tasks/archive/2026-09/task-20260922-070704-模型服务公共库规划.md`（已归档）
 - 文档站：同级 `../ai-profile-docs`（同步记录见本仓库根 `.docs-meta.json`）
 - 交互原型：`docs/prototypes/model-service.html`

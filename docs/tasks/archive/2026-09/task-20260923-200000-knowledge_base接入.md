@@ -1,8 +1,8 @@
 # 任务：knowledge_base 接入 ai-profile
 
-**状态**: 🔵 已推送；数据迁移与对话链路已用真实数据验证，待界面实机验证后归档
+**状态**: 🔵 已完成（2026-09-25 归档）
 **创建时间**: 2026-09-23 20:00:00
-**更新时间**: 2026-09-23 22:30:00
+**更新时间**: 2026-09-25
 **下游仓库**: `E:/my/桌面软件tauri/knowledge_base`（master，v1.64.0，**已发布，有真实用户**）
 **参照**: reeve 接入（`task-20260923-140000-reeve接入.md`，存量地址修正的范例在 `reeve-core/src/legacy_base_url.rs`）
 
@@ -147,3 +147,11 @@ tsc 通过；vitest 436 通过；新增测试 23 个（knowledge_base Rust 15、
 
 - 只读盘点 knowledge_base（存储、预置、端点、Ollama、获取 / 测试、限额 / 预算、ai.profile、HTTP、手机、导入与恢复入口、界面、测试）
 - 发现与 reeve 不同的三处：厂商 id 粒度（24 家厂商而非 2 种协议）、Ollama 原生协议、没有 Anthropic 原生对话
+
+### 2026-09-25
+**变更类型**: 归档
+
+- crate 已发布到 crates.io（`0.1.0` → `0.1.1`，docs.rs 按全部 feature 构建），标签 `v0.1.0` / `v0.1.1` 已推三平台
+- 下游五家（sigil / reeve / knowledge_base / onestop / story_loom）统一改按版本号 `0.1.1` 引用，全量测试通过并已推送
+- 遗留：各应用界面**尚未实机验证** —— 转记于 `docs/downstream.md`，不再挂在任务里
+- 顺带修掉两条既有失败：dataview 同秒排序不稳定（`b5e8335`）、标签重名报原始 UNIQUE 错误（`5c0718d`，标签名保持全局唯一，同步按名字识别）
