@@ -12,7 +12,7 @@
 |---|---|---|---|---|---|---|
 | sigil | `E:/my/桌面软件tauri/sigil` | git rev（`src-tauri/Cargo.toml`） | `685b0dd` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 | `ai-profile-integration` |
 | knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | git rev（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `2a32261` | 2026-09-23 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用） | `ai-profile-integration` |
-| onestop | `E:/my/backend_tauri/onestop` | git rev（`src-tauri/Cargo.toml`，chat + client）；只有桌面端碰模型服务 | `63589a6` | 2026-09-24 | 聊天预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别（对话协议、工具循环、多模态预置、历史组装留在应用） | `ai-profile-integration` |
+| onestop | `E:/my/backend_tauri/onestop` | git rev（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `850eb77` | 2026-09-24 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现 | `ai-profile-integration` |
 | story_loom | `E:/my/桌面软件tauri/story_loom` | git rev（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `c6fb214` | 2026-09-24 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
 | reeve | `E:/my/桌面软件tauri/reeve` | git rev，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `685b0dd` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
 
@@ -21,8 +21,8 @@
 > story_loom 在 `c6fb214`，**只本地提交、未推送**。它的本机 lib 单测有 WebView2 入口崩溃（环境问题），
 > 应用侧纯函数测试（`legacy_endpoint` / `provider_share`）是在临时 crate 里 `#[path]` 引入实跑的。
 >
-> 🔜 onestop 可以删掉本地多模态预置：开 `image` / `video` / `tts` feature 后，`provider::chat_presets` 要改用
-> `presets_for(Kind::Chat)`（否则下拉混进生图预置），多模态下拉改读 crate。它自己的生图 / 视频 / 配音调用也可评估换成 `media`。
+> onestop 的多模态预置已改用 crate（`850eb77`）。它自己的生图 / 视频 / 配音调用只支持三种协议，所以预置按协议过滤；
+> 要支持海螺 / Vidu / 火山语音等，得先把调用换成 `media`（StoryLoom 在用），再放开过滤。
 >
 > onestop 在 `63589a6`（接入时新增 `dropped_models`）；**只本地提交、未推送**，发版节奏由它自己定。
 >
