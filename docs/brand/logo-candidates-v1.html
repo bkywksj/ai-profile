@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh"><head><meta charset="UTF-8"><title>ai-profile Logo 候选方案 V1</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter','Microsoft YaHei',sans-serif;background:#f5f5f7;color:#1d1d1f}
+header{max-width:1280px;margin:28px auto 0;padding:0 16px}
+header h1{font-size:20px}
+header p{font-size:13px;color:#666;margin-top:6px;line-height:1.6}
+h2{max-width:1280px;margin:26px auto 0;padding:0 16px;font-size:14px;color:#444}
+.grid{max-width:1280px;margin:12px auto;padding:0 16px;display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.card{border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.pv{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:#fff}
+.pv svg{width:62%;height:62%}
+.small{display:flex;gap:10px;align-items:center;justify-content:center;padding:8px;background:#fafafa;border-top:1px solid #f0f0f0}
+.small .dk{background:#111;border-radius:6px;padding:4px;display:flex}
+.small svg{display:block}
+.info{padding:8px 10px;border-top:1px solid #f0f0f0}
+.nm{font-size:11px;font-weight:700}
+.ds{font-size:10px;color:#999;margin-top:2px;line-height:1.4}
+</style></head><body>
+<header>
+  <h1>ai-profile · Logo 候选方案 V1（36 个）</h1>
+  <p>定位：开发者基础设施 —— 多个桌面应用共用的 AI 模型服务配置层。<br>
+  每张卡下方是 20px / 32px 小尺寸与深底预览（favicon、侧栏图标能不能认出来，看这一栏）。看中哪几个编号告诉我。</p>
+</header>
+<script>
+// 配色：bg 容器底 / fg 主元素 / ac 强调（渐变用 g 标记）
+const P = {
+  indigo:  {bg:'#4f46e5', fg:'#ffffff', ac:'#a5b4fc', name:'靛蓝'},
+  bluecyan:{bg:'g:#4f46e5:#22d3ee', fg:'#ffffff', ac:'#cffafe', name:'蓝青渐变'},
+  mono:    {bg:'#111111', fg:'#ffffff', ac:'#9ca3af', name:'黑白'},
+  violet:  {bg:'g:#7c3aed:#ec4899', fg:'#ffffff', ac:'#fbcfe8', name:'紫粉渐变'},
+  emerald: {bg:'#059669', fg:'#ffffff', ac:'#a7f3d0', name:'翡翠绿'},
+  amber:   {bg:'g:#f59e0b:#ef4444', fg:'#ffffff', ac:'#fde68a', name:'暖琥珀'},
+};
+let gid = 0;
+// 容器：rsq 圆角方块 / circle 圆 / none 无容器（主元素改用底色着色）
+function wrap(shape, pal, inner){
+  const id = 'g' + (gid++);
+  let defs = '', fill = pal.bg;
+  if (pal.bg.startsWith('g:')) {
+    const [, a, b] = pal.bg.split(':');
+    defs = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>`;
+    fill = `url(#${id})`;
+  }
+  let box = '';
+  if (shape === 'rsq') box = `<rect x="4" y="4" width="112" height="112" rx="26" fill="${fill}"/>`;
+  if (shape === 'circle') box = `<circle cx="60" cy="60" r="56" fill="${fill}"/>`;
+  // 无容器：元素用底色（渐变）着色
+  const fg = shape === 'none' ? fill : pal.fg;
+  const ac = shape === 'none' ? (pal.bg.startsWith('g:') ? fill : pal.bg) : pal.ac;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">${defs}${box}${inner(fg, ac, shape)}</svg>`;
+}
+
+// ── 主元素 ──
+const M = {
+  // A · 叠层配置卡：公共预置 + 应用定制层
+  layers3: (f,a)=>`<rect x="30" y="26" width="52" height="40" rx="9" fill="${a}" opacity=".55"/>
+    <rect x="38" y="40" width="52" height="40" rx="9" fill="${a}" opacity=".8"/>
+    <rect x="46" y="54" width="44" height="34" rx="9" fill="${f}"/>`,
+  layers2: (f,a)=>`<rect x="28" y="30" width="56" height="44" rx="10" fill="none" stroke="${a}" stroke-width="6"/>
+    <rect x="40" y="46" width="56" height="44" rx="10" fill="${f}"/>`,
+  layersCard: (f,a)=>`<rect x="28" y="32" width="60" height="44" rx="10" fill="${a}" opacity=".6"/>
+    <rect x="34" y="44" width="60" height="44" rx="10" fill="${f}"/>
+    <rect x="44" y="56" width="24" height="5" rx="2.5" fill="${a}"/><rect x="44" y="67" width="36" height="5" rx="2.5" fill="${a}" opacity=".7"/>`,
+  layersIso: (f,a)=>`<path d="M60 28 92 44 60 60 28 44Z" fill="${f}"/>
+    <path d="M28 58 60 74 92 58" fill="none" stroke="${a}" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M28 72 60 88 92 72" fill="none" stroke="${a}" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" opacity=".6"/>`,
+  // B · 一对多枢纽：一份配置，多个应用
+  hub: (f,a)=>`<rect x="28" y="46" width="28" height="28" rx="8" fill="${f}"/>
+    <path d="M56 60H66M66 60V38H76M66 60H76M66 60V82H76" fill="none" stroke="${a}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="84" cy="38" r="7" fill="${f}"/><circle cx="84" cy="60" r="7" fill="${f}"/><circle cx="84" cy="82" r="7" fill="${f}"/>`,
+  hubRadial: (f,a)=>`<circle cx="60" cy="60" r="13" fill="${f}"/>
+    <g stroke="${a}" stroke-width="5" stroke-linecap="round"><path d="M60 47V33"/><path d="M71 67l12 7"/><path d="M49 67l-12 7"/></g>
+    <circle cx="60" cy="28" r="7" fill="${f}"/><circle cx="87" cy="77" r="7" fill="${f}"/><circle cx="33" cy="77" r="7" fill="${f}"/>`,
+  hubTri: (f,a)=>`<path d="M60 30 88 80H32Z" fill="none" stroke="${a}" stroke-width="5" stroke-linejoin="round"/>
+    <circle cx="60" cy="63" r="10" fill="${f}"/>
+    <circle cx="60" cy="30" r="6" fill="${f}"/><circle cx="88" cy="80" r="6" fill="${f}"/><circle cx="32" cy="80" r="6" fill="${f}"/>`,
+  // C · 字母与符号
+  letterA: (f,a)=>`<path d="M60 26 86 90H74L68 74H52L46 90H34Z M56 63H64L60 50Z" fill="${f}" fill-rule="evenodd"/>
+    <circle cx="86" cy="34" r="6" fill="${a}"/>`,
+  letterAp: (f,a)=>`<circle cx="50" cy="64" r="15" fill="none" stroke="${f}" stroke-width="8"/>
+    <path d="M65 50V79" stroke="${f}" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="84" cy="44" r="7" fill="${a}"/>`,
+  braces: (f,a)=>`<path d="M44 30c-8 0-10 4-10 10v10c0 6-3 10-8 10 5 0 8 4 8 10v10c0 6 2 10 10 10M76 30c8 0 10 4 10 10v10c0 6 3 10 8 10-5 0-8 4-8 10v10c0 6-2 10-10 10" fill="none" stroke="${f}" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="60" cy="60" r="8" fill="${a}"/>`,
+  sliders: (f,a)=>`<g stroke="${a}" stroke-width="6" stroke-linecap="round"><path d="M30 42H90"/><path d="M30 60H90"/><path d="M30 78H90"/></g>
+    <circle cx="48" cy="42" r="9" fill="${f}"/><circle cx="74" cy="60" r="9" fill="${f}"/><circle cx="58" cy="78" r="9" fill="${f}"/>`,
+  prism: (f,a)=>`<path d="M52 32 76 80H28Z" fill="${f}"/>
+    <g stroke="${a}" stroke-width="5" stroke-linecap="round"><path d="M70 52 94 40"/><path d="M73 60H96"/><path d="M70 68 94 80"/></g>`,
+  cardKey: (f,a)=>`<rect x="26" y="34" width="68" height="52" rx="12" fill="${f}"/>
+    <circle cx="46" cy="56" r="8" fill="${a}"/><rect x="60" y="50" width="24" height="5" rx="2.5" fill="${a}"/><rect x="36" y="70" width="48" height="5" rx="2.5" fill="${a}" opacity=".7"/>`,
+  ring3: (f,a)=>`<g fill="none" stroke-width="9" stroke-linecap="round"><path d="M60 28a32 32 0 0 1 27.7 16" stroke="${f}"/><path d="M89 68a32 32 0 0 1-29 24" stroke="${a}"/><path d="M40 86A32 32 0 0 1 31 46" stroke="${f}" opacity=".85"/></g>
+    <circle cx="60" cy="60" r="9" fill="${f}"/>`,
+};
+
+// 36 个组合：主元素 × 容器 × 配色
+const plan = [
+  ['A','layers3','rsq','indigo'],['A','layers3','rsq','bluecyan'],['A','layers3','none','indigo'],['A','layers3','circle','mono'],
+  ['A','layers2','rsq','indigo'],['A','layers2','rsq','violet'],['A','layersCard','rsq','bluecyan'],['A','layersCard','rsq','mono'],
+  ['A','layersCard','circle','emerald'],['A','layersIso','rsq','indigo'],['A','layersIso','none','bluecyan'],['A','layersIso','rsq','amber'],
+  ['B','hub','rsq','indigo'],['B','hub','rsq','mono'],['B','hub','none','bluecyan'],['B','hubRadial','rsq','bluecyan'],
+  ['B','hubRadial','circle','indigo'],['B','hubRadial','none','violet'],['B','hubTri','rsq','emerald'],['B','hubTri','rsq','indigo'],
+  ['B','ring3','rsq','indigo'],['B','ring3','none','bluecyan'],
+  ['C','letterA','rsq','indigo'],['C','letterA','rsq','bluecyan'],['C','letterA','circle','mono'],['C','letterAp','rsq','indigo'],
+  ['C','letterAp','rsq','violet'],['C','letterAp','none','bluecyan'],['C','braces','rsq','mono'],['C','braces','rsq','indigo'],
+  ['C','sliders','rsq','bluecyan'],['C','sliders','rsq','amber'],['C','prism','rsq','indigo'],['C','prism','none','violet'],
+  ['C','cardKey','rsq','emerald'],['C','cardKey','rsq','indigo'],
+];
+const DESC = {
+  layers3:'三层叠卡：公共预置 + 应用定制层', layers2:'描边卡叠实心卡：底层与覆盖层', layersCard:'配置卡叠层（带字段线）',
+  layersIso:'等轴测叠层（Stack 风）', hub:'一份配置连向三个应用', hubRadial:'核心放射三节点', hubTri:'三角网络中心节点',
+  ring3:'三段环共享一个核心', letterA:'字母 A + 光点', letterAp:'几何小写 a + 光点', braces:'配置花括号 { · }',
+  sliders:'三条滑杆（配置调节）', prism:'棱镜分光：一份进、多份出', cardKey:'档案卡（profile）',
+};
+const GROUP = {A:'方向 A（主）· 叠层配置卡', B:'方向 B · 一对多枢纽', C:'方向 C · 字母与符号'};
+let cur = '', html = '', n = 0;
+for (const [g, m, shape, pal] of plan) {
+  if (g !== cur) { if (cur) html += '</div>'; html += `<h2>${GROUP[g]}</h2><div class="grid">`; cur = g; }
+  n++;
+  const id = 'L' + String(n).padStart(2, '0');
+  const big = wrap(shape, P[pal], M[m]);
+  const s20 = wrap(shape, P[pal], M[m]).replace('<svg ', '<svg width="20" height="20" ');
+  const s32 = wrap(shape, P[pal], M[m]).replace('<svg ', '<svg width="32" height="32" ');
+  const dk = wrap(shape, P[pal], M[m]).replace('<svg ', '<svg width="32" height="32" ');
+  const shapeName = {rsq:'圆角方块', circle:'圆形', none:'无容器'}[shape];
+  html += `<div class="card"><div class="pv">${big}</div>
+    <div class="small">${s20}${s32}<span class="dk">${dk}</span></div>
+    <div class="info"><div class="nm">${id} · ${DESC[m]}</div><div class="ds">${shapeName} · ${P[pal].name}</div></div></div>`;
+}
+html += '</div>';
+document.body.insertAdjacentHTML('beforeend', html);
+</script>
+</body></html>

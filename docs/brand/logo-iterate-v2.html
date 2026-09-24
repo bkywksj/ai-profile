@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh"><head><meta charset="UTF-8"><title>ai-profile Logo 迭代 V2（基于 L21）</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter','Microsoft YaHei',sans-serif;background:#f5f5f7;color:#1d1d1f}
+header{max-width:1280px;margin:28px auto 0;padding:0 16px}
+header h1{font-size:20px}
+header p{font-size:13px;color:#666;margin-top:6px;line-height:1.6}
+h2{max-width:1280px;margin:26px auto 0;padding:0 16px;font-size:14px;color:#444}
+.grid{max-width:1280px;margin:12px auto;padding:0 16px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.trio{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr}
+.trio .light{grid-row:1/3;display:flex;align-items:center;justify-content:center;background:#fff;aspect-ratio:1/1}
+.trio .light svg{width:66%;height:66%}
+.trio .dark{background:#121212;display:flex;align-items:center;justify-content:center}
+.trio .mono{background:#000;display:flex;align-items:center;justify-content:center}
+.trio .dark svg,.trio .mono svg{width:56%;height:56%}
+.small{display:flex;gap:10px;align-items:center;justify-content:center;padding:8px;background:#fafafa;border-top:1px solid #f0f0f0;font-size:10px;color:#999}
+.info{padding:8px 10px;border-top:1px solid #f0f0f0}
+.nm{font-size:11px;font-weight:700}
+.ds{font-size:10px;color:#999;margin-top:2px;line-height:1.4}
+</style></head><body>
+<header>
+  <h1>ai-profile · Logo 迭代 V2（基于 L21「三段环共享一个核心」· 圆角方块 · 靛蓝）</h1>
+  <p>三段弧改为按角度等分（V1 手画的缺口不等）。每张卡：左大图 = 浅底；右上 = 深色模式（#121212）；右下 = 单色（黑底白线，水印 / 单色印刷用）。<br>
+  下方是 16 / 20 / 32 px 实际尺寸 —— favicon 能否认出三段环，看这一栏。看中哪几个编号告诉我。</p>
+</header>
+<script>
+// ── 基准配置（V01）──
+const BASE = {
+  bg: '#4f46e5',          // 容器底：色值，或 'g:起:止'（对角渐变）/ 'r:中心:边缘'（径向）
+  rx: 26,                 // 圆角
+  container: 'fill',      // fill 实心 / none 无容器 / outline 描边
+  r: 31,                  // 环半径
+  sw: 9,                  // 环线宽
+  gap: 30,                // 三段之间的缺口（度）
+  rot: -90,               // 第一段起点角度
+  cap: 'round',
+  arcColors: ['#ffffff', '#a5b4fc', '#ffffff'],
+  core: 'dot',            // dot / ring / halo / square / none
+  coreR: 9,
+  coreColor: '#ffffff',
+  nodes: false,           // 弧端带节点
+  glass: false,
+};
+let gid = 0;
+const rad = d => d * Math.PI / 180;
+const pt = (r, deg) => [60 + r * Math.cos(rad(deg)), 60 + r * Math.sin(rad(deg))];
+function paint(spec, id) {
+  if (spec.startsWith('g:')) { const [, a, b] = spec.split(':'); return [`<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`, `url(#${id})`]; }
+  if (spec.startsWith('r:')) { const [, a, b] = spec.split(':'); return [`<radialGradient id="${id}" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></radialGradient>`, `url(#${id})`]; }
+  return ['', spec];
+}
+// mode: light（原样）/ dark（深底：无容器款把深色元素提亮）/ mono（纯白线稿，无容器）
+function render(c, mode = 'light') {
+  const id = 'p' + (gid++);
+  let [defs, fill] = paint(c.bg, id);
+  let arcCols = c.arcColors.slice(), core = c.coreColor, box = '';
+  if (mode === 'mono') {
+    arcCols = ['#fff', '#fff', '#fff']; core = '#fff'; defs = '';
+  } else if (c.container === 'fill') {
+    box = `<rect x="4" y="4" width="112" height="112" rx="${c.rx}" fill="${fill}"/>`;
+    if (c.glass) box += `<ellipse cx="44" cy="26" rx="40" ry="16" fill="#fff" opacity=".13"/>`;
+  } else if (c.container === 'outline') {
+    box = `<rect x="7" y="7" width="106" height="106" rx="${c.rx}" fill="none" stroke="${fill}" stroke-width="6"/>`;
+  }
+  if (mode === 'dark' && c.container !== 'fill') {
+    // 无容器 / 描边款在深底上：靛蓝线条提亮成浅紫，免得糊进背景
+    arcCols = arcCols.map(x => (x === '#4f46e5' || x.startsWith('url')) ? '#a5b4fc' : x);
+    if (core === '#4f46e5') core = '#c7d2fe';
+    box = box.replace(fill, '#a5b4fc');
+  }
+  const seg = 120, arcs = [];
+  for (let i = 0; i < 3; i++) {
+    const a0 = c.rot + i * seg + c.gap / 2, a1 = c.rot + (i + 1) * seg - c.gap / 2;
+    const [x0, y0] = pt(c.r, a0), [x1, y1] = pt(c.r, a1);
+    arcs.push(`<path d="M${x0.toFixed(2)} ${y0.toFixed(2)}A${c.r} ${c.r} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}" stroke="${arcCols[i]}" stroke-width="${c.sw}" stroke-linecap="${c.cap}" fill="none"/>`);
+    if (c.nodes) { arcs.push(`<circle cx="${x1.toFixed(2)}" cy="${y1.toFixed(2)}" r="${c.sw * 0.75}" fill="${arcCols[i]}"/>`); }
+  }
+  let coreSvg = '';
+  const cr = c.coreR;
+  if (c.core === 'dot') coreSvg = `<circle cx="60" cy="60" r="${cr}" fill="${core}"/>`;
+  if (c.core === 'ring') coreSvg = `<circle cx="60" cy="60" r="${cr}" fill="none" stroke="${core}" stroke-width="${Math.max(4, c.sw * 0.6)}"/>`;
+  if (c.core === 'halo') coreSvg = `<circle cx="60" cy="60" r="${cr + 7}" fill="${core}" opacity=".22"/><circle cx="60" cy="60" r="${cr}" fill="${core}"/>`;
+  if (c.core === 'square') coreSvg = `<rect x="${60 - cr}" y="${60 - cr}" width="${cr * 2}" height="${cr * 2}" rx="${cr * 0.45}" fill="${core}"/>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs>${defs}</defs>${box}${arcs.join('')}${coreSvg}</svg>`;
+}
+const V = (id, nm, ds, over) => ({ id, nm, ds, c: Object.assign({}, BASE, over) });
+const groups = [
+  ['结构 · 环', [
+    V('V01', '基准：等分三段 · 双色', '线宽 9 · 缺口 30° · 白 / 浅紫 / 白', {}),
+    V('V02', '全白三段', '最干净，小尺寸最稳', { arcColors: ['#fff', '#fff', '#fff'] }),
+    V('V03', '细环', '线宽 6，更轻盈', { sw: 6 }),
+    V('V04', '粗环', '线宽 12，远看更有分量', { sw: 12, r: 30 }),
+    V('V05', '小缺口', '缺口 16°，更接近完整的环', { gap: 16 }),
+    V('V06', '大缺口', '缺口 46°，三段更独立（= 三个应用）', { gap: 46 }),
+    V('V07', '平头端点', '更硬朗、更「工程」', { cap: 'butt', gap: 24 }),
+    V('V08', '旋转 30°', '缺口朝正上 / 左下 / 右下', { rot: -60 }),
+    V('V09', '三色', '白 / 浅紫 / 青 —— 三个应用各一色', { arcColors: ['#ffffff', '#a5b4fc', '#67e8f9'] }),
+  ]],
+  ['结构 · 核心', [
+    V('V10', '大核心', '核心 r13，「共享的那份配置」更突出', { coreR: 13 }),
+    V('V11', '空心核心', '环里套环，偏技术感', { core: 'ring', coreR: 9 }),
+    V('V12', '核心带光晕', '核心向外辐射', { core: 'halo', coreR: 8 }),
+    V('V13', '方形核心', '圆角方块核心 = 一张配置卡', { core: 'square', coreR: 9 }),
+    V('V14', '弧端带节点', '每段末端一个点 = 一个应用', { nodes: true, cap: 'butt', gap: 38, arcColors: ['#fff', '#fff', '#fff'] }),
+  ]],
+  ['底色（结构取 V01）', [
+    V('V15', '同色渐变', '#6366f1 → #4338ca，更有层次', { bg: 'g:#6366f1:#4338ca' }),
+    V('V16', '靛蓝 → 紫', '#4f46e5 → #7c3aed', { bg: 'g:#4f46e5:#7c3aed' }),
+    V('V17', '深靛', '#312e81，沉稳、偏企业', { bg: '#312e81', arcColors: ['#fff', '#818cf8', '#fff'] }),
+    V('V18', '径向光晕', '左上亮、右下暗', { bg: 'r:#6d6af0:#3730a3' }),
+    V('V19', '靛蓝 → 青', '与文档站旧配色衔接', { bg: 'g:#4f46e5:#0891b2', arcColors: ['#fff', '#a5f3fc', '#fff'] }),
+    V('V20', '玻璃高光', '顶部一道柔光', { glass: true, bg: 'g:#6366f1:#4338ca' }),
+  ]],
+  ['容器', [
+    V('V21', '大圆角', 'rx 36，接近 iOS 图标', { rx: 36 }),
+    V('V22', '小圆角', 'rx 16，更方正', { rx: 16 }),
+    V('V23', '无容器', '靛蓝线条直接放白底，适合文档站导航栏', { container: 'none', arcColors: ['#4f46e5', '#a5b4fc', '#4f46e5'], coreColor: '#4f46e5' }),
+    V('V24', '描边容器', '白底 + 靛蓝描边方框', { container: 'outline', arcColors: ['#4f46e5', '#a5b4fc', '#4f46e5'], coreColor: '#4f46e5' }),
+  ]],
+];
+let html = '';
+for (const [title, list] of groups) {
+  html += `<h2>${title}</h2><div class="grid">`;
+  for (const v of list) {
+    const sizes = [16, 20, 32].map(s => render(v.c).replace('<svg ', `<svg width="${s}" height="${s}" `)).join('');
+    html += `<div class="card"><div class="trio"><div class="light">${render(v.c)}</div><div class="dark">${render(v.c, 'dark')}</div><div class="mono">${render(v.c, 'mono')}</div></div>
+      <div class="small">${sizes}</div>
+      <div class="info"><div class="nm">${v.id} · ${v.nm}</div><div class="ds">${v.ds}</div></div></div>`;
+  }
+  html += '</div>';
+}
+document.body.insertAdjacentHTML('beforeend', html);
+</script>
+</body></html>
