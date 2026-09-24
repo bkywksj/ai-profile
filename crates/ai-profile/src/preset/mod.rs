@@ -39,7 +39,7 @@ mod video;
 
 pub use catalog::PresetCatalog;
 pub use docgen::render_providers_markdown;
-pub use vendor::{vendors, vendors_all, Vendor};
+pub use vendor::{vendors, vendors_all, vendors_in, Vendor};
 
 /// 一个模型候选项。
 ///

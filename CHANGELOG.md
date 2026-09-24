@@ -77,6 +77,12 @@
 - ⚠️ 行为变化：视频 New API 协议**只认** `extra.video_api=newapi`，不再按域名（原先 `ipsunion`）兜底；
   依赖它的存量配置由下游迁移补标记（StoryLoom v31）
 
+### 多模态调用支持代理；服务商卡片跟随定制目录（2026-09-24）
+- `media::MediaHttp::from_fn(|| builder)`：生图 / 视频 / 配音调用接入调用方的 HTTP 底座（代理 / 证书），
+  超时策略仍由本 crate 在其后施加。各 provider 新增 `with_http`，统一入口新增 `from_config_with` / `synthesize_with`；
+  原有 `new` / `from_config` / `synthesize` 不变
+- `preset::vendors_in(list, kinds)` 与 `PresetCatalog::vendors`：按调用方的定制目录聚合服务商卡片
+
 ### 被滤掉的模型 id 也带回（2026-09-24）
 - `VerifyOk::dropped_models` / `CleanedModels::dropped_models`：清洗时滤掉的非对话模型 id（端点顺序），
   `len() == dropped`（minor，两个结构都是 `non_exhaustive`）
@@ -105,6 +111,10 @@
 - `cargo xtask probe` —— 探活各家端点（人工触发，不进 CI）
 
 ### 待办
-- `client::dry_run` —— 真实调用（产生费用），按 kind 分实现
-- image / video / tts 三种 kind 的预置与 client
-- `packages/react` —— headless hook + 预制组件
+- `packages/react` —— headless hook + 预制组件（等出现第二个想复用界面的前端再做）
+- 各家模型 id 用真实密钥核实后填 `verified_at`
+
+### 不做（2026-09-24 决定）
+- `client::dry_run`：生图 / 配音直接调 `media` 的 `generate` / `synthesize` 就是试运行；
+  对话的「真实测试」按职责边界归应用（要用应用自己的对话实现）
+- 视频任务远程取消：各家取消接口大多没有或未经真实密钥验证；调用方停止轮询即可止损

@@ -59,8 +59,14 @@ fn host_of(base_url: Option<&'static str>) -> Option<&'static str> {
 /// 调用方传入本应用声明的 kinds —— 只做对话的应用不会看到只提供视频的厂商。
 /// 返回顺序沿用预置数组顺序（即分组顺序）。
 pub fn vendors(allow_kinds: &[Kind]) -> Vec<Vendor> {
+    vendors_in(presets(), allow_kinds)
+}
+
+/// 同 [`vendors`]，但聚合的是**调用方给的目录**（通常是 [`super::PresetCatalog::build`] 的结果）——
+/// 下游加了私有条目、删了几家后，服务商卡片要跟着它的目录走，而不是 crate 的全量。
+pub fn vendors_in(list: &[ProviderPreset], allow_kinds: &[Kind]) -> Vec<Vendor> {
     let mut out: Vec<Vendor> = Vec::new();
-    for p in presets() {
+    for p in list {
         if !allow_kinds.contains(&p.kind) {
             continue;
         }

@@ -107,6 +107,11 @@ impl PresetCatalog {
     pub fn build(self) -> Vec<ProviderPreset> {
         self.list
     }
+
+    /// 按厂商聚合当前目录（服务商卡片用），私有条目与删减都会反映进来。见 [`super::vendors_in`]。
+    pub fn vendors(&self, allow_kinds: &[crate::kind::Kind]) -> Vec<super::Vendor> {
+        super::vendors_in(&self.list, allow_kinds)
+    }
 }
 
 #[cfg(test)]
@@ -166,6 +171,19 @@ mod tests {
         assert_eq!(before.len(), after.len(), "覆盖不增加条数");
         let i = before.iter().position(|p| p.key == "deepseek").unwrap();
         assert_eq!(after[i].label, "我的 DeepSeek", "原位覆盖");
+    }
+
+    /// 服务商卡片跟着定制后的目录走：私有条目出现、删掉的消失。
+    #[test]
+    fn vendors_follow_customized_catalog() {
+        let cat = PresetCatalog::new().remove(&["deepseek"]).extend(LOCAL);
+        let vs = cat.vendors(&[Kind::Chat]);
+        assert!(vs.iter().any(|v| v.id == "local_cn"));
+        assert!(!vs.iter().any(|v| v.id == "deepseek"));
+        assert_eq!(
+            super::super::vendors_in(&cat.clone().build(), &[Kind::Chat]).len(),
+            vs.len()
+        );
     }
 
     #[test]
