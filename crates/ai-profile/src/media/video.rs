@@ -98,9 +98,14 @@ pub struct ArkVideoProvider {
 impl ArkVideoProvider {
     /// 用给定配置构造（内部自带带超时的 HTTP 客户端）。
     pub fn new(config: VideoGenConfig) -> Self {
+        Self::with_http(config, &super::MediaHttp::default())
+    }
+
+    /// 用调用方的 HTTP 底座（代理 / 证书）构造；超时策略仍由本 crate 施加。见 [`super::MediaHttp`]。
+    pub fn with_http(config: VideoGenConfig, http: &super::MediaHttp) -> Self {
         // 带超时客户端：submit/poll/下载各请求兜底 180s，杜绝供应商挂起永久阻塞（审查 P0）
         Self {
-            client: super::http::default_client(),
+            client: super::http::default_client(http),
             config,
         }
     }
@@ -280,9 +285,14 @@ pub struct SiliconFlowVideoProvider {
 impl SiliconFlowVideoProvider {
     /// 用给定配置构造（内部自带带超时的 HTTP 客户端）。
     pub fn new(config: VideoGenConfig) -> Self {
+        Self::with_http(config, &super::MediaHttp::default())
+    }
+
+    /// 用调用方的 HTTP 底座（代理 / 证书）构造；超时策略仍由本 crate 施加。见 [`super::MediaHttp`]。
+    pub fn with_http(config: VideoGenConfig, http: &super::MediaHttp) -> Self {
         // 带超时客户端：submit/poll/下载各请求兜底 180s，杜绝供应商挂起永久阻塞（审查 P0）
         Self {
-            client: super::http::default_client(),
+            client: super::http::default_client(http),
             config,
         }
     }
@@ -432,9 +442,14 @@ pub struct MinimaxVideoProvider {
 impl MinimaxVideoProvider {
     /// 用给定配置构造（内部自带带超时的 HTTP 客户端）。
     pub fn new(config: VideoGenConfig) -> Self {
+        Self::with_http(config, &super::MediaHttp::default())
+    }
+
+    /// 用调用方的 HTTP 底座（代理 / 证书）构造；超时策略仍由本 crate 施加。见 [`super::MediaHttp`]。
+    pub fn with_http(config: VideoGenConfig, http: &super::MediaHttp) -> Self {
         // 带超时客户端：submit/poll/下载各请求兜底 180s，杜绝供应商挂起永久阻塞（审查 P0）
         Self {
-            client: super::http::default_client(),
+            client: super::http::default_client(http),
             config,
         }
     }
@@ -604,9 +619,14 @@ pub struct ViduVideoProvider {
 impl ViduVideoProvider {
     /// 用给定配置构造（内部自带带超时的 HTTP 客户端）。
     pub fn new(config: VideoGenConfig) -> Self {
+        Self::with_http(config, &super::MediaHttp::default())
+    }
+
+    /// 用调用方的 HTTP 底座（代理 / 证书）构造；超时策略仍由本 crate 施加。见 [`super::MediaHttp`]。
+    pub fn with_http(config: VideoGenConfig, http: &super::MediaHttp) -> Self {
         // 带超时客户端：submit/poll/下载各请求兜底 180s，杜绝供应商挂起永久阻塞（审查 P0）
         Self {
-            client: super::http::default_client(),
+            client: super::http::default_client(http),
             config,
         }
     }
@@ -749,9 +769,14 @@ pub struct ZhipuVideoProvider {
 impl ZhipuVideoProvider {
     /// 用给定配置构造（内部自带带超时的 HTTP 客户端）。
     pub fn new(config: VideoGenConfig) -> Self {
+        Self::with_http(config, &super::MediaHttp::default())
+    }
+
+    /// 用调用方的 HTTP 底座（代理 / 证书）构造；超时策略仍由本 crate 施加。见 [`super::MediaHttp`]。
+    pub fn with_http(config: VideoGenConfig, http: &super::MediaHttp) -> Self {
         // 带超时客户端：submit/poll/下载各请求兜底 180s，杜绝供应商挂起永久阻塞（审查 P0）
         Self {
-            client: super::http::default_client(),
+            client: super::http::default_client(http),
             config,
         }
     }
@@ -884,9 +909,14 @@ pub struct NewApiVideoProvider {
 impl NewApiVideoProvider {
     /// 用给定配置构造（内部自带带超时的 HTTP 客户端）。
     pub fn new(config: VideoGenConfig) -> Self {
+        Self::with_http(config, &super::MediaHttp::default())
+    }
+
+    /// 用调用方的 HTTP 底座（代理 / 证书）构造；超时策略仍由本 crate 施加。见 [`super::MediaHttp`]。
+    pub fn with_http(config: VideoGenConfig, http: &super::MediaHttp) -> Self {
         // 带超时客户端：submit/poll 各请求兜底，杜绝供应商挂起永久阻塞（与同文件其它 provider 一致）
         Self {
-            client: super::http::default_client(),
+            client: super::http::default_client(http),
             config,
         }
     }
@@ -1286,13 +1316,20 @@ pub enum AnyVideoProvider {
 impl AnyVideoProvider {
     /// 按 [`VideoProtocol::detect`] 选实现。`extra` 为供应商的额外配置 JSON（可为空串）。
     pub fn from_config(config: VideoGenConfig, extra: &str) -> Self {
+        Self::from_config_with(config, extra, &super::MediaHttp::default())
+    }
+
+    /// 同 [`Self::from_config`]，带调用方的 HTTP 底座（代理 / 证书）。
+    pub fn from_config_with(config: VideoGenConfig, extra: &str, http: &super::MediaHttp) -> Self {
         match VideoProtocol::detect(&config.endpoint, extra) {
-            VideoProtocol::Minimax => Self::Minimax(MinimaxVideoProvider::new(config)),
-            VideoProtocol::Vidu => Self::Vidu(ViduVideoProvider::new(config)),
-            VideoProtocol::Zhipu => Self::Zhipu(ZhipuVideoProvider::new(config)),
-            VideoProtocol::SiliconFlow => Self::SiliconFlow(SiliconFlowVideoProvider::new(config)),
-            VideoProtocol::NewApi => Self::NewApi(NewApiVideoProvider::new(config)),
-            VideoProtocol::Ark => Self::Ark(ArkVideoProvider::new(config)),
+            VideoProtocol::Minimax => Self::Minimax(MinimaxVideoProvider::with_http(config, http)),
+            VideoProtocol::Vidu => Self::Vidu(ViduVideoProvider::with_http(config, http)),
+            VideoProtocol::Zhipu => Self::Zhipu(ZhipuVideoProvider::with_http(config, http)),
+            VideoProtocol::SiliconFlow => {
+                Self::SiliconFlow(SiliconFlowVideoProvider::with_http(config, http))
+            }
+            VideoProtocol::NewApi => Self::NewApi(NewApiVideoProvider::with_http(config, http)),
+            VideoProtocol::Ark => Self::Ark(ArkVideoProvider::with_http(config, http)),
         }
     }
 

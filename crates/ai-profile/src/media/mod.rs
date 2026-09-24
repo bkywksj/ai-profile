@@ -54,6 +54,56 @@ impl MediaError {
     }
 }
 
+/// 调用方提供的 HTTP 客户端**底座**（代理 / 自签证书 / 自定义 DNS 从这里进）。
+///
+/// 🔴 与 [`crate::client::Verifier::from_builder`] 同一个思路：底座由调用方配，**超时策略由本 crate 在其后施加**，
+/// 调用方覆盖不掉 —— 各家超时是实测踩出来的（出图不能用整体超时，否则算图慢时被误杀却照样计费）。
+///
+/// 每次构造 provider 都会调一次工厂拿新的 builder（`reqwest::ClientBuilder` 不能克隆）。
+/// 用本 crate 重导出的 [`crate::reqwest`] 建 builder，版本必然匹配：
+///
+/// ```no_run
+/// use ai_profile::media::MediaHttp;
+/// # fn proxy_url() -> String { String::new() }
+/// let url = proxy_url();
+/// let http = MediaHttp::from_fn(move || {
+///     let b = ai_profile::reqwest::Client::builder();
+///     match ai_profile::reqwest::Proxy::all(&url) {
+///         Ok(p) => b.proxy(p),
+///         Err(_) => b,
+///     }
+/// });
+/// ```
+#[derive(Clone, Default)]
+pub struct MediaHttp {
+    base: Option<std::sync::Arc<dyn Fn() -> reqwest::ClientBuilder + Send + Sync>>,
+}
+
+impl MediaHttp {
+    /// 用调用方的工厂构造（每次建客户端时调用它拿一个新 builder）。
+    pub fn from_fn(f: impl Fn() -> reqwest::ClientBuilder + Send + Sync + 'static) -> Self {
+        Self {
+            base: Some(std::sync::Arc::new(f)),
+        }
+    }
+
+    /// 拿一个底座 builder：有工厂用工厂，否则用 reqwest 默认（会读系统代理环境变量）。
+    pub(crate) fn builder(&self) -> reqwest::ClientBuilder {
+        match &self.base {
+            Some(f) => f(),
+            None => reqwest::Client::builder(),
+        }
+    }
+}
+
+impl std::fmt::Debug for MediaHttp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MediaHttp")
+            .field("custom_base", &self.base.is_some())
+            .finish()
+    }
+}
+
 /// 按字符截断（不切断中文），超出加省略号。
 pub(crate) fn truncate(s: &str, max: usize) -> String {
     if s.chars().count() <= max {
@@ -80,10 +130,10 @@ pub(crate) mod http {
     #[cfg(feature = "image")]
     const IMAGE_READ_TIMEOUT_SECS: u64 = 360;
 
-    /// 非流式客户端：整体超时兜底，避免任一请求永久阻塞。
+    /// 非流式客户端：整体超时兜底，避免任一请求永久阻塞。超时施加在调用方底座之后（覆盖不掉）。
     #[cfg(any(feature = "video", feature = "tts"))]
-    pub(crate) fn default_client() -> reqwest::Client {
-        reqwest::Client::builder()
+    pub(crate) fn default_client(base: &super::MediaHttp) -> reqwest::Client {
+        base.builder()
             .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
             .timeout(Duration::from_secs(DEFAULT_TIMEOUT_SECS))
             .build()
@@ -91,10 +141,10 @@ pub(crate) mod http {
             .unwrap_or_else(|_| reqwest::Client::new())
     }
 
-    /// 出图客户端（文生图请求 + 结果图下载共用）：connect + read 双超时。
+    /// 出图客户端（文生图请求 + 结果图下载共用）：connect + read 双超时。超时施加在调用方底座之后。
     #[cfg(feature = "image")]
-    pub(crate) fn image_client() -> reqwest::Client {
-        reqwest::Client::builder()
+    pub(crate) fn image_client(base: &super::MediaHttp) -> reqwest::Client {
+        base.builder()
             .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
             .read_timeout(Duration::from_secs(IMAGE_READ_TIMEOUT_SECS))
             .build()
@@ -163,6 +213,49 @@ mod tests {
             "上游 500"
         );
         assert_eq!(MediaError::InvalidInput("x".into()).message(), "x");
+    }
+
+    /// 🔴 调用方的底座工厂必须真的被用上 —— 否则代理配了等于没配，且不报任何错。
+    #[test]
+    #[cfg(any(feature = "image", feature = "video"))]
+    fn media_http_factory_is_used_by_every_entry() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Arc;
+        let calls = Arc::new(AtomicUsize::new(0));
+        let c = calls.clone();
+        let http = MediaHttp::from_fn(move || {
+            c.fetch_add(1, Ordering::SeqCst);
+            reqwest::Client::builder()
+        });
+        let mut expected = 0;
+        #[cfg(feature = "image")]
+        {
+            let _ = image::AnyImageProvider::from_config_with(
+                image::ImageGenConfig {
+                    endpoint: "https://a/v1".into(),
+                    model: "m".into(),
+                    api_key: "k".into(),
+                },
+                &http,
+            );
+            expected += 1;
+        }
+        #[cfg(feature = "video")]
+        {
+            let _ = video::AnyVideoProvider::from_config_with(
+                video::VideoGenConfig {
+                    endpoint: "https://a/v1".into(),
+                    model: "m".into(),
+                    api_key: "k".into(),
+                },
+                "",
+                &http,
+            );
+            expected += 1;
+        }
+        assert_eq!(calls.load(Ordering::SeqCst), expected);
+        assert!(format!("{http:?}").contains("custom_base: true"));
+        assert!(format!("{:?}", MediaHttp::default()).contains("custom_base: false"));
     }
 
     #[test]

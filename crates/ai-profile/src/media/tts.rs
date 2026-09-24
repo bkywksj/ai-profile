@@ -230,9 +230,14 @@ pub struct SiliconFlowTtsProvider {
 impl SiliconFlowTtsProvider {
     /// 用给定配置构造（内部自带带超时的 HTTP 客户端）。
     pub fn new(config: TtsConfig) -> Self {
+        Self::with_http(config, &super::MediaHttp::default())
+    }
+
+    /// 用调用方的 HTTP 底座（代理 / 证书）构造；超时策略仍由本 crate 施加。见 [`super::MediaHttp`]。
+    pub fn with_http(config: TtsConfig, http: &super::MediaHttp) -> Self {
         Self {
             // 带超时客户端：配音请求兜底 180s，杜绝供应商挂起永久阻塞（审查 P0）
-            client: super::http::default_client(),
+            client: super::http::default_client(http),
             config,
         }
     }
@@ -527,9 +532,14 @@ pub struct VolcTtsProvider {
 impl VolcTtsProvider {
     /// 用给定配置构造（内部自带带超时的 HTTP 客户端）。
     pub fn new(config: VolcTtsConfig) -> Self {
+        Self::with_http(config, &super::MediaHttp::default())
+    }
+
+    /// 用调用方的 HTTP 底座（代理 / 证书）构造；超时策略仍由本 crate 施加。见 [`super::MediaHttp`]。
+    pub fn with_http(config: VolcTtsConfig, http: &super::MediaHttp) -> Self {
         // 带超时客户端：杜绝供应商挂起永久阻塞（审查 P0）
         Self {
-            client: super::http::default_client(),
+            client: super::http::default_client(http),
             config,
         }
     }
@@ -801,15 +811,35 @@ pub async fn synthesize(
     api_key: String,
     params: &TtsParams,
 ) -> Result<Vec<u8>, MediaError> {
+    synthesize_with(
+        endpoint,
+        model,
+        extra,
+        api_key,
+        params,
+        &super::MediaHttp::default(),
+    )
+    .await
+}
+
+/// 同 [`synthesize`]，带调用方的 HTTP 底座（代理 / 证书）。
+pub async fn synthesize_with(
+    endpoint: &str,
+    model: &str,
+    extra: &str,
+    api_key: String,
+    params: &TtsParams,
+    http: &super::MediaHttp,
+) -> Result<Vec<u8>, MediaError> {
     match TtsProtocol::detect(endpoint) {
         TtsProtocol::Volc => {
             let (appid, cluster) = parse_volc_extra(extra);
-            VolcTtsProvider::new(VolcTtsConfig {
+            VolcTtsProvider::with_http(VolcTtsConfig {
                 endpoint: endpoint.to_string(),
                 appid,
                 cluster,
                 access_token: api_key,
-            })
+            }, http)
             .synthesize(params)
             .await
         }
@@ -820,11 +850,11 @@ pub async fn synthesize(
                 .into(),
         )),
         TtsProtocol::OpenAi => {
-            SiliconFlowTtsProvider::new(TtsConfig {
+            SiliconFlowTtsProvider::with_http(TtsConfig {
                 endpoint: endpoint.to_string(),
                 model: model.to_string(),
                 api_key,
-            })
+            }, http)
             .synthesize(params)
             .await
         }

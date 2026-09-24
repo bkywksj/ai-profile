@@ -79,10 +79,15 @@ pub struct OpenAiImageProvider {
 impl OpenAiImageProvider {
     /// 用给定配置构造（内部自带带超时的 HTTP 客户端）。
     pub fn new(config: ImageGenConfig) -> Self {
+        Self::with_http(config, &super::MediaHttp::default())
+    }
+
+    /// 用调用方的 HTTP 底座（代理 / 证书）构造；超时策略仍由本 crate 施加。见 [`super::MediaHttp`]。
+    pub fn with_http(config: ImageGenConfig, http: &super::MediaHttp) -> Self {
         // 出图专用客户端：connect + read 双超时（非整体超时）。整体超时会在算图逼近上限时
         // 误杀「上游已算完并已计费」的请求，造成「有消费记录却没图」，见 shared::http::image_client。
         Self {
-            client: super::http::image_client(),
+            client: super::http::image_client(http),
             config,
         }
     }
@@ -264,10 +269,15 @@ pub struct DashScopeImageProvider {
 impl DashScopeImageProvider {
     /// 用给定配置构造（内部自带带超时的 HTTP 客户端）。
     pub fn new(config: ImageGenConfig) -> Self {
+        Self::with_http(config, &super::MediaHttp::default())
+    }
+
+    /// 用调用方的 HTTP 底座（代理 / 证书）构造；超时策略仍由本 crate 施加。见 [`super::MediaHttp`]。
+    pub fn with_http(config: ImageGenConfig, http: &super::MediaHttp) -> Self {
         // 出图专用客户端（同 OpenAiImageProvider）：connect + read 双超时，不用整体超时。
         // 本家是异步两段式（submit/poll 都是快请求），read 超时对它只是更宽松的兜底，无副作用。
         Self {
-            client: super::http::image_client(),
+            client: super::http::image_client(http),
             config,
         }
     }
@@ -465,9 +475,16 @@ pub enum AnyImageProvider {
 impl AnyImageProvider {
     /// 按端点选实现：含 `dashscope` → 通义万相，其余 → OpenAI images 兼容。
     pub fn from_config(config: ImageGenConfig) -> Self {
+        Self::from_config_with(config, &super::MediaHttp::default())
+    }
+
+    /// 同 [`Self::from_config`]，带调用方的 HTTP 底座（代理 / 证书）。
+    pub fn from_config_with(config: ImageGenConfig, http: &super::MediaHttp) -> Self {
         match ImageProtocol::detect(&config.endpoint) {
-            ImageProtocol::DashScope => Self::DashScope(DashScopeImageProvider::new(config)),
-            ImageProtocol::OpenAi => Self::OpenAi(OpenAiImageProvider::new(config)),
+            ImageProtocol::DashScope => {
+                Self::DashScope(DashScopeImageProvider::with_http(config, http))
+            }
+            ImageProtocol::OpenAi => Self::OpenAi(OpenAiImageProvider::with_http(config, http)),
         }
     }
 
