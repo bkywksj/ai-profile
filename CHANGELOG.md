@@ -104,6 +104,16 @@
   - **任务编排不进 crate**：轮询循环、取消、落盘、进度事件归调用方
 - 依赖：`client` 新增 `base64`、`log`；`video` 带图像解码库（依赖名 `img`，New API 中转站要先压缩大首帧）
 
+### Anthropic 协议自动补 `/v1`（2026-09-24）
+- `endpoint::anthropic_base_url`：Anthropic 协议的 base 末段不是版本段就补 `/v1`；已带版本段原样用，
+  末尾 `#` 表示「别替我补」。`join_chat_endpoint(base, "messages")` 与 `Verifier`（Anthropic）都走它
+- 理由：Anthropic 只有 v1，整个生态（官方 SDK、Claude Code 的 `ANTHROPIC_BASE_URL`、各家 `/anthropic` 入口）
+  都约定 base 填到版本段之前 —— 这是确定的协议翻译，与 OpenAI 兼容一侧「不推断」的契约不冲突
+- 起因：粘贴导入 `baseURL: https://x.com:8443` 的 Anthropic 配置，对话打到 `/messages`，中转网关回
+  200 + 前端网页，报「解析失败」；而它的 `/models` 不带 `/v1` 也能用，「获取模型」反而是绿的
+- 404 诊断改用补过的 base，不再对已补 `/v1` 的地址建议「补 /v1」
+- `tests/verify_mock.rs`：守住验证请求真实打到 `/v1/models`，以及 OpenAI 兼容一侧仍原样拼
+
 ### 发布前收尾（2026-09-24）
 - 🔴 多模态 HTTP 客户端建失败时**不再静默退回 `reqwest::Client::new()`** ——
   那会连同调用方配的代理与超时一起丢掉、改走直连且不报错。现在失败原因留到发请求时以

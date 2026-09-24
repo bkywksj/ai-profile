@@ -20,7 +20,7 @@
 
 use std::time::Duration;
 
-use crate::endpoint::{ends_with_version_segment, join_api_path};
+use crate::endpoint::{anthropic_base_url, ends_with_version_segment, join_api_path};
 use crate::error::VerifyError;
 use crate::kind::Protocol;
 use crate::model_filter::clean_fetched_models;
@@ -241,6 +241,13 @@ impl Verifier {
                 key: "base_url".to_string(),
             });
         }
+        // Anthropic 与对话同一口径补 /v1，否则会出现「获取通过、对话 404」或反过来。
+        // 诊断也用补过的 base：已经替用户补了 /v1，404 时再建议「补 /v1」就是误导
+        let effective_base = match cfg.protocol {
+            Protocol::Anthropic => anthropic_base_url(base),
+            _ => base.to_string(),
+        };
+        let base = effective_base.as_str();
         let url = join_api_path(base, "models");
 
         // 3. 发请求 —— 复用 self.client 的连接池
