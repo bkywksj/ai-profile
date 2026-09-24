@@ -85,6 +85,7 @@
   - `media::image`：OpenAI `/images/generations` 兼容 + 通义万相 DashScope 异步；`AnyImageProvider::from_config`
   - `media::video`：火山方舟 / 海螺 / Vidu / 智谱 / 硅基流动 / New API 六套 submit + poll；
     `VideoProtocol::detect`、`AnyVideoProvider`、`supports_last_frame`、`explain_error`
+  - `media::image::ImageProtocol::detect`：只判协议、不构造 provider（onestop 据此过滤它调不通的生图预置）
   - `media::tts`：火山语音专有协议 + OpenAI `/audio/speech`；`TtsProtocol::detect`、`synthesize`、音色目录 `voice_catalog`
   - 错误类型 `MediaError`，`Display` 与 StoryLoom 原 `AppError` 逐字一致
   - **任务编排不进 crate**：轮询循环、取消、落盘、进度事件归调用方

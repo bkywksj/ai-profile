@@ -429,9 +429,32 @@ impl ImageProvider for DashScopeImageProvider {
 
 // ───────────────────────── 文生图分发包装 ─────────────────────────
 
-/// 文生图供应商分发：按端点子串选具体实现（仿视频侧 media.rs 的端点分发）。
-/// `dashscope` → 通义万相（异步两段式）；其余 → OpenAI images 兼容（同步，含即梦 Seedream/硅基流动等）。
-/// 加新家（可灵图等）= 实现一个 ImageProvider + 在此加一行端点判断。
+/// 生图协议。与视频的 [`super::video::VideoProtocol`]、配音的 [`super::tts::TtsProtocol`] 对称：
+/// 调用方只想知道「这个地址走哪套协议」时用它（如只实现了 OpenAI images 的下游据此过滤预置），
+/// 不必为此构造 provider。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum ImageProtocol {
+    /// OpenAI `/images/generations` 兼容（同步）—— 识别不出时的兜底
+    OpenAi,
+    /// 通义万相（DashScope 异步任务：提交 → 轮询 → 下载）
+    DashScope,
+}
+
+impl ImageProtocol {
+    /// 按端点识别：含 `dashscope` → 通义万相，其余 → OpenAI images 兼容。
+    pub fn detect(endpoint: &str) -> Self {
+        if endpoint.to_ascii_lowercase().contains("dashscope") {
+            Self::DashScope
+        } else {
+            Self::OpenAi
+        }
+    }
+}
+
+/// 文生图供应商分发：按 [`ImageProtocol::detect`] 选具体实现。
+/// 加新家（可灵图等）= 实现一个 ImageProvider + 在 `ImageProtocol` 加一个变体。
 pub enum AnyImageProvider {
     /// OpenAI `/images/generations` 兼容（火山方舟 Seedream、硅基流动、聚合站）
     OpenAi(OpenAiImageProvider),
@@ -442,11 +465,9 @@ pub enum AnyImageProvider {
 impl AnyImageProvider {
     /// 按端点选实现：含 `dashscope` → 通义万相，其余 → OpenAI images 兼容。
     pub fn from_config(config: ImageGenConfig) -> Self {
-        let ep = config.endpoint.to_ascii_lowercase();
-        if ep.contains("dashscope") {
-            Self::DashScope(DashScopeImageProvider::new(config))
-        } else {
-            Self::OpenAi(OpenAiImageProvider::new(config))
+        match ImageProtocol::detect(&config.endpoint) {
+            ImageProtocol::DashScope => Self::DashScope(DashScopeImageProvider::new(config)),
+            ImageProtocol::OpenAi => Self::OpenAi(OpenAiImageProvider::new(config)),
         }
     }
 
@@ -681,5 +702,24 @@ mod tests {
         webp.extend_from_slice(b"WEBP");
         webp.resize(MIN_IMAGE_BYTES + 64, 0x00);
         assert!(validate_image_bytes(&webp, "测试").is_ok(), "WEBP");
+    }
+}
+
+#[cfg(test)]
+mod protocol_tests {
+    use super::*;
+
+    /// 🔴 每条生图预置都要识别到预期协议 —— 改预置地址时这条会红。
+    #[test]
+    fn every_image_preset_detects_expected_protocol() {
+        for p in crate::preset::presets_for(crate::Kind::Image) {
+            let Some(url) = p.base_url else { continue };
+            let want = if p.key == "wan_image" {
+                ImageProtocol::DashScope
+            } else {
+                ImageProtocol::OpenAi
+            };
+            assert_eq!(ImageProtocol::detect(url), want, "{}", p.key);
+        }
     }
 }
