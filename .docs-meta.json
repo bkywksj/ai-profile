@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "5f57e24",
-  "lastSyncTime": "2026-09-23T14:40:00Z",
+  "lastSyncCommit": "92c8cfe",
+  "lastSyncTime": "2026-09-24T06:03:13Z",
   "coveredSections": [
     "guide",
     "api",
@@ -98,6 +98,31 @@
       "sourceChanges": [
         "crates/ai-profile/src/protocol.rs",
         "crates/ai-profile/src/preset/chat.rs",
+        "docs/providers.md"
+      ]
+    },
+    {
+      "commit": "92c8cfe",
+      "time": "2026-09-24T06:03:13Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "api/media.md",
+        "api/catalog.md",
+        "api/limits.md",
+        "guide/migration.md",
+        "index.md",
+        "guide/introduction.md",
+        "guide/installation.md",
+        "api/verify.md",
+        "api/preset.md",
+        "reference/add-provider.md",
+        "reference/providers.md"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/media/",
+        "crates/ai-profile/src/preset/catalog.rs",
+        "crates/ai-profile/src/preset/{image,video,tts}.rs",
+        "crates/ai-profile/src/limits.rs",
         "docs/providers.md"
       ]
     }
