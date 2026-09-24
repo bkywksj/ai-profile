@@ -1370,7 +1370,6 @@ mod dispatch_tests {
                 "vidu_video" => VideoProtocol::Vidu,
                 "zhipu_video" | "ai302_zhipu_video" => VideoProtocol::Zhipu,
                 "siliconflow_video" => VideoProtocol::SiliconFlow,
-                "ipsunion_video" => VideoProtocol::NewApi,
                 other => panic!("新增视频预置 {other} 要在这里登记预期协议"),
             };
             assert_eq!(got, want, "{}", p.key);

@@ -65,10 +65,10 @@
 - 下游升级时要补 6 家的 `providerTemplate.*` 翻译（sigil `check-preset-i18n.py`、
   reeve 守卫 `ai_profile_preset_i18n_keys_exist` 会报缺）
 
-### 新增聚合站预置（2026-09-24）
-- 中宇AI智行（`ipsunion`，聚合中转）：随 onestop 接入搬入，共 26 家；地址实测可达（未带密钥返回 401），
-  model id 取自 onestop 已发布的预置，未经真实密钥验证。`vendor_id` 留给以后的生图预置复用（同一个密钥）
-- 下游升级时要补 `providerTemplate.ipsunion.*` 翻译
+### 撤回聚合站预置（2026-09-24）
+- 中宇AI智行（`ipsunion`）的对话 / 生图 / 视频 / 配音 4 条预置**不进 crate**（用户决定）：它是个别应用自己的合作渠道，
+  不该出现在所有下游的服务商下拉里。需要它的应用（onestop、StoryLoom）在本地补这几条
+- 对话预置回到 25 家；此前升级到 `844a755`～`ee1731e` 的下游若补过 `providerTemplate.ipsunion.*` 翻译，可以删掉
 
 ### 被滤掉的模型 id 也带回（2026-09-24）
 - `VerifyOk::dropped_models` / `CleanedModels::dropped_models`：清洗时滤掉的非对话模型 id（端点顺序），
@@ -77,7 +77,7 @@
   而此前只拿得到条数、拿不到 id。只做对话的调用方忽略它即可
 
 ### 多模态：生图 / 视频 / 配音（2026-09-24，随 StoryLoom 接入反向搬入）
-- 预置：生图 6、视频 9、配音 5 条（含各自「自定义」档），挂 `image` / `video` / `tts` feature；
+- 预置：生图 5、视频 8、配音 4 条（含各自「自定义」档），挂 `image` / `video` / `tts` feature；
   `vendor_id` 与同 host 的对话预置共用。只开 `chat` 的下游不受影响（`presets()` 仍是静态数组）
 - ⚠️ 行为变化：`infer_preset_key` 只在对话预置里反推（开了多模态后不会把对话配置认成生图档）；
   分组连续性守卫改为按 kind 判

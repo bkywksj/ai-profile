@@ -1,4 +1,4 @@
-//! 对话（chat）能力的 provider 预置 —— 26 家。
+//! 对话（chat）能力的 provider 预置 —— 25 家。
 //!
 //! 🔴 **数组顺序即下拉呈现顺序，同组必须连续。**
 //!
@@ -10,7 +10,6 @@
 //!   随 knowledge_base 接入搬入：地址与模型取自它已发布的预置表，**未实际调通**，`apply_url` 未核实故留空。
 //!   腾讯混元没有搬：老地址已停止上新模型，引导走 TokenHub（见那一档的 hint）。
 //!   零一万物没有搬：2026-09-23 探测其端点返回「Model service has been discontinued」
-//! - 中宇AI智行（聚合中转）于 2026-09-24 随 onestop 接入搬入，数据取自它已发布的预置，**未实际调通**
 //!
 //! `verified_at` 只填**实际调通过**的，照文档抄来的一律留 `None` ——
 //! 开源后别人提 PR 加 provider，没有这个字段就没法判断该不该信。
@@ -434,32 +433,6 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         ],
         protocol: Protocol::OpenAiCompatible,
         match_hosts: &["api.xiaomimimo.com"],
-        extra_fields: NO_EXTRA,
-        apply_url: None,
-        is_local: false,
-        verified_at: None,
-    },
-    ProviderPreset {
-        key: "ipsunion",
-        // 聚合站：同一个密钥通吃聊天 + 生图 —— 以后 image 预置接入时复用这个 vendor_id
-        vendor_id: "ipsunion",
-        kind: Kind::Chat,
-        group_key: GROUP_CHINA.0,
-        group_label: GROUP_CHINA.1,
-        label_key: "providerTemplate.ipsunion.label",
-        label: "中宇AI智行（聚合）",
-        hint_key: Some("providerTemplate.ipsunion.hint"),
-        hint: Some("聚合中转：一个密钥可用多家模型；模型名以该站列出的为准，关键模型先测试连接"),
-        base_url: Some("https://api.ipsunion.com/v1"),
-        // 聚合站的模型名是该站对外名，与各家官方 id 未必一致 —— 取自 onestop 已发布的预置
-        model: "deepseek-v3.2",
-        models: &[
-            ModelOption::plain("deepseek-v3.2"),
-            ModelOption::plain("claude-opus-4-8"),
-            ModelOption::plain("gpt-5.1"),
-        ],
-        protocol: Protocol::OpenAiCompatible,
-        match_hosts: &["api.ipsunion.com"],
         extra_fields: NO_EXTRA,
         apply_url: None,
         is_local: false,

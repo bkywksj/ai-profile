@@ -92,31 +92,6 @@ pub(super) const IMAGE_PRESETS: &[ProviderPreset] = &[
         is_local: false,
         verified_at: None,
     },
-    ProviderPreset {
-        key: "ipsunion_image",
-        vendor_id: "ipsunion",
-        kind: Kind::Image,
-        group_key: GROUP_CHINA.0,
-        group_label: GROUP_CHINA.1,
-        label_key: "providerTemplate.ipsunionImage.label",
-        label: "中宇AI智行 生图",
-        hint_key: Some("providerTemplate.ipsunionImage.hint"),
-        // StoryLoom 实测：gpt-image-2 可出图；自定义尺寸（竖屏）可能不生效，多为方图
-        hint: Some("聚合中转，与对话同一个密钥；自定义尺寸可能不生效（多出方图）"),
-        base_url: Some("https://api.ipsunion.com/v1"),
-        model: "gpt-image-2",
-        models: &[
-            ModelOption::plain("gpt-image-2"),
-            ModelOption::plain("glm-image"),
-            ModelOption::plain("gemini-3-pro-image-preview"),
-        ],
-        protocol: Protocol::OpenAiCompatible,
-        match_hosts: &["api.ipsunion.com"],
-        extra_fields: NO_EXTRA,
-        apply_url: None,
-        is_local: false,
-        verified_at: None,
-    },
     // ── 国际 ─────────────────────────────────────────────────────
     ProviderPreset {
         key: "openai_image",

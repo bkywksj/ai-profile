@@ -407,7 +407,6 @@ mod tests {
         for url in [
             "https://api.siliconflow.cn/v1",
             "https://ark.cn-beijing.volces.com/api/v3",
-            "https://api.ipsunion.com/v1",
         ] {
             let key = infer_preset_key(Protocol::OpenAiCompatible, Some(url));
             assert_eq!(

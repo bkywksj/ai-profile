@@ -4,7 +4,7 @@
 
 # 支持的服务商
 
-当前共 **32** 家服务商、**46** 条预置配置。
+当前共 **31** 家服务商、**42** 条预置配置。
 
 > `base_url` 一律是**服务商文档里的原文**（含版本段、不含端点后缀）。
 > 本 crate 原样使用它、不做任何推断 —— 所以各家的版本段不统一（多数 `/v1`、
@@ -31,7 +31,6 @@
 | 阶跃星辰 | 对话 | `api.stepfun.com` | 自定义端点 |
 | 百川智能 | 对话 | `api.baichuan-ai.com` | 自定义端点 |
 | 小米 MiMo | 对话 | `api.xiaomimimo.com` | 自定义端点 |
-| 中宇AI智行（聚合） | 对话 / 生图 / 视频 / 配音 | `api.ipsunion.com` | 自定义端点 |
 | OpenAI 官方 | 对话 / 生图 / 配音 | `api.openai.com` | 云端 |
 | OpenRouter | 对话 | `openrouter.ai` | 云端 |
 | Google Gemini（OpenAI 兼容层） | 对话 | `generativelanguage.googleapis.com` | 云端 |
@@ -68,7 +67,6 @@
 | `stepfun` | 阶跃星辰 | `https://api.stepfun.com/v1` | `step-1-flash` | OpenAI 兼容 | 未核实 |
 | `baichuan` | 百川智能 | `https://api.baichuan-ai.com/v1` | `Baichuan4-Turbo` | OpenAI 兼容 | 未核实 |
 | `mimo` | 小米 MiMo | `https://api.xiaomimimo.com/v1` | `mimo-v2-flash` | OpenAI 兼容 | 未核实 |
-| `ipsunion` | 中宇AI智行（聚合） | `https://api.ipsunion.com/v1` | `deepseek-v3.2` | OpenAI 兼容 | 未核实 |
 | `openai_official` | OpenAI 官方 | `https://api.openai.com/v1` | `gpt-5.6-terra` | OpenAI 兼容 | 未核实 |
 | `openrouter` | OpenRouter | `https://openrouter.ai/api/v1` | `anthropic/claude-sonnet-5` | OpenAI 兼容 | 未核实 |
 | `gemini` | Google Gemini（OpenAI 兼容层） | `https://generativelanguage.googleapis.com/v1beta/openai` | `gemini-3.8-flash` | OpenAI 兼容 | 未核实 |
@@ -87,7 +85,6 @@
 | `seedream_image` | 即梦 Seedream（火山方舟） | `https://ark.cn-beijing.volces.com/api/v3` | `doubao-seedream-4-0-250828` | OpenAI 兼容 | 未核实 |
 | `wan_image` | 通义万相（阿里百炼） | `https://dashscope.aliyuncs.com/api/v1` | `wan2.2-t2i-flash` | OpenAI 兼容 | 未核实 |
 | `siliconflow_image` | 硅基流动 生图 | `https://api.siliconflow.cn/v1` | `Kwai-Kolors/Kolors` | OpenAI 兼容 | 未核实 |
-| `ipsunion_image` | 中宇AI智行 生图 | `https://api.ipsunion.com/v1` | `gpt-image-2` | OpenAI 兼容 | 未核实 |
 | `openai_image` | OpenAI 生图 | `https://api.openai.com/v1` | `gpt-image-1` | OpenAI 兼容 | 未核实 |
 | `custom_image` | 自定义生图端点 | `—` | `—` | OpenAI 兼容 | 未核实 |
 
@@ -102,7 +99,6 @@
 | `zhipu_video` | 智谱 CogVideoX | `https://open.bigmodel.cn/api/paas/v4` | `cogvideox-flash` | OpenAI 兼容 | 未核实 |
 | `ai302_minimax_video` | 302.AI 视频·海螺 | `https://api.302.ai/minimaxi/v1` | `MiniMax-Hailuo-02` | OpenAI 兼容 | 未核实 |
 | `ai302_zhipu_video` | 302.AI 视频·智谱 | `https://api.302.ai/zhipu/api/paas/v4` | `cogvideox-flash` | OpenAI 兼容 | 未核实 |
-| `ipsunion_video` | 中宇AI智行 视频 | `https://api.ipsunion.com/v1` | `doubao-seedance-2.0` | OpenAI 兼容 | 未核实 |
 | `custom_video` | 自定义视频端点 | `—` | `—` | OpenAI 兼容 | 未核实 |
 
 ## 配音
@@ -111,7 +107,6 @@
 |---|---|---|---|---|---|
 | `volc_tts` | 字节豆包 配音（火山语音） | `https://openspeech.bytedance.com/api/v1/tts` | `volcano_tts` | OpenAI 兼容 | 未核实 |
 | `siliconflow_tts` | 硅基流动 配音 CosyVoice | `https://api.siliconflow.cn/v1` | `FunAudioLLM/CosyVoice2-0.5B` | OpenAI 兼容 | 未核实 |
-| `ipsunion_tts` | 中宇AI智行 配音（GLM-TTS） | `https://api.ipsunion.com/v1` | `glm-tts` | OpenAI 兼容 | 未核实 |
 | `openai_tts` | OpenAI 配音 | `https://api.openai.com/v1` | `tts-1` | OpenAI 兼容 | 未核实 |
 | `custom_tts` | 自定义配音端点 | `—` | `—` | OpenAI 兼容 | 未核实 |
 
