@@ -13,9 +13,16 @@
 | sigil | `E:/my/桌面软件tauri/sigil` | git rev（`src-tauri/Cargo.toml`） | `685b0dd` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 | `ai-profile-integration` |
 | knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | git rev（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `2a32261` | 2026-09-23 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用） | `ai-profile-integration` |
 | onestop | `E:/my/backend_tauri/onestop` | git rev（`src-tauri/Cargo.toml`，chat + client）；只有桌面端碰模型服务 | `63589a6` | 2026-09-24 | 聊天预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别（对话协议、工具循环、多模态预置、历史组装留在应用） | `ai-profile-integration` |
+| story_loom | `E:/my/桌面软件tauri/story_loom` | git rev（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `c6fb214` | 2026-09-24 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
 | reeve | `E:/my/桌面软件tauri/reeve` | git rev，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `685b0dd` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
 
-> ⏳ 四家的界面改动都**尚未实机验证**；代码测试全绿。
+> ⏳ 五家的界面改动都**尚未实机验证**；代码测试全绿。
+>
+> story_loom 在 `c6fb214`，**只本地提交、未推送**。它的本机 lib 单测有 WebView2 入口崩溃（环境问题），
+> 应用侧纯函数测试（`legacy_endpoint` / `provider_share`）是在临时 crate 里 `#[path]` 引入实跑的。
+>
+> 🔜 onestop 可以删掉本地多模态预置：开 `image` / `video` / `tts` feature 后，`provider::chat_presets` 要改用
+> `presets_for(Kind::Chat)`（否则下拉混进生图预置），多模态下拉改读 crate。它自己的生图 / 视频 / 配音调用也可评估换成 `media`。
 >
 > onestop 在 `63589a6`（接入时新增 `dropped_models`）；**只本地提交、未推送**，发版节奏由它自己定。
 >
@@ -31,7 +38,7 @@
 
 | 顺序 | 项目 | 现状（2026-09-23 盘点） | 接入时必须处理 |
 |---|---|---|---|
-| 1 | **story_loom** | chat 预置 TS `src/lib/providerPresets.ts`（9 家）+ **生图 5 / 视频 9 / 配音 4**；ai.profile 只导入（`services/ai/provider_share.rs`） | 多模态的种子：先把它的 image / video / tts 预置**反向搬进** crate（开 `image` / `video` / `tts` feature），再接入 任务文档 `task-20260924-120000-story_loom接入.md` |
+| — | （暂无） | 已登记的下游全部接入 | — |
 
 ### 🔴 存量地址修正（已发布过的下游都要做；reeve、knowledge_base 已做完，可作范例）
 
