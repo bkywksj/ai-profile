@@ -18,8 +18,8 @@
 //!
 //! # 数组顺序即呈现顺序
 //!
-//! 下拉按 `group_key` 分组，**同组必须连续排列** —— 不连续会切出重复的分组标题。
-//! 有 `preset_groups_are_contiguous` 守着。
+//! 下拉按 `group_key` 分组，**同一 kind 内同组必须连续排列** —— 不连续会切出重复的分组标题。
+//! 有 `preset_groups_are_contiguous` 守着。不同 kind 分开渲染，各自从「国内」起排。
 
 use serde::Serialize;
 
@@ -29,6 +29,12 @@ pub mod vendor;
 
 mod chat;
 mod docgen;
+#[cfg(feature = "image")]
+mod image;
+#[cfg(feature = "tts")]
+mod tts;
+#[cfg(feature = "video")]
+mod video;
 
 pub use docgen::render_providers_markdown;
 pub use vendor::{vendors, vendors_all, Vendor};
@@ -241,8 +247,28 @@ pub const GROUP_LOCAL: (&str, &str) = ("providerGroup.local", "本地 / 自建")
 pub const CUSTOM_PRESET_KEY: &str = "openai_compatible_custom";
 
 /// 全部预置。数组顺序即呈现顺序。
+///
+/// 顺序：chat → image → video → tts（只含本 build 开启的 kind）。
+/// 只开 `chat` 时直接返回静态数组；开了多模态才在首次调用时拼接一次。
 pub fn presets() -> &'static [ProviderPreset] {
-    chat::CHAT_PRESETS
+    #[cfg(not(any(feature = "image", feature = "video", feature = "tts")))]
+    {
+        chat::CHAT_PRESETS
+    }
+    #[cfg(any(feature = "image", feature = "video", feature = "tts"))]
+    {
+        static ALL: std::sync::OnceLock<Vec<ProviderPreset>> = std::sync::OnceLock::new();
+        ALL.get_or_init(|| {
+            let mut v = chat::CHAT_PRESETS.to_vec();
+            #[cfg(feature = "image")]
+            v.extend_from_slice(image::IMAGE_PRESETS);
+            #[cfg(feature = "video")]
+            v.extend_from_slice(video::VIDEO_PRESETS);
+            #[cfg(feature = "tts")]
+            v.extend_from_slice(tts::TTS_PRESETS);
+            v
+        })
+    }
 }
 
 /// 按 kind 过滤 —— 调用方渲染下拉时用。
@@ -278,7 +304,9 @@ pub fn infer_preset_key(protocol: Protocol, base_url: Option<&str>) -> &'static 
     if url.is_empty() {
         return CUSTOM_PRESET_KEY;
     }
-    for p in presets() {
+    // 🔴 只在对话预置里反推：开了多模态后，硅基流动 / 火山方舟等同 host 的
+    //    生图、视频预置也在 presets() 里，不过滤会把一条对话配置认成生图档
+    for p in presets_for(Kind::Chat) {
         if p.protocol != Protocol::OpenAiCompatible {
             continue;
         }
@@ -324,22 +352,69 @@ pub fn model_limits(
 mod tests {
     use super::*;
 
-    /// 🔴 同组必须连续 —— 不连续会让下拉切出两个同名分组标题。
+    /// 🔴 同一 kind 内同组必须连续 —— 不连续会让下拉切出两个同名分组标题。
+    ///
+    /// 按 kind 分别判：各 kind 分开渲染（对话下拉、生图下拉……），各自从「国内」起排。
     #[test]
     fn preset_groups_are_contiguous() {
-        let mut seen: Vec<&str> = Vec::new();
-        let mut prev = "";
+        let mut kinds: Vec<Kind> = Vec::new();
         for p in presets() {
-            if p.group_key == prev {
+            if !kinds.contains(&p.kind) {
+                kinds.push(p.kind);
+            }
+        }
+        for kind in kinds {
+            let mut seen: Vec<&str> = Vec::new();
+            let mut prev = "";
+            for p in presets_for(kind) {
+                if p.group_key == prev {
+                    continue;
+                }
+                assert!(
+                    !seen.contains(&p.group_key),
+                    "{:?} 的分组 {} 被拆成了不连续的多段",
+                    kind,
+                    p.group_key
+                );
+                seen.push(p.group_key);
+                prev = p.group_key;
+            }
+        }
+    }
+
+    /// 同一 kind 的预置必须连续 —— `presets_for` 过滤无所谓，但文档与服务商目录按数组顺序走。
+    #[test]
+    fn preset_kinds_are_contiguous() {
+        let mut seen: Vec<Kind> = Vec::new();
+        let mut prev: Option<Kind> = None;
+        for p in presets() {
+            if prev == Some(p.kind) {
                 continue;
             }
             assert!(
-                !seen.contains(&p.group_key),
-                "分组 {} 被拆成了不连续的多段",
-                p.group_key
+                !seen.contains(&p.kind),
+                "{:?} 的预置被拆成了不连续的多段",
+                p.kind
             );
-            seen.push(p.group_key);
-            prev = p.group_key;
+            seen.push(p.kind);
+            prev = Some(p.kind);
+        }
+    }
+
+    /// 🔴 对话配置不能被反推成同 host 的生图 / 视频档。
+    #[test]
+    fn infer_preset_key_only_returns_chat_presets() {
+        for url in [
+            "https://api.siliconflow.cn/v1",
+            "https://ark.cn-beijing.volces.com/api/v3",
+            "https://api.ipsunion.com/v1",
+        ] {
+            let key = infer_preset_key(Protocol::OpenAiCompatible, Some(url));
+            assert_eq!(
+                preset_by_key(key).map(|p| p.kind),
+                Some(Kind::Chat),
+                "{url} → {key}"
+            );
         }
     }
 

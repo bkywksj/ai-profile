@@ -130,7 +130,11 @@ mod tests {
     ///
     /// 为什么要有这条：文档一旦手改就变成第二份数据源，而本 crate 存在的全部
     /// 理由正是消掉重复数据源 —— 自己再引入一份说不过去。
+    ///
+    /// 只在四种 kind 全开时比对：文档按本 build 的 kind 生成，`cargo xtask gen-docs`
+    /// 开的是全部 feature；只开 chat 的 build 生成的内容本来就少几节。
     #[test]
+    #[cfg(all(feature = "image", feature = "video", feature = "tts"))]
     fn providers_md_in_sync() {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/providers.md");
         let on_disk = std::fs::read_to_string(&path).unwrap_or_else(|e| {

@@ -13,7 +13,19 @@ fn public_api_is_usable_from_outside() {
 
     // 2. 按 kind 过滤
     let chat: Vec<_> = preset::presets_for(Kind::Chat).collect();
-    assert_eq!(chat.len(), all.len(), "当前只有 chat 一种 kind");
+    assert!(chat.len() >= 26, "chat 预置应有 26 家，实际 {}", chat.len());
+    #[cfg(not(any(feature = "image", feature = "video", feature = "tts")))]
+    assert_eq!(chat.len(), all.len(), "只开 chat 时全部都是对话预置");
+    // 开了多模态：每种都有预置，且下游不用关心数组怎么拼的
+    #[cfg(feature = "image")]
+    assert!(preset::presets_for(Kind::Image).count() >= 5);
+    #[cfg(feature = "video")]
+    assert!(preset::presets_for(Kind::Video).count() >= 8);
+    #[cfg(feature = "tts")]
+    assert!(preset::preset_by_key("volc_tts").is_some_and(|p| p
+        .extra_fields
+        .iter()
+        .any(|f| f.key == "appid" && f.required)));
 
     // 3. 按 key 查
     let ds = preset::preset_by_key("deepseek").expect("deepseek 应存在");

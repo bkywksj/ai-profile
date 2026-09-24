@@ -136,7 +136,11 @@ mod tests {
         assert_eq!(r.dropped, 3);
         assert_eq!(
             r.dropped_models,
-            vec!["BAAI/bge-large-zh-v1.5", "FunAudioLLM/CosyVoice2-0.5B", "Kwai-Kolors/Kolors"],
+            vec![
+                "BAAI/bge-large-zh-v1.5",
+                "FunAudioLLM/CosyVoice2-0.5B",
+                "Kwai-Kolors/Kolors"
+            ],
             "被滤掉的 id 要原样带回，顺序同端点"
         );
     }
