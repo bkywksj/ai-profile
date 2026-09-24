@@ -9,6 +9,10 @@ resolver = "2"
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+# 最低 Rust 版本：由全 feature 下最高的依赖决定（image 0.25 要 1.88）。
+# 只开 chat 的纯数据形态实际能在更老的编译器上编，但 rust-version 只能写一个值，按最严的写。
+# 升依赖后 CI 的 msrv 任务会红 —— 届时要么上调这里，要么锁住那个依赖的版本。
+rust-version = "1.88"
 license = "MIT"
 repository = "https://github.com/bkywksj/ai-profile"
 authors = ["抓蛙师"]

@@ -104,6 +104,15 @@
   - **任务编排不进 crate**：轮询循环、取消、落盘、进度事件归调用方
 - 依赖：`client` 新增 `base64`、`log`；`video` 带图像解码库（依赖名 `img`，New API 中转站要先压缩大首帧）
 
+### 发布前收尾（2026-09-24）
+- 🔴 多模态 HTTP 客户端建失败时**不再静默退回 `reqwest::Client::new()`** ——
+  那会连同调用方配的代理与超时一起丢掉、改走直连且不报错。现在失败原因留到发请求时以
+  `MediaError::Failed` 报出；公开构造函数签名不变
+- rustdoc 零警告（修掉 5 处失效的文档内链接），CI 以 `-D warnings` 守住
+- 声明 `rust-version = "1.88"`，CI 新增 msrv 任务用 1.88 真编一遍
+- 包内补 `LICENSE`；README 按现状重写（原文还停在「规划阶段」，且含 crates.io 上会失效的相对链接）
+- `providers_md_in_sync` 在 crates.io 下载的包里（没有仓库 `docs/`）跳过，仓库内仍严格校验
+
 ### 文档与工具
 - `docs/providers.md` —— 由 `cargo xtask gen-docs` 生成，
   守卫测试 `providers_md_in_sync` 保证与代码一致

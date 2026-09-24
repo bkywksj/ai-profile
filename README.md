@@ -1,76 +1,71 @@
 # ai-profile
 
-> 桌面应用的 AI 模型服务配置层 —— provider 预置清单、`ai.profile` 互通协议、端点拼接与连通性验证。
+> 桌面应用的 AI 模型服务配置层 —— 服务商预置、`ai.profile` 互通协议、端点拼接、连通性验证，
+> 以及生图 / 视频 / 配音的调用实现。
+>
 > Shared model-service layer for desktop apps: provider presets, the `ai.profile` interchange format,
-> endpoint resolution and connectivity verification.
+> endpoint resolution, connectivity verification, and image / video / TTS calls.
 
-[![status](https://img.shields.io/badge/status-planning-orange)](docs/tasks/active/)
-[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![crates.io](https://img.shields.io/crates/v/ai-profile)](https://crates.io/crates/ai-profile)
+[![docs.rs](https://img.shields.io/docsrs/ai-profile)](https://docs.rs/ai-profile)
+[![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 
-**当前状态：规划阶段，尚未发布。** 设计文档见 [`docs/tasks/active/`](docs/tasks/active/)，
-交互原型见 [`docs/prototypes/model-service.html`](docs/prototypes/model-service.html)。
-
----
+📖 **完整文档：<https://ai-profile.ruoyi.plus>**
 
 ## 这是什么
 
-多个桌面应用都需要「让用户配置 AI 模型服务」这一整套能力：
+多个应用都需要「让用户配置 AI 模型服务」这一整套能力。它们此前在每个应用里各写一遍，
+模型 id 一变就必然漏改（DeepSeek 下线 `deepseek-chat` 别名后，有个应用两个月后才发现「点开即报错」）。
 
-- 20 家服务商的预置清单（base_url / 模型 id / 协议类型 / 专有字段）
-- `ai.profile` 协议 —— 配置在应用之间粘贴互通
-- 端点拼接（各家版本段并不统一：多数 `/v1`、智谱 `/v4`、Gemini `/v1beta/openai`）
-- 连通性验证与结构化错误（让 UI 能给出「一键修正」而不只是一行红字）
+本库把**变动最频繁、跨应用差异为零**的那部分抽出来：
 
-这些逻辑此前在每个应用里各写一遍，约 1.5 万行做同一件事，且模型 id 变动时必然漏改
-（DeepSeek 2026-07-24 下线 `deepseek-chat` 别名后，某个应用两个月后才发现「点开即报错」）。
+| 能力 | 内容 |
+|---|---|
+| 预置 | 对话 25 家 + 生图 / 视频 / 配音 17 条：地址、模型、协议、专有字段、密钥申请页；按厂商聚合成目录 |
+| 定制目录 | 应用可以增删改筛预置、加自己的私有服务商（`PresetCatalog`） |
+| `ai.profile` | 配置在应用之间粘贴互通的交换格式，支持多条打包 |
+| 端点 | 拼接规则、模型清单清洗 |
+| 验证 | 「获取模型」零成本验证，结构化错误（能做出「一键补 `/v1`」而不只是一行红字） |
+| 限额 | 上下文窗口 / 输出上限的四层来源（用户 > 端点上报 > 预置 > 未知），历史裁剪、超长识别 |
+| 多模态调用 | 生图（OpenAI 兼容 / 通义万相）、视频（六套提交+轮询协议）、配音（OpenAI 兼容 / 火山） |
 
-本仓库把**变动最频繁、跨应用差异为零**的那部分抽出来，做成一份可依赖的库。
+**不进本库**：密钥存储与加密、数据库与 CRUD、对话请求与流式解析、视频任务编排、只属于某个应用的服务商。
 
-## 边界：什么进、什么不进
-
-| | 内容 | 归属 |
-|---|---|---|
-| ✅ | 预置清单、`ai.profile` 协议、端点拼接、模型清单清洗、验证与结构化错误 | 本 crate |
-| ❌ | **密钥存储与加密** | 留给应用 —— 各家差异极大（有的用系统密钥环、有的用 SQLCipher 金库） |
-| ❌ | 数据库 / CRUD / 激活态管理 | 同上 |
-| ⏸ | React 组件（headless hook + 预制件） | `packages/react`，第二阶段 |
-
-**本 crate 不接触任何密钥明文的持久化**。它只在验证/调用时接收调用方传入的 key，用完即弃。
-
-## 支持的能力（kind）
-
-| kind | 状态 | 执行模型 |
-|---|---|---|
-| `chat` | 第一版 | 同步 / 流式 |
-| `image` | 规划中 | 同步 **或** submit+poll |
-| `video` | 规划中 | 必然 submit+poll（各家轮询协议不同） |
-| `tts` | 规划中 | 同步，返回字节流 |
-
-按 feature 开启，不用的不编进二进制：
+## 安装
 
 ```toml
-ai-profile = { version = "0.1", features = ["chat"] }
+[dependencies]
+# 按需三选一
+ai-profile = "0.1"                                             # 只要预置与纯函数：零 HTTP 依赖，可编到移动端
+ai-profile = { version = "0.1", features = ["client"] }        # + 零成本验证
+ai-profile = { version = "0.1", features = ["client", "image", "video", "tts"] }  # + 多模态调用
 ```
 
-## 设计要点
+最低 Rust 版本 1.88（由开启多模态时的图像解码依赖决定）。
 
-**base_url 原样使用，不做版本段推断。**
-各家并不统一，推断需要转义符才能表达例外（Gemini 的 `/v1beta/openai` 版本段不在末尾），
-而推断错的代价是隐性的 —— 用户照文档填对了，库悄悄加了一段，他只看到 404。
+## 30 秒上手
 
-**默认 model 选「够用档」而非「最强档」。**
-把旗舰塞进默认值，等于替用户做了一个他没同意的花钱决定。
+```rust
+use ai_profile::{preset_by_key, vendors, Kind};
 
-**模型清单清洗用排除法而非白名单。**
-厂商上新速度远快于特征词更新，白名单必然把新模型误藏 —— 而"藏起来"对用户不可见。
+// 给用户列厂商：只做对话的应用不会看到「只提供视频」的厂商
+for v in vendors(&[Kind::Chat]) {
+    println!("{} [{}]", v.label, v.group_label);
+}
 
-**错误必须结构化。**
-`Err(String)` 会让调用方只能显示一行红字；`NotFound { suggested_url }` 才能做出「一键补 /v1」。
+// 用户选了一家，取预置填表单
+let p = preset_by_key("deepseek").expect("预置存在");
+println!("{:?} / {}", p.base_url, p.model);
+```
 
-## 协议
+验证、导入导出、限额、多模态的用法见[快速开始](https://ai-profile.ruoyi.plus/guide/quick-start)。
 
-`ai.profile` 是一个跨应用的配置交换格式，规范见 [`SPEC.md`](SPEC.md)。
-任何工具都可以生成/解析它，与本 crate 无关。
+## 三条设计铁律
+
+1. **`base_url` 原样使用，绝不推断版本段** —— 各家不统一（多数 `/v1`、智谱 `/v4`、Gemini `/v1beta/openai`）。
+   推断错的代价是隐性的：用户照文档填对了，库悄悄加一段，他只看到 404。
+2. **默认模型选「够用档」而非「最强档」** —— 把旗舰塞进默认值，等于替用户做了一个他没同意的花钱决定。
+3. **模型清单清洗用排除法，不用白名单** —— 厂商上新远快于特征词更新，白名单必然把新模型误藏。
 
 ## License
 

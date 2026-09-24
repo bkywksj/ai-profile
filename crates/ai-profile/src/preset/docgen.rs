@@ -137,6 +137,12 @@ mod tests {
     #[cfg(all(feature = "image", feature = "video", feature = "tts"))]
     fn providers_md_in_sync() {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/providers.md");
+        // 从 crates.io 下载的包里没有仓库的 docs/ 目录：那里没有可比对的对象，跳过。
+        // 只按「docs/ 目录在不在」判断 —— 在仓库里文件缺失仍然要红，不能被这条放过
+        if !path.parent().is_some_and(|d| d.is_dir()) {
+            eprintln!("跳过：不在源码仓库内（{} 不存在）", path.display());
+            return;
+        }
         let on_disk = std::fs::read_to_string(&path).unwrap_or_else(|e| {
             panic!(
                 "读不到 {}：{e}\n跑 `cargo xtask gen-docs` 生成它",

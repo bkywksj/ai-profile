@@ -45,3 +45,22 @@ jobs:
       #    不开的话 image/video/tts 的 match 臂根本没被编译过
       - name: test (all features)
         run: cargo test --workspace --all-features
+
+      # 文档内链接失效在本地只是 warning，发到 docs.rs 就是页面上的断链 —— CI 里当错误处理
+      - name: doc (no warnings)
+        run: cargo doc -p ai-profile --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+  # 用声明的最低版本真编一遍，rust-version 才不是一句空话
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.88
+      - uses: Swatinem/rust-cache@v2
+      # 库不提交 Cargo.lock：让解析器挑兼容 1.88 的依赖版本，模拟下游用老编译器时的真实情况
+      - name: check (all features)
+        run: cargo check -p ai-profile --all-features
+        env:
+          CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS: fallback
