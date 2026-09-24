@@ -112,6 +112,12 @@
 - 声明 `rust-version = "1.88"`，CI 新增 msrv 任务用 1.88 真编一遍
 - 包内补 `LICENSE`；README 按现状重写（原文还停在「规划阶段」，且含 crates.io 上会失效的相对链接）
 - `providers_md_in_sync` 在 crates.io 下载的包里（没有仓库 `docs/`）跳过，仓库内仍严格校验
+- `tests/media_mock.rs`：18 条模拟服务端测试（wiremock），覆盖全部 12 个多模态 provider 的
+  「提交 → 轮询 → 取结果」与错误翻译。此前 media 只有分发与解析单测，没有一条真正发过请求
+  - 守住的协议契约举例：New API 轮询用 `id` 而非 `task_id`、海螺成功后多一步取下载地址、
+    火山方舟时长必须拼进 text 尾缀、火山语音鉴权头是 `Bearer;token`、出图下载失败自动重试一次
+  - 🔴 测试注入 `no_proxy()` 的底座：reqwest 默认读 `HTTP_PROXY` 且不为 127.0.0.1 绕开，
+    开着本机代理时请求会绕一圈再回来、随机报 os error 10053
 
 ### 文档与工具
 - `docs/providers.md` —— 由 `cargo xtask gen-docs` 生成，

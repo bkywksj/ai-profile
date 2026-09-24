@@ -38,4 +38,7 @@ img = { package = "image", version = "0.25", optional = true, default-features =
 
 [dev-dependencies]
 # 异步单测（media 分发层的防呆断言）
-tokio = { version = "1", features = ["macros", "rt"] }
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
+# 多模态调用的模拟服务端测试（tests/media_mock.rs）：本地起 HTTP 服务，按各家协议回放响应
+wiremock = "0.6"
+base64 = "0.22"
