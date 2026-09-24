@@ -18,3 +18,6 @@ Thumbs.db
 
 # 探活输出
 /xtask-report.json
+
+# 本地密钥（crates.io 发布 token 等），绝不入库
+/.secrets/
