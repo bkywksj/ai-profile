@@ -72,7 +72,7 @@ pub trait ImageProvider {
 
 /// OpenAI images 兼容供应商（硅基流动 `/v1/images/generations` 等）
 pub struct OpenAiImageProvider {
-    client: reqwest::Client,
+    client: super::http::MediaClient,
     config: ImageGenConfig,
 }
 
@@ -162,6 +162,7 @@ impl ImageProvider for OpenAiImageProvider {
         };
         let resp = self
             .client
+            .get()?
             .post(self.images_url())
             .bearer_auth(&self.config.api_key)
             .json(&body)
@@ -240,7 +241,7 @@ impl ImageProvider for OpenAiImageProvider {
             .ok_or_else(|| MediaError::Failed("出图响应缺少图片 URL".into()))?;
 
         // URL 仅 1 小时有效 → 即时下载为二进制（含校验 + 失败重试一次，不重复计费）
-        let (bytes, ext) = download_image_checked(&self.client, &url, "下载出图结果").await?;
+        let (bytes, ext) = download_image_checked(self.client.get()?, &url, "下载出图结果").await?;
         Ok(ImageResult {
             bytes,
             ext,
@@ -258,11 +259,11 @@ impl ImageProvider for OpenAiImageProvider {
 ///   - 轮询 GET {base}/tasks/{task_id} → {output:{task_status, results:[{url}]}}
 ///     task_status: PENDING / RUNNING / SUCCEEDED / FAILED / CANCELED / UNKNOWN
 ///
-/// 端点形如 https://dashscope.aliyuncs.com/api/v1（注意非 compatible-mode）。
+/// 端点形如 `https://dashscope.aliyuncs.com/api/v1`（注意非 compatible-mode）。
 /// 结果 URL 有时效 → 即时下载为二进制返回（与 OpenAiImageProvider 一致）。
 /// 注：当前仅纯文生图；params.image（img2img 锁角色）暂不下发（Wan t2i 不支持，后续可加 imageedit 模型）。
 pub struct DashScopeImageProvider {
-    client: reqwest::Client,
+    client: super::http::MediaClient,
     config: ImageGenConfig,
 }
 
@@ -305,6 +306,7 @@ impl DashScopeImageProvider {
         });
         let resp = self
             .client
+            .get()?
             .post(format!(
                 "{}/services/aigc/text2image/image-synthesis",
                 self.base()
@@ -351,6 +353,7 @@ impl DashScopeImageProvider {
         for _ in 0..100 {
             let resp = self
                 .client
+                .get()?
                 .get(format!("{}/tasks/{}", self.base(), task_id))
                 .bearer_auth(&self.config.api_key)
                 .send()
@@ -428,7 +431,8 @@ impl ImageProvider for DashScopeImageProvider {
         let task_id = self.submit(params).await?;
         let url = self.poll_until_url(&task_id).await?;
         // 结果 URL 有时效 → 即时下载为二进制（与 OpenAiImageProvider 一致，含校验 + 重试一次）
-        let (bytes, ext) = download_image_checked(&self.client, &url, "下载文生图结果").await?;
+        let (bytes, ext) =
+            download_image_checked(self.client.get()?, &url, "下载文生图结果").await?;
         Ok(ImageResult {
             bytes,
             ext,

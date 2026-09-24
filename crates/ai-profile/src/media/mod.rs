@@ -14,7 +14,7 @@
 //! # 协议按地址识别
 //!
 //! 各家协议不同却都只给一个 base_url，所以协议从地址（和 `extra`）里认：
-//! [`image::AnyImageProvider::from_config`]、[`video::VideoProtocol::detect`]、[`tts::TtsProtocol::detect`]。
+//! [`AnyImageProvider::from_config`](crate::media::image::AnyImageProvider::from_config)、[`VideoProtocol::detect`](crate::media::video::VideoProtocol::detect)、[`TtsProtocol::detect`](crate::media::tts::TtsProtocol::detect)。
 //! 预置里的地址就是按这套规则写的 —— **改预置地址前先看识别规则**。
 
 use std::time::Duration;
@@ -132,23 +132,42 @@ pub(crate) mod http {
 
     /// 非流式客户端：整体超时兜底，避免任一请求永久阻塞。超时施加在调用方底座之后（覆盖不掉）。
     #[cfg(any(feature = "video", feature = "tts"))]
-    pub(crate) fn default_client(base: &super::MediaHttp) -> reqwest::Client {
-        base.builder()
-            .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
-            .timeout(Duration::from_secs(DEFAULT_TIMEOUT_SECS))
-            .build()
-            // builder 仅在 TLS / 系统配置异常时才失败，退回无超时客户端保证可用性
-            .unwrap_or_else(|_| reqwest::Client::new())
+    pub(crate) fn default_client(base: &super::MediaHttp) -> MediaClient {
+        MediaClient::build(
+            base.builder()
+                .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
+                .timeout(Duration::from_secs(DEFAULT_TIMEOUT_SECS)),
+        )
     }
 
     /// 出图客户端（文生图请求 + 结果图下载共用）：connect + read 双超时。超时施加在调用方底座之后。
     #[cfg(feature = "image")]
-    pub(crate) fn image_client(base: &super::MediaHttp) -> reqwest::Client {
-        base.builder()
-            .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
-            .read_timeout(Duration::from_secs(IMAGE_READ_TIMEOUT_SECS))
-            .build()
-            .unwrap_or_else(|_| reqwest::Client::new())
+    pub(crate) fn image_client(base: &super::MediaHttp) -> MediaClient {
+        MediaClient::build(
+            base.builder()
+                .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
+                .read_timeout(Duration::from_secs(IMAGE_READ_TIMEOUT_SECS)),
+        )
+    }
+
+    /// 建好的客户端，或建失败的原因。
+    ///
+    /// 🔴 建失败时**不能**退回 `reqwest::Client::new()`：那样调用方配的代理与超时会一起被丢掉，
+    /// 请求改走直连且不报任何错 —— 国内用户表现为「配了代理还是连不上」，出图还失去超时保护。
+    /// 失败原因留到真正发请求时经 [`MediaClient::get`] 报出来，公开构造函数签名因此不必改成 `Result`。
+    #[derive(Clone)]
+    pub(crate) struct MediaClient(pub(super) Result<reqwest::Client, String>);
+
+    impl MediaClient {
+        fn build(b: reqwest::ClientBuilder) -> Self {
+            Self(b.build().map_err(|e| describe_reqwest_error(&e)))
+        }
+
+        pub(crate) fn get(&self) -> Result<&reqwest::Client, super::MediaError> {
+            self.0.as_ref().map_err(|e| {
+                super::MediaError::Failed(format!("HTTP 客户端初始化失败（请检查代理设置）: {e}"))
+            })
+        }
     }
 
     /// 沿 reqwest 错误的 `source()` 链提取底层真因（reqwest 的 `Display` 只到 URL 为止）。
@@ -213,6 +232,17 @@ mod tests {
             "上游 500"
         );
         assert_eq!(MediaError::InvalidInput("x".into()).message(), "x");
+    }
+
+    /// 🔴 客户端建失败必须在发请求时报错，不能静默退回一个丢了代理与超时的默认客户端。
+    #[test]
+    fn broken_client_reports_instead_of_falling_back() {
+        let broken = http::MediaClient(Err("代理地址无效".into()));
+        let err = broken.get().unwrap_err().to_string();
+        assert!(
+            err.contains("HTTP 客户端初始化失败") && err.contains("代理地址无效"),
+            "{err}"
+        );
     }
 
     /// 🔴 调用方的底座工厂必须真的被用上 —— 否则代理配了等于没配，且不报任何错。

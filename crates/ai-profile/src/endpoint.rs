@@ -19,7 +19,7 @@
 /// 把 base_url 和端点路径拼成完整 URL。
 ///
 /// 仅有的两处容错：
-/// - 剥掉误填的对话端点后缀（见 [`strip_chat_endpoint`]）——「同一个字段填了两种东西」
+/// - 剥掉误填的对话端点后缀（见 `strip_chat_endpoint`）——「同一个字段填了两种东西」
 /// - 剥掉旧契约遗留的末尾 `#` 标记（存量配置里可能有）
 pub fn join_api_path(base: &str, path: &str) -> String {
     let base = strip_chat_endpoint(base.trim().trim_end_matches('#').trim_end_matches('/'));

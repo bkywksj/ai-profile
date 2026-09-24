@@ -178,7 +178,7 @@ fn volc_voice_catalog() -> Vec<VoiceOption> {
 /// TTS 调用配置（含解密后的 Key，仅 Rust 内部传递）
 #[derive(Debug, Clone)]
 pub struct TtsConfig {
-    /// 端点（OpenAI 兼容 base url，如 https://api.siliconflow.cn/v1）
+    /// 端点（OpenAI 兼容 base url，如 `https://api.siliconflow.cn/v1`）
     pub endpoint: String,
     /// 模型 id
     pub model: String,
@@ -223,7 +223,7 @@ pub trait TtsProvider {
 
 /// 硅基流动 CosyVoice（OpenAI /audio/speech 兼容）TTS 实现
 pub struct SiliconFlowTtsProvider {
-    client: reqwest::Client,
+    client: super::http::MediaClient,
     config: TtsConfig,
 }
 
@@ -329,6 +329,7 @@ impl TtsProvider for SiliconFlowTtsProvider {
 
         let resp = self
             .client
+            .get()?
             .post(self.speech_url())
             .bearer_auth(&self.config.api_key)
             .json(&body)
@@ -412,7 +413,7 @@ impl VoiceDirection {
 
     /// 情感 → 语气曲线（漫剧化 V5·演绎）：映射成 (speed_ratio, loudness_ratio, emotion_scale)，
     /// 让愤怒又快又响、悲伤又慢又轻——情绪立体，不再「平读」。
-    /// 取值在火山合法区间内：speed_ratio[0.1,2]、loudness_ratio[0.5,2]、emotion_scale[1,5]。
+    /// 取值在火山合法区间内：`speed_ratio` ∈ `[0.1, 2]`、`loudness_ratio` ∈ `[0.5, 2]`、`emotion_scale` ∈ `[1, 5]`。
     /// 平静/中性/未知 → (1.0, 1.0, 4) 自然值。speed/loudness 对所有音色生效；emotion_scale 仅情感音色用。
     pub fn prosody(&self) -> (f64, f64, i64) {
         let l = self.emotion.as_str();
@@ -510,7 +511,7 @@ fn is_volc_voice(voice: &str) -> bool {
 /// 字节豆包 TTS 配置（火山 openspeech 专有协议；漫剧化 V3·M5 W3）
 #[derive(Debug, Clone)]
 pub struct VolcTtsConfig {
-    /// 端点（默认 https://openspeech.bytedance.com/api/v1/tts）
+    /// 端点（默认 `https://openspeech.bytedance.com/api/v1/tts`）
     pub endpoint: String,
     /// 应用 appid（火山语音控制台）
     pub appid: String,
@@ -525,7 +526,7 @@ pub struct VolcTtsConfig {
 ///   body {app{appid,token,cluster}, user{uid}, audio{voice_type,encoding}, request{reqid,text,operation:"query"}}
 ///   响应 {code:3000, data:"<base64 音频>"}
 pub struct VolcTtsProvider {
-    client: reqwest::Client,
+    client: super::http::MediaClient,
     config: VolcTtsConfig,
 }
 
@@ -617,6 +618,7 @@ impl TtsProvider for VolcTtsProvider {
 
         let resp = self
             .client
+            .get()?
             .post(self.config.endpoint.trim())
             // 火山要求形如 "Bearer;{token}"（分号是其特有写法）
             .header(

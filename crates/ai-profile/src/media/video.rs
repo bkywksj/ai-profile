@@ -16,7 +16,7 @@ use super::MediaError;
 /// 图生视频调用配置（含解密后的 Key，仅 Rust 内部传递）
 #[derive(Debug, Clone)]
 pub struct VideoGenConfig {
-    /// 端点（火山方舟 base url，如 https://ark.cn-beijing.volces.com/api/v3）
+    /// 端点（火山方舟 base url，如 `https://ark.cn-beijing.volces.com/api/v3`）
     pub endpoint: String,
     /// 模型 id
     pub model: String,
@@ -91,7 +91,7 @@ pub trait VideoProvider: Send + Sync {
 
 /// 火山方舟（Seedance）图生视频实现
 pub struct ArkVideoProvider {
-    client: reqwest::Client,
+    client: super::http::MediaClient,
     config: VideoGenConfig,
 }
 
@@ -193,6 +193,7 @@ impl VideoProvider for ArkVideoProvider {
 
         let resp = self
             .client
+            .get()?
             .post(self.tasks_url())
             .bearer_auth(&self.config.api_key)
             .json(&body)
@@ -227,6 +228,7 @@ impl VideoProvider for ArkVideoProvider {
         let url = format!("{}/{}", self.tasks_url(), task_id);
         let resp = self
             .client
+            .get()?
             .get(&url)
             .bearer_auth(&self.config.api_key)
             .send()
@@ -276,9 +278,9 @@ impl VideoProvider for ArkVideoProvider {
 /// 硅基流动 视频生成（Wan2.x 图生视频）实现 —— 与 Ark 不同端点/协议：
 ///   - 提交 POST {endpoint}/video/submit  body {model, prompt, image_size, image(首帧)}
 ///   - 查询 POST {endpoint}/video/status  body {requestId}
-///     status: Succeed / InProgress / Failed；Succeed 时 results.videos[0].url 为结果
+///     status: Succeed / InProgress / Failed；Succeed 时 `results.videos[0].url` 为结果
 pub struct SiliconFlowVideoProvider {
-    client: reqwest::Client,
+    client: super::http::MediaClient,
     config: VideoGenConfig,
 }
 
@@ -349,6 +351,7 @@ impl VideoProvider for SiliconFlowVideoProvider {
         });
         let resp = self
             .client
+            .get()?
             .post(format!("{}/video/submit", self.base()))
             .bearer_auth(&self.config.api_key)
             .json(&body)
@@ -383,6 +386,7 @@ impl VideoProvider for SiliconFlowVideoProvider {
         let body = serde_json::json!({ "requestId": task_id });
         let resp = self
             .client
+            .get()?
             .post(format!("{}/video/status", self.base()))
             .bearer_auth(&self.config.api_key)
             .json(&body)
@@ -433,9 +437,9 @@ impl VideoProvider for SiliconFlowVideoProvider {
 ///     status: Queueing / Preparing / Processing / Success / Fail
 ///   - 取址 GET  {base}/files/retrieve?file_id=xxx → {file.download_url}（Success 后多一步取下载地址）
 ///
-/// 端点形如 https://api.minimaxi.com/v1。
+/// 端点形如 `https://api.minimaxi.com/v1`。
 pub struct MinimaxVideoProvider {
-    client: reqwest::Client,
+    client: super::http::MediaClient,
     config: VideoGenConfig,
 }
 
@@ -499,6 +503,7 @@ impl VideoProvider for MinimaxVideoProvider {
         }
         let resp = self
             .client
+            .get()?
             .post(format!("{}/video_generation", self.base()))
             .bearer_auth(&self.config.api_key)
             .json(&body)
@@ -533,6 +538,7 @@ impl VideoProvider for MinimaxVideoProvider {
         let url = format!("{}/query/video_generation?task_id={}", self.base(), task_id);
         let resp = self
             .client
+            .get()?
             .get(&url)
             .bearer_auth(&self.config.api_key)
             .send()
@@ -566,6 +572,7 @@ impl VideoProvider for MinimaxVideoProvider {
                 let furl = format!("{}/files/retrieve?file_id={}", self.base(), file_id);
                 let fresp = self
                     .client
+                    .get()?
                     .get(&furl)
                     .bearer_auth(&self.config.api_key)
                     .send()
@@ -610,9 +617,9 @@ impl VideoProvider for MinimaxVideoProvider {
 ///   - 查询 GET {base}/tasks/{task_id} → {output:{task_status, video_url}}
 ///     task_status: PENDING / RUNNING / SUCCEEDED / FAILED / CANCELED / UNKNOWN
 ///
-/// 端点形如 https://dashscope.aliyuncs.com/api/v1（百炼亦可经 302 透传 /dashscope）。
+/// 端点形如 `https://dashscope.aliyuncs.com/api/v1`（百炼亦可经 302 透传 /dashscope）。
 pub struct ViduVideoProvider {
-    client: reqwest::Client,
+    client: super::http::MediaClient,
     config: VideoGenConfig,
 }
 
@@ -672,6 +679,7 @@ impl VideoProvider for ViduVideoProvider {
         });
         let resp = self
             .client
+            .get()?
             .post(format!(
                 "{}/services/aigc/video-generation/video-synthesis",
                 self.base()
@@ -715,6 +723,7 @@ impl VideoProvider for ViduVideoProvider {
     async fn poll(&self, task_id: &str) -> Result<VideoTaskStatus, MediaError> {
         let resp = self
             .client
+            .get()?
             .get(format!("{}/tasks/{}", self.base(), task_id))
             .bearer_auth(&self.config.api_key)
             .send()
@@ -760,9 +769,9 @@ impl VideoProvider for ViduVideoProvider {
 ///   - 查询 GET {base}/async-result/{id} → {task_status, video_result:[{url}]}
 ///     task_status: PROCESSING / SUCCESS / FAIL
 ///
-/// 端点形如 https://open.bigmodel.cn/api/paas/v4（亦可经 302 透传 /zhipu/api/paas/v4）。
+/// 端点形如 `https://open.bigmodel.cn/api/paas/v4`（亦可经 302 透传 /zhipu/api/paas/v4）。
 pub struct ZhipuVideoProvider {
-    client: reqwest::Client,
+    client: super::http::MediaClient,
     config: VideoGenConfig,
 }
 
@@ -822,6 +831,7 @@ impl VideoProvider for ZhipuVideoProvider {
         });
         let resp = self
             .client
+            .get()?
             .post(format!("{}/videos/generations", self.base()))
             .bearer_auth(&self.config.api_key)
             .json(&body)
@@ -855,6 +865,7 @@ impl VideoProvider for ZhipuVideoProvider {
     async fn poll(&self, task_id: &str) -> Result<VideoTaskStatus, MediaError> {
         let resp = self
             .client
+            .get()?
             .get(format!("{}/async-result/{}", self.base(), task_id))
             .bearer_auth(&self.config.api_key)
             .send()
@@ -899,10 +910,10 @@ impl VideoProvider for ZhipuVideoProvider {
 ///   - 查询 GET {base}/video/generations/{id} → {status, progress, metadata:{url}}
 ///     status: queued / in_progress / completed / failed
 ///
-/// 端点形如 https://relay.example.com/v1（与该站 chat/image 共用同一 base + Bearer Key）。
+/// 端点形如 `https://relay.example.com/v1`（与该站 chat/image 共用同一 base + Bearer Key）。
 /// 注：纯文生视频时 image 为空不下发；图生视频时 image 作首帧，输出画幅随首帧比例（无需额外传 size）。
 pub struct NewApiVideoProvider {
-    client: reqwest::Client,
+    client: super::http::MediaClient,
     config: VideoGenConfig,
 }
 
@@ -986,6 +997,7 @@ impl VideoProvider for NewApiVideoProvider {
         }
         let resp = self
             .client
+            .get()?
             .post(self.videos_url())
             .bearer_auth(&self.config.api_key)
             .json(&body)
@@ -1023,6 +1035,7 @@ impl VideoProvider for NewApiVideoProvider {
         let url = format!("{}/{}", self.videos_url(), task_id);
         let resp = self
             .client
+            .get()?
             .get(&url)
             .bearer_auth(&self.config.api_key)
             .send()
