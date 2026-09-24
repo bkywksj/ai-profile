@@ -12,19 +12,22 @@
 |---|---|---|---|---|---|---|
 | sigil | `E:/my/桌面软件tauri/sigil` | git rev（`src-tauri/Cargo.toml`） | `685b0dd` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 | `ai-profile-integration` |
 | knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | git rev（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `2a32261` | 2026-09-23 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用） | `ai-profile-integration` |
-| onestop | `E:/my/backend_tauri/onestop` | git rev（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `850eb77` | 2026-09-24 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现 | `ai-profile-integration` |
-| story_loom | `E:/my/桌面软件tauri/story_loom` | git rev（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `c6fb214` | 2026-09-24 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
+| onestop | `E:/my/backend_tauri/onestop` | git rev（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `767234a` | 2026-09-24 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现 | `ai-profile-integration` |
+| story_loom | `E:/my/桌面软件tauri/story_loom` | git rev（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `767234a` | 2026-09-24 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
 | reeve | `E:/my/桌面软件tauri/reeve` | git rev，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `685b0dd` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
 
 > ⏳ 五家的界面改动都**尚未实机验证**；代码测试全绿。
 >
-> story_loom 在 `c6fb214`，**只本地提交、未推送**。它的本机 lib 单测有 WebView2 入口崩溃（环境问题），
+> story_loom **只本地提交、未推送**。它的本机 lib 单测有 WebView2 入口崩溃（环境问题），
 > 应用侧纯函数测试（`legacy_endpoint` / `provider_share`）是在临时 crate 里 `#[path]` 引入实跑的。
+>
+> 🔴 **只属于个别应用的服务商不进 crate**（2026-09-24 撤回中宇AI智行）：那个应用用 `PresetCatalog::new().extend(&LOCAL)` 自己加，
+> onestop（对话一条）、story_loom（四种能力各一条，视频带 `video_api=newapi`）都在各自的 `local_presets.rs`。
 >
 > onestop 的多模态预置已改用 crate（`850eb77`）。它自己的生图 / 视频 / 配音调用只支持三种协议，所以预置按协议过滤；
 > 要支持海螺 / Vidu / 火山语音等，得先把调用换成 `media`（StoryLoom 在用），再放开过滤。
 >
-> onestop 在 `850eb77`；**只本地提交、未推送**，发版节奏由它自己定。
+> onestop、story_loom 在 `767234a`；**只本地提交、未推送**，发版节奏由它自己定。
 >
 > sigil / reeve 已升到 `685b0dd`，粘贴导入改用 `parse_profiles`，支持智码一次分享的多条打包。
 > knowledge_base 仍在 `2a32261`：落后的只有 `685b0dd` 这个修复（粘了别的 JSON 时错误提示更准），不影响使用，下次升级时带上。
