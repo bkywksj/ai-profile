@@ -499,9 +499,9 @@ fn explain_image_http_error(status: u16, body: &str) -> String {
 
 /// 合法出图的最小字节数。真实出图（720×1280）至少几十 KB；小于 1KB 必然不是图，
 /// 而是中转站/CDN 在异常时返回的空 body、错误页或占位内容。
-/// `pub(crate)`：落盘后的对账自愈（storyboard::reconcile_chapter_images）用同一阈值判定坏图，
+/// `pub`：调用方落盘后的对账自愈（如 StoryLoom 的 `reconcile_chapter_images`）用同一阈值判定坏图，
 /// 保持「下载时拒收」与「事后体检」口径一致，避免两处各写一份数字漂移。
-pub(crate) const MIN_IMAGE_BYTES: usize = 1024;
+pub const MIN_IMAGE_BYTES: usize = 1024;
 
 /// 校验拿到的字节确实是一张图，**杜绝「空图落盘却标成功」**。
 ///
