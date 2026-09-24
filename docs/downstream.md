@@ -10,11 +10,11 @@
 
 | 项目 | 仓库路径 | 引用方式 | 当前引用 | 最后同步 | 接入范围 | 本项目侧技能 |
 |---|---|---|---|---|---|---|
-| sigil | `E:/my/桌面软件tauri/sigil` | git rev（`src-tauri/Cargo.toml`） | `685b0dd` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 | `ai-profile-integration` |
-| knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | git rev（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `2a32261` | 2026-09-23 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用） | `ai-profile-integration` |
-| onestop | `E:/my/backend_tauri/onestop` | git rev（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `767234a` | 2026-09-24 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现 | `ai-profile-integration` |
-| story_loom | `E:/my/桌面软件tauri/story_loom` | git rev（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `767234a` | 2026-09-24 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
-| reeve | `E:/my/桌面软件tauri/reeve` | git rev，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `685b0dd` | 2026-09-23 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
+| sigil | `E:/my/桌面软件tauri/sigil` | crates.io 版本（`src-tauri/Cargo.toml`） | `0.1.1` | 2026-09-24 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 | `ai-profile-integration` |
+| knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `0.1.1` | 2026-09-24 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用） | `ai-profile-integration` |
+| onestop | `E:/my/backend_tauri/onestop` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `0.1.1` | 2026-09-24 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现 | `ai-profile-integration` |
+| story_loom | `E:/my/桌面软件tauri/story_loom` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `0.1.1` | 2026-09-24 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
+| reeve | `E:/my/桌面软件tauri/reeve` | crates.io 版本，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `0.1.1` | 2026-09-24 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
 
 > ⏳ 五家的界面改动都**尚未实机验证**；代码测试全绿。
 >
@@ -27,13 +27,17 @@
 > onestop 的多模态预置已改用 crate（`850eb77`）。它自己的生图 / 视频 / 配音调用只支持三种协议，所以预置按协议过滤；
 > 要支持海螺 / Vidu / 火山语音等，得先把调用换成 `media`（StoryLoom 在用），再放开过滤。
 >
-> onestop、story_loom 在 `767234a`；**只本地提交、未推送**，发版节奏由它自己定。
+> 2026-09-24：五家统一从 git 提交号切到 **crates.io `0.1.1`**（首个正式发布版），均只本地提交、未推送。
+> 各家测试：sigil 1419 / reeve 1104 / onestop 198 全过；story_loom 编译检查通过（lib 单测受 WebView2 环境所限，
+> 迁移对照测试在临时 crate 实跑 13/13）；knowledge_base 有 2 条**与本库无关**的既有失败
+> （`dataview_recent_notes_orders_by_updated_at`、`tag_path_segments_independent_namespace`，Cargo.lock 只变了 ai-profile）。
 >
-> sigil / reeve 已升到 `685b0dd`，粘贴导入改用 `parse_profiles`，支持智码一次分享的多条打包。
-> knowledge_base 仍在 `2a32261`：落后的只有 `685b0dd` 这个修复（粘了别的 JSON 时错误提示更准），不影响使用，下次升级时带上。
+> ⚠️ 0.1.1 起 Anthropic 协议自动补 `/v1`。onestop 的 v16 迁移因此把「带路径、无版本段」的 Anthropic 地址钉上 `#`，
+> 保证升级前后请求同一地址；reeve / knowledge_base / sigil / story_loom 的旧规则本来就补 `/v1`，不受影响。
 
-> 升级一个下游 = 改它 `Cargo.toml` 里的 `rev` → 在该项目跑全量测试 → 按它自己的节奏发版 →
-> **回来改上表的「当前引用」和「最后同步」**。漏了最后一步，下次就不知道它落后多少。
+> 升级一个下游 = 改它 `Cargo.toml` 里的 `version`（`cargo update -p ai-profile` 拿同一小版本内的补丁）→
+> 在该项目跑全量测试 → 按它自己的节奏发版 → **回来改上表的「当前引用」和「最后同步」**。
+> 漏了最后一步，下次就不知道它落后多少。
 
 ## 计划接入
 
