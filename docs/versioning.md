@@ -82,7 +82,19 @@ cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo fmt --all --check
 cargo xtask gen-docs                                        # 确认 providers.md 无变化
+RUSTDOCFLAGS="-D warnings --cfg docsrs" cargo doc -p ai-profile --all-features --no-deps
+cargo package -p ai-profile                                 # 打包 + 编译验证
 ```
+
+另外三条是 0.1.0 发布时漏掉、只能靠补发 0.1.1 弥补的：
+
+- **docs.rs 按全部 feature 构建**：解出的包内 `Cargo.toml` 里要有 `[package.metadata.docs.rs] all-features = true`，
+  否则 docs.rs 只用默认 feature，`client` / `media` 在文档站上整块消失
+- **打包后单独跑测试**：`cargo package` 的产物解到临时目录再 `cargo test --all-features`。
+  下载包里没有仓库的 `docs/`，依赖它的测试必须能跳过
+- **MSRV 真编**：CI 的 `msrv` 任务用声明的 1.88 编一遍，推送后等它绿了再发布
+
+完整发版流程（版本号、CHANGELOG、发布、tag、核对、交接）见技能 `crate-release`。
 
 > 🔴 `cargo test --workspace` **不能**代替前三条：xtask 依赖 `client` feature，
 > workspace 级命令会触发 feature unification，让 `ai-profile` 永远带上 client ——

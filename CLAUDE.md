@@ -20,7 +20,7 @@
 | 形态 | Rust crate（npm UI 包是后续阶段） |
 | 可见性 | **GitHub 主仓公开**（`bkywksj/ai-profile`，下游按提交号拉取）；Gitee / GitCode 私有镜像 |
 | 远程 | `github` / `gitee` / `gitcode` 三个都要推；文档站同样三个，**上线由 Gitee 触发**（见下方「仓库与推送」） |
-| 分发 | 目前下游按 **git 提交号**引用；三个下游接入、API 稳定后再发 crates.io |
+| 分发 | 已发布到 crates.io（2026-09-24 起），下游按**版本号**引用；发版走技能 `crate-release` |
 | 下游 | 见 `docs/downstream.md`（**唯一权威清单**，本文件不重复列） |
 | License | MIT |
 
@@ -203,6 +203,7 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 | `downstream-sync` | crate 推送后升级下游、维护登记表、同步文档站、真实密钥联调 |
 | `task-tracker` | 跨会话的多步骤任务（每个下游接入各开一份） |
 | `git-workflow` | 提交规范与推送 |
+| `crate-release` | 发新版本到 crates.io（版本号、CHANGELOG、发版闸门、发布、tag、发布 token） |
 
 ---
 

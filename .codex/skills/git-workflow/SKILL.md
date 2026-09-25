@@ -16,8 +16,10 @@ description: |
 ## 与应用项目的区别
 
 本仓库**没有**打 tag 触发 CI 构建安装包那一套（那是 sigil 的 `release-publish`）。
-目前也不发 crates.io（等至少三个下游接入后再发，见 `docs/downstream.md`）。
-「发布」= 推送（三个远程都要推），下游按 GitHub 上的提交号引用。
+本 crate 已发布到 crates.io，下游按**版本号**引用（`ai-profile = "0.1"`）。
+
+- 「推送」≠「发布」：推送只是把提交放到三个远程；下游要等**发了新版本**才能 `cargo update` 拿到
+- 发新版本走技能 `crate-release`（版本号、CHANGELOG、发版闸门、`cargo publish`、打 tag）
 
 ## 提交说明
 
@@ -49,7 +51,7 @@ Conventional Commits，中文正文：
 
 | 仓库 | remote | 平台 / 地址 | 可见性 | 凭据 | 作用 |
 |---|---|---|---|---|---|
-| 本 crate | `github` | `github.com/bkywksj/ai-profile` | **公开** | `github1` | 🔴 主仓：下游 `Cargo.toml` 按提交号从这里拉，CI 也从这里拉 |
+| 本 crate | `github` | `github.com/bkywksj/ai-profile` | **公开** | `github1` | 🔴 主仓：crates.io 的 `repository` 指向它，CI 跑在这里 |
 | 本 crate | `gitee` | `gitee.com/bkywksj/ai-profile` | 私有 | `gitee` | 镜像 |
 | 本 crate | `gitcode` | `gitcode.com/zhuawashi/ai-profile` | 私有 | `gitcode` | 镜像 |
 | 文档站 `../ai-profile-docs` | `github` | `github.com/bkywksj/ai-profile-docs` | 私有 | `github1` | 镜像 |
@@ -57,14 +59,14 @@ Conventional Commits，中文正文：
 | 文档站 | `gitcode` | `gitcode.com/zhuawashi/ai-profile-docs` | 私有 | `gitcode` | 镜像 |
 
 - 一律走 Sigil `git_push`，**逐个 remote 推**，凭据按上表（`username` 不用传）
-- 🔴 **crate 先推 `github`**：下游只认 GitHub 的提交号，漏推它等于没发布；Gitee / GitCode 是镜像，随后补上
+- 🔴 **crate 先推 `github`**：CI（含 MSRV 检查）跑在 GitHub，发布前要等它绿；Gitee / GitCode 是镜像，随后补上
 - 🔴 **文档站必须推 `gitee`**：上线部署由 Gitee 触发，只推 GitHub 的话线上文档不会更新
 - 部署平台（EdgeOne Pages）关联的是 `bkywksj/ai-profile-docs`，**不是**本 crate：
   安装 `pnpm install`、构建 `pnpm build`、输出 `docs/.vitepress/dist`、根目录 `/`。
   构建日志报 `ERR_PNPM_NO_PKG_MANIFEST No package.json found` = 关联错成了 crate 仓库
 - 不跑本地 `git push` / `fetch` / `pull`（会弹凭据窗卡死）
 - 推送后看返回的 `pushed` 字段，区分「真推上去」与「远端已是最新」
-- 新建镜像仓库用 `git_repo_create`，只能建私有；GitHub 主仓要保持**公开**（下游 CI 拉取不带凭据）
+- 新建镜像仓库用 `git_repo_create`，只能建私有；GitHub 主仓要保持**公开**（crates.io / docs.rs 页面链到它）
 - 推送完走技能 `downstream-sync`
 
 ## 提交前

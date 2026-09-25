@@ -4,12 +4,12 @@ description: |
   用于 ai-profile 推送之后把改动送到下游：同步文档站、升级已接入项目、维护下游登记表、跑真实密钥联调。
 
   触发场景：
-  - crate 刚推送了新提交（新模型、修复、API 变更），要让 sigil / reeve 等用上
+  - crate 刚发布了新版本（新模型、修复、API 变更），要让 sigil / reeve 等用上
   - 开始接入一个新的下游项目，或查某个下游落后了多少
   - 同步文档站 ai-profile-docs（providers 清单、API 页）
   - 需要用真实 API 密钥验证端点行为
 
-  触发词：下游、升级下游、同步下游、接入、rev、提交号、downstream、登记表、文档站同步、联调、真实密钥
+  触发词：下游、升级下游、同步下游、接入、版本号、cargo update、downstream、登记表、文档站同步、联调、真实密钥
 ---
 
 # 下游同步
@@ -22,10 +22,10 @@ description: |
 ## 一次改动的完整路线
 
 ```
-① 在本仓库改            测试 + gen-docs + CHANGELOG → 提交 → 推送
-② 同步文档站            ai-profile-docs（见下）→ 回写 .docs-meta.json
-③ 读 docs/downstream.md  「已接入」表：哪些项目、各引用哪个提交
-④ 逐个升级已接入的下游    改 rev → 全量测试 → 按该项目节奏发版
+① 在本仓库改            测试 + gen-docs + CHANGELOG → 提交 → 推送 → 发新版本（技能 crate-release）
+② 同步文档站            ai-profile-docs（见下，含「更新日志」页）→ 回写 .docs-meta.json
+③ 读 docs/downstream.md  「已接入」表：哪些项目、各引用哪个版本
+④ 逐个升级已接入的下游    cargo update / 改 version → 全量测试 → 按该项目节奏发版
 ⑤ 回填登记表            改「当前引用」「最后同步」→ 提交本仓库
 ```
 
@@ -50,6 +50,7 @@ pnpm check-links           # 站内链接
 🔴 **上线由 Gitee 触发**：只推 GitHub 的话线上文档不会更新。
 
 API / 限额 / 协议有变 → 同步改对应页（`api/*.md`、`guide/frontend.md` 的 TS 类型）。
+发了新版本 → 在 `reference/changelog.md` 加一节（面向使用者：带来了什么、升级要不要改代码），导航栏的版本号一起改。
 **同步完回到本仓库更新 `.docs-meta.json`**：`lastSyncCommit` + 追加一条 `updateHistory`。
 漏了这步，下次增量更新会从错误的起点算 diff（曾经停在建仓那次一整天）。
 
@@ -58,7 +59,8 @@ API / 限额 / 协议有变 → 同步改对应页（`api/*.md`、`guide/fronten
 以 sigil 为例：
 
 ```bash
-# 1. 改 src-tauri/Cargo.toml 的 ai-profile rev（只改这一处，Cargo.lock 随之更新）
+# 1. 同一小版本内（0.1.x）：cargo update -p ai-profile，只动 Cargo.lock
+#    跨小版本（0.1 → 0.2，有破坏性变更）：改 src-tauri/Cargo.toml 的 version，再按 CHANGELOG 改代码
 # 2. 该项目的全量测试（sigil 必须 PowerShell + src-tauri 为工作目录 + --workspace）
 Push-Location src-tauri; cargo test --workspace; Pop-Location
 npx tsc --noEmit
