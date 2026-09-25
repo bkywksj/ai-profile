@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "1b395cd",
-  "lastSyncTime": "2026-09-25T12:00:00Z",
+  "lastSyncCommit": "a388e11",
+  "lastSyncTime": "2026-09-25T15:00:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -167,6 +167,22 @@
         "README.md"
       ],
       "note": "用 AI 接入：提示词模板、通用接入技能、llms.txt / llms-full.txt 自动生成"
+    },
+    {
+      "commit": "a388e11",
+      "time": "2026-09-25T15:00:00Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "reference/spec.md",
+        "api/protocol.md",
+        "public/spec/**",
+        ".vitepress/config.ts"
+      ],
+      "sourceChanges": [
+        "spec/**",
+        "xtask/src/spec.rs"
+      ],
+      "note": "其他语言实现：预置 JSON + 一致性用例下载与格式说明"
     }
   ]
 }
