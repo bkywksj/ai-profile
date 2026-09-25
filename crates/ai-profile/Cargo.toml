@@ -47,3 +47,9 @@ tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
 # 多模态调用的模拟服务端测试（tests/media_mock.rs）：本地起 HTTP 服务，按各家协议回放响应
 wiremock = "0.6"
 base64 = "0.22"
+
+# 可运行示例：CI 里随 --all-targets 一起编译，接口一改示例就编不过 —— 不会像文档片段那样悄悄过时。
+# 只有 verify 要发 HTTP，需要 client；其余是纯数据 / 纯函数，默认 feature 就能跑。
+[[example]]
+name = "verify"
+required-features = ["client"]

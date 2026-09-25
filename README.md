@@ -59,6 +59,16 @@ println!("{:?} / {}", p.base_url, p.model);
 ```
 
 验证、导入导出、限额、多模态的用法见[快速开始](https://ai-profile.ruoyi.plus/guide/quick-start)。
+可运行的完整示例见 [`examples/`](https://github.com/bkywksj/ai-profile/tree/master/crates/ai-profile/examples)。
+
+## 用 AI 编程助手接入
+
+本库 2026-09 才发布，AI 的训练数据里没有它。用 Claude Code / Codex / Cursor 接入时，先让它读这两份：
+
+- 接入规则（也可直接放进项目当技能）：<https://ai-profile.ruoyi.plus/ai/ai-profile-integration.md>
+- 全文文档（纯文本）：<https://ai-profile.ruoyi.plus/llms-full.txt>
+
+提示词模板与各工具的放置方式见[用 AI 接入](https://ai-profile.ruoyi.plus/guide/ai-assisted)。
 
 ## 三条设计铁律
 

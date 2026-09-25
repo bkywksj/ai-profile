@@ -6,6 +6,10 @@
 >
 > 🔴 **接入完成后再建**，不要提前建：技能固化的是已经跑通的做法。
 > sigil 的成品可作参考：`E:/my/桌面软件tauri/sigil/.claude/skills/ai-profile-integration/SKILL.md`。
+>
+> 🔴 这是**我们自己的应用**用的模板（带本机路径与内部流程）。给外部用户的通用版本在文档站
+> `ai-profile-docs/docs/public/ai/ai-profile-integration.md`（线上 `/ai/ai-profile-integration.md`），
+> 规则类内容两边要保持一致。
 
 ---
 
