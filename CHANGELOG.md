@@ -21,7 +21,8 @@
 - `ai.profile` 信封必须是 JSON 对象：此前 serde 默认允许按字段顺序从数组反序列化，
   `["ai.profile",1,{…}]` 也能导入，协议里没有这种写法；现返回 `invalid_json`
 - 模型清洗补 `transcribe`：OpenAI 的 `gpt-4o-transcribe` / `gpt-4o-mini-transcribe` 是语音转写模型
-- **下游影响**（逐个查过调用点）：以上都只影响非常规输入，正常配置结果不变；只升依赖、不用改代码
+- **下游影响**（按输入形态判断，未逐个下游实测）：以上都只影响非常规输入（`/v1beta` 结尾的地址、
+  以 `messages` 结尾但不是 `/messages` 的路径、数组形式的信封、转写模型），正常配置结果不变；只升依赖、不用改代码
 - 以上四处都是请外部实现者只凭公开规范写 Python 版时发现的
 - 模型清洗漏掉了本库自己的生图 / 视频 / 配音模型：`dall-e-3`、`doubao-seedream-*`、`doubao-seedance-*`、
   `wan*-t2i-*`、`*-I2V-*`、`vidu/*_img2video`、`cogvideox-*`、`MiniMax-Hailuo-*`、`fish-speech-*`
