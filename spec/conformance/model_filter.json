@@ -130,6 +130,83 @@
       "expected": false,
       "fn": "is_chat_model_id",
       "input": {
+        "id": "dall-e-3"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "doubao-seedream-4-0-250828"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "doubao-seedance-1-0-pro-250528"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "wan2.2-t2i-flash"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "Wan-AI/Wan2.2-I2V-A14B"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "vidu/viduq3-pro_img2video"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "cogvideox-3"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "MiniMax-Hailuo-02"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "fishaudio/fish-speech-1.5"
+      }
+    },
+    {
+      "expected": true,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "doubao-seed-1-6-250615"
+      }
+    },
+    {
+      "expected": true,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "gpt-4o-audio-preview"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
         "id": "omni-moderation-latest"
       }
     },

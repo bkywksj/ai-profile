@@ -38,6 +38,21 @@ const NON_CHAT_MARKERS: &[&str] = &[
     // 🔴 只能匹配 "image"，绝不能顺手加 "vl" 或 "omni" —— 那两类是**能对话**的
     // 多模态模型（Qwen3-VL-32B-Instruct 可以正常聊天），滤掉就是误伤。
     "image",
+    // ── 以下每个词都来自本库生图 / 视频 / 配音预置里的真实模型名 ──
+    // 守卫测试 `non_chat_presets_are_filtered` 用预置数据反向校验：
+    // 新加一条非对话预置而这里漏了词，测试直接红，不必等用户在下拉里撞见
+    "dall-e",    // OpenAI 生图：dall-e-3
+    "seedream",  // 火山生图：doubao-seedream-4-0-…
+    "seedance",  // 火山视频：doubao-seedance-1-0-pro-…
+    "t2i",       // 文生图：wan2.2-t2i-flash、wanx2.1-t2i-turbo
+    "i2v",       // 图生视频：Wan-AI/Wan2.2-I2V-A14B、I2V-01-Director
+    "t2v",       // 文生视频：Wan2.1-T2V（与 i2v 成对出现）
+    "img2video", // vidu/viduq3-pro_img2video
+    "cogvideo",  // 智谱视频：cogvideox-3
+    "hailuo",    // MiniMax 视频：MiniMax-Hailuo-02
+    // 语音合成：fishaudio/fish-speech-1.5、MiniMax speech-02-hd。
+    // 不会误伤对话模型 —— 语音对话模型叫 audio / realtime，不叫 speech
+    "speech",
     // 图像描述专用（Qwen3-Omni-30B-A3B-Captioner）：只输出图注，不能对话
     "captioner",
     "ocr",
@@ -168,5 +183,49 @@ mod tests {
         assert!(is_chat_model_id("Qwen3-Omni-30B-A3B-Instruct"));
         assert!(!is_chat_model_id("Qwen3-Omni-30B-A3B-Captioner"));
         assert!(!is_chat_model_id("Qwen/Qwen-Image-Edit-2509"));
+    }
+
+    /// 🔴 用本库自己的预置当标准答案，双向校验特征词：
+    /// - 生图 / 视频 / 配音预置里的每个模型都必须被滤掉 —— 否则用户对同一家端点点「获取模型」，
+    ///   我们自己预置的生图模型会出现在对话下拉里（dall-e-3 就是这么被发现的）
+    /// - 对话预置里的每个模型都必须放行 —— 加特征词最容易误伤的就是这边
+    ///
+    /// 非对话预置在 image / video / tts feature 后面，默认 feature 下这一半是空集；
+    /// CI 的 `cargo test --workspace --all-features` 会覆盖到。
+    #[test]
+    fn non_chat_presets_are_filtered() {
+        use crate::kind::Kind;
+        let mut leaked = Vec::new();
+        let mut hurt = Vec::new();
+        for p in crate::preset::presets() {
+            let ids = p.models.iter().map(|m| m.value).chain([p.model]);
+            for id in ids.filter(|id| !id.is_empty()) {
+                match (p.kind, is_chat_model_id(id)) {
+                    (Kind::Chat, false) => hurt.push(format!("{}: {id}", p.key)),
+                    (Kind::Chat, true) => {}
+                    (_, true) => leaked.push(format!("{}: {id}", p.key)),
+                    (_, false) => {}
+                }
+            }
+        }
+        assert!(
+            leaked.is_empty(),
+            "非对话模型漏进了对话清单，补特征词：{leaked:#?}"
+        );
+        assert!(hurt.is_empty(), "对话模型被误滤，特征词太宽：{hurt:#?}");
+    }
+
+    /// 新特征词不能误伤的对话模型：名字里碰巧带着相近片段
+    #[test]
+    fn new_markers_do_not_hurt_chat_models() {
+        for id in [
+            "doubao-seed-1-6-250615", // seed ≠ seedream / seedance
+            "gpt-4o-audio-preview",   // 语音对话叫 audio，不叫 speech
+            "gpt-4o-realtime-preview",
+            "Qwen/Qwen2.5-VL-72B-Instruct",
+            "glm-4.5v",
+        ] {
+            assert!(is_chat_model_id(id), "{id} 是对话模型，不能被滤掉");
+        }
     }
 }

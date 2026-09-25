@@ -9,9 +9,11 @@
 - `spec/`：与语言无关的预置数据 `presets.json` + 6 组一致性用例，供其他语言实现对照；
   由 `cargo xtask gen-spec` 从 Rust 参考实现生成，守卫测试 `spec_files_in_sync` 保证与代码同步
 
-### 已知问题
-- `is_chat_model_id("dall-e-3")` 返回 `true`：特征词表缺 `dall-e`，OpenAI 的 DALL·E 系列会出现在
-  「获取模型」下拉里。修复属于行为变更，留待下个版本
+### 修复
+- 模型清洗漏掉了本库自己的生图 / 视频 / 配音模型：`dall-e-3`、`doubao-seedream-*`、`doubao-seedance-*`、
+  `wan*-t2i-*`、`*-I2V-*`、`vidu/*_img2video`、`cogvideox-*`、`MiniMax-Hailuo-*`、`fish-speech-*`
+  会出现在「获取模型」的对话下拉里。补齐特征词，并加守卫测试 `non_chat_presets_are_filtered`：
+  用预置数据双向校验（非对话预置的模型必须被滤掉、对话预置的必须放行），以后新增预置漏了词会直接红
 
 ## [0.1.1] - 2026-09-24
 
