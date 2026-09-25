@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "92c8cfe",
-  "lastSyncTime": "2026-09-24T06:03:13Z",
+  "lastSyncCommit": "1a5b32d",
+  "lastSyncTime": "2026-09-25T10:00:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -125,6 +125,33 @@
         "crates/ai-profile/src/limits.rs",
         "docs/providers.md"
       ]
+    },
+    {
+      "commit": "1a5b32d",
+      "time": "2026-09-25T10:00:00Z",
+      "type": "full",
+      "affectedDocs": [
+        "index.md",
+        "products.md",
+        "guide/cookbook.md",
+        "reference/changelog.md",
+        "guide/installation.md",
+        "guide/introduction.md",
+        "guide/quick-start.md",
+        "guide/frontend.md",
+        "guide/tauri-integration.md",
+        "api/endpoint.md",
+        "api/verify.md",
+        "api/media.md",
+        "reference/add-provider.md",
+        "reference/providers.md",
+        "reference/versioning.md"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/preset/docgen.rs",
+        "docs/providers.md"
+      ],
+      "note": "按 0.1.1 源码全站校订；统一侧边栏 + 按场景查找 + 更新日志 + 产品矩阵"
     }
   ]
 }
