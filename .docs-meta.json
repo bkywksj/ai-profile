@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "1a5b32d",
-  "lastSyncTime": "2026-09-25T10:00:00Z",
+  "lastSyncCommit": "1b395cd",
+  "lastSyncTime": "2026-09-25T12:00:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -152,6 +152,21 @@
         "docs/providers.md"
       ],
       "note": "按 0.1.1 源码全站校订；统一侧边栏 + 按场景查找 + 更新日志 + 产品矩阵"
+    },
+    {
+      "commit": "1b395cd",
+      "time": "2026-09-25T12:00:00Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "guide/ai-assisted.md",
+        "public/ai/ai-profile-integration.md",
+        ".vitepress/config.ts"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/examples/*.rs",
+        "README.md"
+      ],
+      "note": "用 AI 接入：提示词模板、通用接入技能、llms.txt / llms-full.txt 自动生成"
     }
   ]
 }
