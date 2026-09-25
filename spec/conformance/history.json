@@ -145,7 +145,7 @@
       "name": "服务端错误"
     }
   ],
-  "crateVersion": "0.1.1",
+  "crateVersion": "0.1.2",
   "description": "is_context_overflow：宁可漏判不可误判（误判会把用户历史无谓地裁掉一半）。按顺序：① 状态码 413 → true；② 状态码不是 400 或 422 → false；③ 响应体 ASCII 小写后记为 b（非 ASCII 字符不变）；④ b 包含 max_tokens 或 max_completion_tokens，且不含 context、prompt、input 中任何一个 → false（输出上限问题，裁历史没用）；⑤ b 包含 rules.patterns 任一子串 → true，否则 false。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "rules": {

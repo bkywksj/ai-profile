@@ -754,7 +754,7 @@
       }
     }
   ],
-  "crateVersion": "0.1.1",
+  "crateVersion": "0.1.2",
   "description": "parse_profiles 检查顺序：① 去两端空白后为空 → empty；② 不是合法 JSON、或顶层不是对象（数组也不行）→ invalid_json；③ 信封字段类型不对 → invalid_json：kind 须为字符串（缺失当空串）、v 须为非负整数（缺失当 1；写成字符串 \"1\" 也不行）；④ v 大于 1 → unsupported_version（先于 kind 检查）；⑤ kind 既不是 ai.profile 也不是 ai.profile.bundle → not_ai_profile（found 为读到的 kind，缺失为空串）；⑥ data 缺失 → missing_data；单条的 data 不是对象 → missing_data，打包的 data 不是对象 → invalid_json。invalid_json 的 detail 是自由文本，用例里标了 ignore。单条：data 的字段 name、provider、model 与下列别名都须是字符串（缺失当空串），类型不对 → invalid_json：baseURL / baseUrl / base_url、apiKey / api_key、toolId / tool_id、authType / auth_type；hints 为对象，其中 toolId / tool_id。🔴 同一字段的多个别名同时出现（如 baseURL 与 base_url）→ invalid_json，不做优先级选择。各字段去两端空白；model 去空白后为空 → 用 defaultModel（去空白）并标 modelFallback: true。协议推断（看原始 model，不看兜底值；「小写」均指 ASCII 小写）：provider 小写后含 anthropic 或 claude → anthropic；否则 model 小写后以 claude- 开头 → anthropic；否则 toolId（hints.toolId 非空时用它，否则用顶层 toolId）小写后含 claude 或 anthropic → anthropic；其余 → openai_compatible。rawProvider 为去空白的原始 provider。单条信封里的 authType 不起作用（跳过规则只对打包生效）。打包：data 里取 profiles（或别名 api_profiles；两者同时出现 → invalid_json；缺失当空数组；不是数组 → invalid_json）。逐条：不是对象的条目静默丢弃、不计数；是对象但字段类型不对 → **整个打包** invalid_json；authType 为 oauth（不区分大小写）的跳过并计入 skipped；其余按单条规则解析。一条都没剩 → empty_bundle（skipped 为跳过数）。to_profile：输入原样写入（不去空白），只产出规范写法 {kind: ai.profile, v: 1, data: {name, provider, baseURL, apiKey, model}}；provider 为 anthropic（Anthropic 协议）或 openai（其余）；model 为空也照样输出空串字段。格式规范见 https://ai-profile.ruoyi.plus/api/protocol",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "specVersion": 1,

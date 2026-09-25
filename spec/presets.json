@@ -1,5 +1,5 @@
 {
-  "crateVersion": "0.1.1",
+  "crateVersion": "0.1.2",
   "description": "全部服务商预置（对话 / 生图 / 视频 / 配音）与按厂商聚合的目录。字段含义见 https://ai-profile.ruoyi.plus/api/preset",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "presets": [

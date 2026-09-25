@@ -5,31 +5,33 @@
 
 ## [未发布]
 
-### 新增
-- 公开常量 `model_filter::{NON_CHAT_MARKERS, NON_CHAT_PREFIXES}`、`history::CONTEXT_OVERFLOW_PATTERNS`、
-  `limits::{CONTEXT_WINDOW_FIELDS, MAX_OUTPUT_FIELDS}`：模型清洗、超长识别、限额解析用到的数据表。
-  只是把原有的私有表公开，行为不变；多语言规范直接导出它们
+## [0.1.2] - 2026-09-25
 
-### 新增（仓库层面，不影响 crate 代码）
-- `spec/`：与语言无关的预置数据 `presets.json` + 6 组一致性用例，供其他语言实现对照；
-  由 `cargo xtask gen-spec` 从 Rust 参考实现生成，守卫测试 `spec_files_in_sync` 保证与代码同步
+**升级只需 `cargo update -p ai-profile`，不用改代码。** 行为变化只涉及下面列出的输入，正常配置结果不变。
 
 ### 修复
+- **模型清洗漏掉了本库自己的生图 / 视频 / 配音模型**：`dall-e-3`、`doubao-seedream-*`、`doubao-seedance-*`、
+  `wan*-t2i-*`、`*-I2V-*`、`vidu/*_img2video`、`cogvideox-*`、`MiniMax-Hailuo-*`、`fish-speech-*`，
+  以及 OpenAI 的语音转写模型 `gpt-4o-transcribe` / `gpt-4o-mini-transcribe`，都会出现在「获取模型」的对话下拉里。
+  新增守卫测试用预置数据双向校验：以后新增非对话预置而特征词没覆盖到，测试直接失败。
+  下游影响：对话下拉变干净；`dropped_models` 变多 —— 按它排生图 / 视频 / 配音下拉的应用，这些模型会排到正确位置
 - `suggest_url` 对以 `/v1beta` 结尾的地址（带不带结尾 `/`）会建议出 `…/v1beta/v1` 这种错地址，现返回 `None`
-- 误填端点后缀按**路径段**识别：此前按字符串，`…/v1/mymessages` 会被剥成 `…/v1/my`（`join_api_path` /
-  `join_chat_endpoint` / `anthropic_base_url` 共用这条规则）
+- 误填的端点后缀改按**路径段**识别：此前按字符串，`…/v1/mymessages` 会被剥成 `…/v1/my`
+  （`join_api_path` / `join_chat_endpoint` / `anthropic_base_url` 共用这条规则）
 - `ai.profile` 信封必须是 JSON 对象：此前 serde 默认允许按字段顺序从数组反序列化，
   `["ai.profile",1,{…}]` 也能导入，协议里没有这种写法；现返回 `invalid_json`
-- 模型清洗补 `transcribe`：OpenAI 的 `gpt-4o-transcribe` / `gpt-4o-mini-transcribe` 是语音转写模型
-- **下游影响**（按输入形态判断，未逐个下游实测）：以上都只影响非常规输入（`/v1beta` 结尾的地址、
-  以 `messages` 结尾但不是 `/messages` 的路径、数组形式的信封、转写模型），正常配置结果不变；只升依赖、不用改代码
-- 以上四处都是请外部实现者只凭公开规范写 Python 版时发现的
-- 模型清洗漏掉了本库自己的生图 / 视频 / 配音模型：`dall-e-3`、`doubao-seedream-*`、`doubao-seedance-*`、
-  `wan*-t2i-*`、`*-I2V-*`、`vidu/*_img2video`、`cogvideox-*`、`MiniMax-Hailuo-*`、`fish-speech-*`
-  会出现在「获取模型」的对话下拉里。补齐特征词，并加守卫测试 `non_chat_presets_are_filtered`：
-  用预置数据双向校验（非对话预置的模型必须被滤掉、对话预置的必须放行），以后新增预置漏了词会直接红。
-  **下游影响**：只升依赖、不用改代码。对话下拉变干净；`dropped_models` 变多 —— 按它排序生图 / 视频 / 配音
-  下拉的应用（story_loom、onestop），这些模型会排到正确的位置
+
+后四处是请外部实现者只凭公开规范写 Python 版时发现的。
+
+### 新增
+- 公开常量 `model_filter::{NON_CHAT_MARKERS, NON_CHAT_PREFIXES}`、`history::CONTEXT_OVERFLOW_PATTERNS`、
+  `limits::{CONTEXT_WINDOW_FIELDS, MAX_OUTPUT_FIELDS}`：模型清洗、超长识别、限额解析用到的数据表，
+  原本是私有的，公开后行为不变
+
+### 仓库层面（不影响 crate 代码）
+- **其他语言可以对照实现了**：`spec/` 发布与语言无关的预置数据 `presets.json` 和 8 组共 246 条一致性用例，
+  规则用到的数据表随用例一起发布。由 `cargo xtask gen-spec` 从本库生成，守卫测试保证与代码同步。
+  文档站按版本存档：<https://ai-profile.ruoyi.plus/spec/v0.1.2/>，说明见「其他语言实现」页
 
 ## [0.1.1] - 2026-09-24
 

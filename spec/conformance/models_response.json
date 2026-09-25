@@ -219,7 +219,7 @@
       "name": "不是 JSON"
     }
   ],
-  "crateVersion": "0.1.1",
+  "crateVersion": "0.1.2",
   "description": "parse_models_response 是两个函数的合并：ids = parse_model_ids，limits = parse_model_limits。ids：{data:[…]} 或裸数组都接受，元素是对象取 id、是字符串取本身。limits：每条模型的上下文窗口按 rules.contextWindowFields、输出上限按 rules.maxOutputFields 取值 —— 先按表的顺序查 top_provider 对象里的字段，都没有再按同样顺序查顶层；两个值各自独立。有效值：正整数；非负浮点取整；字符串去两端空白后按整数解析（带小数点的不认）；0、负数、超出 u32 视为没有。两个值都没有的模型不收录。用例里每项写成 {id, limits}；注意 verify 成功结果里的 modelLimits 线格式是 [id, limits] 二元数组。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "rules": {

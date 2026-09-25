@@ -111,7 +111,7 @@
       }
     }
   ],
-  "crateVersion": "0.1.1",
+  "crateVersion": "0.1.2",
   "description": "layers 按优先级从高到低（user > endpoint > preset），从左往右两两合并 merge(merge(l0, l1), l2)。merge(hi, lo)：hi 两个字段都为空时整条换成 lo（连 source 一起，空的用户设置不能冒充来源）；否则逐字段取 hi 的值、为空才用 lo 的，source 保留 hi 的。推论：所有层都为空时，结果是最后一层（两个 null + 最后一层的 source）—— 调用方看两个值都是 null 即视为「未知」，不看 source。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "specVersion": 1,

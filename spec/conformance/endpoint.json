@@ -672,7 +672,7 @@
       }
     }
   ],
-  "crateVersion": "0.1.1",
+  "crateVersion": "0.1.2",
   "description": "下文「剥端点后缀」指：若字符串以 /chat/completions 或 /messages 结尾（按路径段匹配，前面必须是 /；区分大小写；按此顺序、只剥一次），去掉该后缀及其前面所有 /。join_api_path(base, path)：去两端空白 → 去末尾所有 # → 去末尾所有 / → 剥端点后缀 → 拼上 \"/\" + path。base 为空时结果是 \"/\" + path —— 空地址不在本函数职责内，调用方应先校验。anthropic_base_url(base)：去两端空白，记下末尾是否有 # → 去末尾所有 # → 去末尾所有 / → 剥端点后缀，得到 b；原来末尾有 #、或 b 为空、或 ends_with_version_segment(b) → 返回 b；否则返回 b + \"/v1\"。join_chat_endpoint(base, path)：去两端空白、去末尾所有 #、去末尾所有 / 后，若以 \"/\" + path 结尾 → 原样返回（只有粘进来的端点与请求的 path 一致时才原样用）；否则 path 为 messages → join_api_path(anthropic_base_url(base), path)；其余 → join_api_path(base, path)。ends_with_version_segment(base)：去两端空白、去末尾所有 / 后，取最后一个 / 之后的部分（不区分它是主机名还是路径，所以 https://v4 也算），它是否为小写 v 后跟至少一位 ASCII 数字；v1beta、V1、单独的 v 都不算。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "specVersion": 1,
