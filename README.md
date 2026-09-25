@@ -10,7 +10,7 @@
 [![docs.rs](https://img.shields.io/docsrs/ai-profile)](https://docs.rs/ai-profile)
 [![license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 
-📖 **完整文档：<https://ai-profile.ruoyi.plus>** · 🏠 官网：<https://ruoyi.plus>
+📖 **完整文档：<https://ai-profile.ruoyi.plus>**
 
 ## 这是什么
 
