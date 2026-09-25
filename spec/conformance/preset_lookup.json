@@ -220,7 +220,7 @@
       }
     }
   ],
-  "crateVersion": "0.1.2",
+  "crateVersion": "0.1.3",
   "description": "infer_preset_key：baseUrl（null 当空串）去两端空白、ASCII 小写后记为 url。Anthropic 协议：url 为空或包含 \"://api.anthropic.com\" → anthropic_official，否则 → claude_code。其它协议：url 为空 → openai_compatible_custom；否则按 presets.json 的顺序，只看 kind 为 chat 且 protocol 为 openai_compatible 的预置，url 包含它 matchHosts 里任一项（子串，可带端口）即返回它的 key；都不中 → openai_compatible_custom。子串匹配让不带版本段的老地址也能认出来。model_limits：先 infer_preset_key 找到预置，再用 model（去两端空白）与它 models 的 value 精确匹配；匹配到且 contextWindow、maxOutput 至少一个非空 → 返回预置限额（字段同 limits.json：source 与逐字段来源都是 preset）；其余情况一律 null，不猜。preset_endpoint：用户没填地址时该预置实际请求的端点。预置有 baseUrl → 就是它；没有，但 rules.protocolDefaultBaseUrls[protocol] 包含它 matchHosts 里任一项（子串）→ 这个官方端点；其余（自定义端点、中转档，matchHosts 为空）→ null，必须由用户填。「Anthropic 官方」的 baseUrl 刻意为 null（界面据此隐藏地址框），靠这条规则得到地址。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "rules": {

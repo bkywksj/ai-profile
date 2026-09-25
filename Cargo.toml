@@ -7,7 +7,7 @@ members = ["crates/ai-profile", "xtask"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 # 最低 Rust 版本：由全 feature 下最高的依赖决定（image 0.25 要 1.88）。
 # 只开 chat 的纯数据形态实际能在更老的编译器上编，但 rust-version 只能写一个值，按最严的写。
