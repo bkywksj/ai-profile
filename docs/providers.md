@@ -7,8 +7,9 @@
 当前共 **31** 家服务商、**42** 条预置配置。
 
 > `base_url` 一律是**服务商文档里的原文**（含版本段、不含端点后缀）。
-> 本 crate 原样使用它、不做任何推断 —— 所以各家的版本段不统一（多数 `/v1`、
+> OpenAI 兼容一侧原样使用、不做任何推断 —— 所以各家的版本段不统一（多数 `/v1`、
 > 智谱 `/v4`、Gemini 的 `/v1beta/openai` 还不在末尾）也不影响。
+> Anthropic 协议例外：末段不是版本号时自动补 `/v1`（预置里仍然写全）。
 
 ## 按服务商
 
@@ -82,33 +83,33 @@
 
 | 预置 key | 名称 | Base URL | 默认模型 | 协议 | 核实于 |
 |---|---|---|---|---|---|
-| `seedream_image` | 即梦 Seedream（火山方舟） | `https://ark.cn-beijing.volces.com/api/v3` | `doubao-seedream-4-0-250828` | OpenAI 兼容 | 未核实 |
-| `wan_image` | 通义万相（阿里百炼） | `https://dashscope.aliyuncs.com/api/v1` | `wan2.2-t2i-flash` | OpenAI 兼容 | 未核实 |
-| `siliconflow_image` | 硅基流动 生图 | `https://api.siliconflow.cn/v1` | `Kwai-Kolors/Kolors` | OpenAI 兼容 | 未核实 |
-| `openai_image` | OpenAI 生图 | `https://api.openai.com/v1` | `gpt-image-1` | OpenAI 兼容 | 未核实 |
-| `custom_image` | 自定义生图端点 | `—` | `—` | OpenAI 兼容 | 未核实 |
+| `seedream_image` | 即梦 Seedream（火山方舟） | `https://ark.cn-beijing.volces.com/api/v3` | `doubao-seedream-4-0-250828` | 按地址识别 | 未核实 |
+| `wan_image` | 通义万相（阿里百炼） | `https://dashscope.aliyuncs.com/api/v1` | `wan2.2-t2i-flash` | 按地址识别 | 未核实 |
+| `siliconflow_image` | 硅基流动 生图 | `https://api.siliconflow.cn/v1` | `Kwai-Kolors/Kolors` | 按地址识别 | 未核实 |
+| `openai_image` | OpenAI 生图 | `https://api.openai.com/v1` | `gpt-image-1` | 按地址识别 | 未核实 |
+| `custom_image` | 自定义生图端点 | `—` | `—` | 按地址识别 | 未核实 |
 
 ## 视频
 
 | 预置 key | 名称 | Base URL | 默认模型 | 协议 | 核实于 |
 |---|---|---|---|---|---|
-| `seedance` | 即梦 Seedance（火山方舟） | `https://ark.cn-beijing.volces.com/api/v3` | `doubao-seedance-1-0-pro-250528` | OpenAI 兼容 | 未核实 |
-| `minimax_video` | 海螺 MiniMax 视频 | `https://api.minimaxi.com/v1` | `MiniMax-Hailuo-02` | OpenAI 兼容 | 未核实 |
-| `vidu_video` | Vidu 视频（阿里百炼） | `https://dashscope.aliyuncs.com/api/v1` | `vidu/viduq3-turbo_img2video` | OpenAI 兼容 | 未核实 |
-| `siliconflow_video` | 硅基流动 视频 Wan | `https://api.siliconflow.cn/v1` | `Wan-AI/Wan2.2-I2V-A14B` | OpenAI 兼容 | 未核实 |
-| `zhipu_video` | 智谱 CogVideoX | `https://open.bigmodel.cn/api/paas/v4` | `cogvideox-flash` | OpenAI 兼容 | 未核实 |
-| `ai302_minimax_video` | 302.AI 视频·海螺 | `https://api.302.ai/minimaxi/v1` | `MiniMax-Hailuo-02` | OpenAI 兼容 | 未核实 |
-| `ai302_zhipu_video` | 302.AI 视频·智谱 | `https://api.302.ai/zhipu/api/paas/v4` | `cogvideox-flash` | OpenAI 兼容 | 未核实 |
-| `custom_video` | 自定义视频端点 | `—` | `—` | OpenAI 兼容 | 未核实 |
+| `seedance` | 即梦 Seedance（火山方舟） | `https://ark.cn-beijing.volces.com/api/v3` | `doubao-seedance-1-0-pro-250528` | 按地址识别 | 未核实 |
+| `minimax_video` | 海螺 MiniMax 视频 | `https://api.minimaxi.com/v1` | `MiniMax-Hailuo-02` | 按地址识别 | 未核实 |
+| `vidu_video` | Vidu 视频（阿里百炼） | `https://dashscope.aliyuncs.com/api/v1` | `vidu/viduq3-turbo_img2video` | 按地址识别 | 未核实 |
+| `siliconflow_video` | 硅基流动 视频 Wan | `https://api.siliconflow.cn/v1` | `Wan-AI/Wan2.2-I2V-A14B` | 按地址识别 | 未核实 |
+| `zhipu_video` | 智谱 CogVideoX | `https://open.bigmodel.cn/api/paas/v4` | `cogvideox-flash` | 按地址识别 | 未核实 |
+| `ai302_minimax_video` | 302.AI 视频·海螺 | `https://api.302.ai/minimaxi/v1` | `MiniMax-Hailuo-02` | 按地址识别 | 未核实 |
+| `ai302_zhipu_video` | 302.AI 视频·智谱 | `https://api.302.ai/zhipu/api/paas/v4` | `cogvideox-flash` | 按地址识别 | 未核实 |
+| `custom_video` | 自定义视频端点 | `—` | `—` | 按地址识别 | 未核实 |
 
 ## 配音
 
 | 预置 key | 名称 | Base URL | 默认模型 | 协议 | 核实于 |
 |---|---|---|---|---|---|
-| `volc_tts` | 字节豆包 配音（火山语音） | `https://openspeech.bytedance.com/api/v1/tts` | `volcano_tts` | OpenAI 兼容 | 未核实 |
-| `siliconflow_tts` | 硅基流动 配音 CosyVoice | `https://api.siliconflow.cn/v1` | `FunAudioLLM/CosyVoice2-0.5B` | OpenAI 兼容 | 未核实 |
-| `openai_tts` | OpenAI 配音 | `https://api.openai.com/v1` | `tts-1` | OpenAI 兼容 | 未核实 |
-| `custom_tts` | 自定义配音端点 | `—` | `—` | OpenAI 兼容 | 未核实 |
+| `volc_tts` | 字节豆包 配音（火山语音） | `https://openspeech.bytedance.com/api/v1/tts` | `volcano_tts` | 按地址识别 | 未核实 |
+| `siliconflow_tts` | 硅基流动 配音 CosyVoice | `https://api.siliconflow.cn/v1` | `FunAudioLLM/CosyVoice2-0.5B` | 按地址识别 | 未核实 |
+| `openai_tts` | OpenAI 配音 | `https://api.openai.com/v1` | `tts-1` | 按地址识别 | 未核实 |
+| `custom_tts` | 自定义配音端点 | `—` | `—` | 按地址识别 | 未核实 |
 
 ## 加一家服务商
 
@@ -118,5 +119,5 @@
 2. 默认 `model` 选**够用档**而非最强档
 3. `models` 只放核对过的 id，并填 `verified_at`
 4. 同一厂商复用同一个 `vendor_id`
-5. `cargo test` 七个守卫测试必须全绿
+5. `cargo test` 守卫测试必须全绿
 6. `cargo xtask gen-docs` 重新生成本文件

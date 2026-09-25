@@ -39,8 +39,9 @@ pub fn render_providers_markdown() -> String {
 
     s.push_str(
         "> `base_url` 一律是**服务商文档里的原文**（含版本段、不含端点后缀）。\n\
-         > 本 crate 原样使用它、不做任何推断 —— 所以各家的版本段不统一（多数 `/v1`、\n\
-         > 智谱 `/v4`、Gemini 的 `/v1beta/openai` 还不在末尾）也不影响。\n\n",
+         > OpenAI 兼容一侧原样使用、不做任何推断 —— 所以各家的版本段不统一（多数 `/v1`、\n\
+         > 智谱 `/v4`、Gemini 的 `/v1beta/openai` 还不在末尾）也不影响。\n\
+         > Anthropic 协议例外：末段不是版本号时自动补 `/v1`（预置里仍然写全）。\n\n",
     );
 
     // ── 按厂商汇总 ─────────────────────────────────────────────
@@ -82,9 +83,16 @@ pub fn render_providers_markdown() -> String {
         for p in items {
             let base = p.base_url.unwrap_or("—");
             let model = if p.model.is_empty() { "—" } else { p.model };
-            let proto = match p.protocol {
-                crate::kind::Protocol::Anthropic => "Anthropic",
-                _ => "OpenAI 兼容",
+            // 🔴 `protocol` 字段只对对话有意义；生图 / 视频 / 配音的协议由调用时按地址识别
+            //    （media::*::detect，挂 client feature，生成文档时不一定编进来）。
+            //    此前统一显示成「OpenAI 兼容」，连火山语音这种专有协议也是 —— 误导
+            let proto = if p.kind != Kind::Chat {
+                "按地址识别"
+            } else {
+                match p.protocol {
+                    crate::kind::Protocol::Anthropic => "Anthropic",
+                    _ => "OpenAI 兼容",
+                }
             };
             // 🔴 verified_at 为空 = 未实际调通过，明确标出来而不是留白 ——
             //    留白会让读者以为"没这个概念"，标出来才知道该自己验一下
@@ -103,7 +111,7 @@ pub fn render_providers_markdown() -> String {
          2. 默认 `model` 选**够用档**而非最强档\n\
          3. `models` 只放核对过的 id，并填 `verified_at`\n\
          4. 同一厂商复用同一个 `vendor_id`\n\
-         5. `cargo test` 七个守卫测试必须全绿\n\
+         5. `cargo test` 守卫测试必须全绿\n\
          6. `cargo xtask gen-docs` 重新生成本文件\n",
     );
     s
