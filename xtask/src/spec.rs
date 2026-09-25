@@ -19,9 +19,12 @@ use std::collections::BTreeMap;
 use ai_profile::client::{
     check_required_fields, diagnose, parse_model_ids, parse_model_limits, suggest_url,
 };
-use ai_profile::endpoint::{anthropic_base_url, join_api_path, join_chat_endpoint};
+use ai_profile::endpoint::{
+    anthropic_base_url, ends_with_version_segment, join_api_path, join_chat_endpoint,
+};
+use ai_profile::history::is_context_overflow;
 use ai_profile::model_filter::{clean_fetched_models, is_chat_model_id};
-use ai_profile::preset::{presets, vendors_all};
+use ai_profile::preset::{infer_preset_key, model_limits, presets, vendors_all};
 use ai_profile::{parse_profiles, to_profile, Protocol, TokenLimits};
 use serde_json::{json, Value};
 
@@ -106,12 +109,31 @@ fn endpoint_json() -> Value {
             "expected": anthropic_base_url(base),
         }));
     }
+    // 版本段判定：只认「v + 纯数字」，主机名以 v4 开头的不算
+    for base in [
+        "https://api.deepseek.com/v1",
+        "https://api.deepseek.com/v1/",
+        "https://open.bigmodel.cn/api/paas/v4",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+        "https://x.com/v1beta",
+        "https://api.deepseek.com",
+        "https://v4.example.com",
+        "https://x.com/v",
+        "",
+    ] {
+        cases.push(json!({
+            "fn": "ends_with_version_segment",
+            "input": { "base": base },
+            "expected": ends_with_version_segment(base),
+        }));
+    }
     with_cases(
         header(
             "端点拼接",
             "join_api_path：base_url 原样使用，只剥掉误填的对话端点后缀与末尾 #。\
              join_chat_endpoint：对话端点允许整条粘进来；path 为 messages（Anthropic）时按 anthropic_base_url 补 /v1。\
-             anthropic_base_url：末段不是 v<数字> 就补 /v1，末尾 # 表示别补。",
+             anthropic_base_url：末段不是 v<数字> 就补 /v1，末尾 # 表示别补。\
+             ends_with_version_segment：末段（去掉末尾 /）是否形如 v + 纯数字；v1beta、主机名 v4.example.com 都不算。",
         ),
         cases,
     )
@@ -487,6 +509,165 @@ fn limits_json() -> Value {
     )
 }
 
+// ── 从已存配置反推预置 ───────────────────────────────────────────
+
+fn preset_lookup_json() -> Value {
+    let inputs: [(Protocol, Option<&str>); 10] = [
+        (Protocol::Anthropic, None),
+        (Protocol::Anthropic, Some("https://api.anthropic.com")),
+        // 官方地址带不带 /v1 都是官方档
+        (Protocol::Anthropic, Some("https://api.anthropic.com/v1")),
+        (Protocol::Anthropic, Some("https://relay.example.com")),
+        (Protocol::OpenAiCompatible, None),
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://api.deepseek.com/v1"),
+        ),
+        // 存量配置常是不带版本段的旧写法：按主机名匹配，不按全串
+        (Protocol::OpenAiCompatible, Some("https://api.deepseek.com")),
+        // 大小写不敏感
+        (
+            Protocol::OpenAiCompatible,
+            Some("HTTPS://API.DEEPSEEK.COM/v1"),
+        ),
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://open.bigmodel.cn/api/paas/v4"),
+        ),
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://unknown.example.com/v1"),
+        ),
+    ];
+    let mut cases: Vec<Value> = inputs
+        .iter()
+        .map(|(protocol, base)| {
+            json!({
+                "fn": "infer_preset_key",
+                "input": { "protocol": protocol, "baseUrl": base },
+                "expected": infer_preset_key(*protocol, *base),
+            })
+        })
+        .collect();
+    let limits_inputs: [(Protocol, Option<&str>, &str); 5] = [
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://api.deepseek.com/v1"),
+            "deepseek-flash",
+        ),
+        // model 两端空白要去掉
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://api.deepseek.com"),
+            "  deepseek-flash ",
+        ),
+        // 预置里有这家、但没有这个模型：不猜
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://api.deepseek.com/v1"),
+            "not-a-real-model",
+        ),
+        // 自定义端点：没有预置可查
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://unknown.example.com/v1"),
+            "deepseek-flash",
+        ),
+        (Protocol::OpenAiCompatible, None, "whatever"),
+    ];
+    for (protocol, base, model) in limits_inputs {
+        cases.push(json!({
+            "fn": "model_limits",
+            "input": { "protocol": protocol, "baseUrl": base, "model": model },
+            "expected": model_limits(protocol, base, model),
+        }));
+    }
+    with_cases(
+        header(
+            "从已存配置反推预置",
+            "infer_preset_key：Anthropic 协议下空地址或 api.anthropic.com → anthropic_official，其余 → claude_code；\
+             OpenAI 兼容只在对话预置里按 matchHosts 做子串匹配（小写后），都不中 → openai_compatible_custom。\
+             按主机名而非全串，老配置不带版本段也能认出来。\
+             model_limits：先反推预置，再按 model（去空白）精确匹配它的 models，取预置登记的限额；查不到返回 null，不猜。",
+        ),
+        cases,
+    )
+}
+
+// ── 超长报错识别 ─────────────────────────────────────────────────
+
+fn history_json() -> Value {
+    let inputs: [(&str, u16, &str); 11] = [
+        (
+            "OpenAI / DeepSeek / vLLM",
+            400,
+            r#"{"error":{"message":"This model's maximum context length is 131072 tokens. However, you requested 140000 tokens (135904 in the messages, 4096 in the completion).","type":"invalid_request_error","code":"context_length_exceeded"}}"#,
+        ),
+        (
+            "Anthropic",
+            400,
+            r#"{"type":"error","error":{"type":"invalid_request_error","message":"prompt is too long: 215000 tokens > 200000 maximum"}}"#,
+        ),
+        (
+            "Gemini（OpenAI 兼容层）",
+            400,
+            r#"[{"error":{"code":400,"message":"The input token count (1200000) exceeds the maximum number of tokens allowed (1048576).","status":"INVALID_ARGUMENT"}}]"#,
+        ),
+        (
+            "Kimi",
+            400,
+            r#"{"error":{"message":"Invalid request: Your request exceeded model token limit: 131072","type":"invalid_request_error"}}"#,
+        ),
+        (
+            "通义",
+            400,
+            r#"{"error":{"message":"Range of input length should be [1, 129024]","type":"invalid_request_error","code":"invalid_parameter_error"}}"#,
+        ),
+        ("请求体过大", 413, "Request Entity Too Large"),
+        (
+            "限流：提到 tokens 但与窗口无关",
+            429,
+            r#"{"error":{"message":"Rate limit reached for gpt-x on tokens per min (TPM): Limit 30000, Used 29000","type":"tokens"}}"#,
+        ),
+        (
+            "输出上限太大：裁历史解决不了",
+            400,
+            r#"{"error":{"message":"max_tokens is too large: 50000. This model supports at most 8192 completion tokens.","type":"invalid_request_error"}}"#,
+        ),
+        (
+            "Anthropic 输出上限",
+            400,
+            r#"{"type":"error","error":{"type":"invalid_request_error","message":"max_tokens: 64000 > 32000, which is the maximum allowed number of output tokens"}}"#,
+        ),
+        (
+            "鉴权失败",
+            401,
+            r#"{"error":{"message":"maximum context length"}}"#,
+        ),
+        ("服务端错误", 500, "context length exceeded"),
+    ];
+    let cases = inputs
+        .iter()
+        .map(|(name, status, body)| {
+            json!({
+                "fn": "is_context_overflow",
+                "name": name,
+                "input": { "status": status, "body": body },
+                "expected": is_context_overflow(*status, body),
+            })
+        })
+        .collect();
+    with_cases(
+        header(
+            "超长报错识别",
+            "is_context_overflow：宁可漏判不可误判（误判会把用户历史无谓地裁掉一半）。413 一律算；\
+             只看 400 / 422，其余状态码一律不算；只提 max_tokens / max_completion_tokens 而不提 \
+             context / prompt / input 的是输出上限问题，不算。命中的报错片段见用例。",
+        ),
+        cases,
+    )
+}
+
 /// 全部生成物：`spec/` 下的相对路径 → 文件内容（带末尾换行的格式化 JSON）。
 pub fn render_all() -> BTreeMap<&'static str, String> {
     let files = [
@@ -497,6 +678,8 @@ pub fn render_all() -> BTreeMap<&'static str, String> {
         ("conformance/diagnose.json", diagnose_json()),
         ("conformance/ai_profile.json", ai_profile_json()),
         ("conformance/limits.json", limits_json()),
+        ("conformance/preset_lookup.json", preset_lookup_json()),
+        ("conformance/history.json", history_json()),
     ];
     files
         .into_iter()

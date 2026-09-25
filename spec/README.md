@@ -5,12 +5,14 @@
 | 文件 | 内容 |
 |------|------|
 | `presets.json` | 全部服务商预置 + 按厂商聚合的目录，与 crate 同源 |
-| `conformance/endpoint.json` | 端点拼接：`join_api_path` / `join_chat_endpoint` / `anthropic_base_url` |
+| `conformance/endpoint.json` | 端点拼接：`join_api_path` / `join_chat_endpoint` / `anthropic_base_url` / `ends_with_version_segment` |
 | `conformance/model_filter.json` | 模型清单清洗：`is_chat_model_id` / `clean_fetched_models` |
 | `conformance/models_response.json` | `/models` 响应解析：模型 id 与限额 |
 | `conformance/diagnose.json` | 验证失败的错误判定：`diagnose` / `suggest_url` / `check_required_fields` |
 | `conformance/ai_profile.json` | `ai.profile` 解析（宽进）与生成（严出） |
 | `conformance/limits.json` | token 限额三层合并 |
+| `conformance/preset_lookup.json` | 从已存配置反推预置：`infer_preset_key` / `model_limits`（预置登记的静态限额） |
+| `conformance/history.json` | 超长报错识别：`is_context_overflow`（历史裁剪本身暂无用例） |
 
 🔴 **全部由 `cargo xtask gen-spec` 生成，请勿手改。** 期望值是 Rust 参考实现现场算出来的，
 守卫测试 `spec_files_in_sync` 保证它们与代码同步 —— 改了规则忘了重新生成，CI 会红。

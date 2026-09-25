@@ -1,0 +1,108 @@
+{
+  "cases": [
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"error\":{\"message\":\"This model's maximum context length is 131072 tokens. However, you requested 140000 tokens (135904 in the messages, 4096 in the completion).\",\"type\":\"invalid_request_error\",\"code\":\"context_length_exceeded\"}}",
+        "status": 400
+      },
+      "name": "OpenAI / DeepSeek / vLLM"
+    },
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"prompt is too long: 215000 tokens > 200000 maximum\"}}",
+        "status": 400
+      },
+      "name": "Anthropic"
+    },
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "[{\"error\":{\"code\":400,\"message\":\"The input token count (1200000) exceeds the maximum number of tokens allowed (1048576).\",\"status\":\"INVALID_ARGUMENT\"}}]",
+        "status": 400
+      },
+      "name": "Gemini（OpenAI 兼容层）"
+    },
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"error\":{\"message\":\"Invalid request: Your request exceeded model token limit: 131072\",\"type\":\"invalid_request_error\"}}",
+        "status": 400
+      },
+      "name": "Kimi"
+    },
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"error\":{\"message\":\"Range of input length should be [1, 129024]\",\"type\":\"invalid_request_error\",\"code\":\"invalid_parameter_error\"}}",
+        "status": 400
+      },
+      "name": "通义"
+    },
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "Request Entity Too Large",
+        "status": 413
+      },
+      "name": "请求体过大"
+    },
+    {
+      "expected": false,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"error\":{\"message\":\"Rate limit reached for gpt-x on tokens per min (TPM): Limit 30000, Used 29000\",\"type\":\"tokens\"}}",
+        "status": 429
+      },
+      "name": "限流：提到 tokens 但与窗口无关"
+    },
+    {
+      "expected": false,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"error\":{\"message\":\"max_tokens is too large: 50000. This model supports at most 8192 completion tokens.\",\"type\":\"invalid_request_error\"}}",
+        "status": 400
+      },
+      "name": "输出上限太大：裁历史解决不了"
+    },
+    {
+      "expected": false,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"max_tokens: 64000 > 32000, which is the maximum allowed number of output tokens\"}}",
+        "status": 400
+      },
+      "name": "Anthropic 输出上限"
+    },
+    {
+      "expected": false,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"error\":{\"message\":\"maximum context length\"}}",
+        "status": 401
+      },
+      "name": "鉴权失败"
+    },
+    {
+      "expected": false,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "context length exceeded",
+        "status": 500
+      },
+      "name": "服务端错误"
+    }
+  ],
+  "crateVersion": "0.1.1",
+  "description": "is_context_overflow：宁可漏判不可误判（误判会把用户历史无谓地裁掉一半）。413 一律算；只看 400 / 422，其余状态码一律不算；只提 max_tokens / max_completion_tokens 而不提 context / prompt / input 的是输出上限问题，不算。命中的报错片段见用例。",
+  "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "specVersion": 1,
+  "title": "超长报错识别"
+}

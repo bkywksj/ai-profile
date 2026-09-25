@@ -1,0 +1,142 @@
+{
+  "cases": [
+    {
+      "expected": "anthropic_official",
+      "fn": "infer_preset_key",
+      "input": {
+        "baseUrl": null,
+        "protocol": "anthropic"
+      }
+    },
+    {
+      "expected": "anthropic_official",
+      "fn": "infer_preset_key",
+      "input": {
+        "baseUrl": "https://api.anthropic.com",
+        "protocol": "anthropic"
+      }
+    },
+    {
+      "expected": "anthropic_official",
+      "fn": "infer_preset_key",
+      "input": {
+        "baseUrl": "https://api.anthropic.com/v1",
+        "protocol": "anthropic"
+      }
+    },
+    {
+      "expected": "claude_code",
+      "fn": "infer_preset_key",
+      "input": {
+        "baseUrl": "https://relay.example.com",
+        "protocol": "anthropic"
+      }
+    },
+    {
+      "expected": "openai_compatible_custom",
+      "fn": "infer_preset_key",
+      "input": {
+        "baseUrl": null,
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": "deepseek",
+      "fn": "infer_preset_key",
+      "input": {
+        "baseUrl": "https://api.deepseek.com/v1",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": "deepseek",
+      "fn": "infer_preset_key",
+      "input": {
+        "baseUrl": "https://api.deepseek.com",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": "deepseek",
+      "fn": "infer_preset_key",
+      "input": {
+        "baseUrl": "HTTPS://API.DEEPSEEK.COM/v1",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": "zhipu",
+      "fn": "infer_preset_key",
+      "input": {
+        "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": "openai_compatible_custom",
+      "fn": "infer_preset_key",
+      "input": {
+        "baseUrl": "https://unknown.example.com/v1",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": {
+        "contextWindow": 1000000,
+        "maxOutput": 384000,
+        "source": "preset"
+      },
+      "fn": "model_limits",
+      "input": {
+        "baseUrl": "https://api.deepseek.com/v1",
+        "model": "deepseek-flash",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": {
+        "contextWindow": 1000000,
+        "maxOutput": 384000,
+        "source": "preset"
+      },
+      "fn": "model_limits",
+      "input": {
+        "baseUrl": "https://api.deepseek.com",
+        "model": "  deepseek-flash ",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": null,
+      "fn": "model_limits",
+      "input": {
+        "baseUrl": "https://api.deepseek.com/v1",
+        "model": "not-a-real-model",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": null,
+      "fn": "model_limits",
+      "input": {
+        "baseUrl": "https://unknown.example.com/v1",
+        "model": "deepseek-flash",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": null,
+      "fn": "model_limits",
+      "input": {
+        "baseUrl": null,
+        "model": "whatever",
+        "protocol": "openai_compatible"
+      }
+    }
+  ],
+  "crateVersion": "0.1.1",
+  "description": "infer_preset_key：Anthropic 协议下空地址或 api.anthropic.com → anthropic_official，其余 → claude_code；OpenAI 兼容只在对话预置里按 matchHosts 做子串匹配（小写后），都不中 → openai_compatible_custom。按主机名而非全串，老配置不带版本段也能认出来。model_limits：先反推预置，再按 model（去空白）精确匹配它的 models，取预置登记的限额；查不到返回 null，不猜。",
+  "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "specVersion": 1,
+  "title": "从已存配置反推预置"
+}
