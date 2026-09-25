@@ -19,7 +19,7 @@ description: |
 本 crate 已发布到 crates.io，下游按**版本号**引用（`ai-profile = "0.1"`）。
 
 - 「推送」≠「发布」：推送只是把提交放到三个远程；下游要等**发了新版本**才能 `cargo update` 拿到
-- 发新版本走技能 `crate-release`（版本号、CHANGELOG、发版闸门、`cargo publish`、打 tag）
+- 发新版本走技能 `crate-release`（版本号、CHANGELOG、发版闸门、经 Sigil `crates_publish` 发布、打 tag）
 
 ## 提交说明
 

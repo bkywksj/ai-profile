@@ -1,25 +1,29 @@
 ---
 name: crate-release
 description: |
-  用于把 ai-profile 发布一个新版本到 crates.io：定版本位、改版本号与 CHANGELOG、跑发版闸门、发布、打 tag、核对 crates.io / docs.rs、交接下游。
+  用于把 ai-profile 发布一个新版本到 crates.io：定版本位、改版本号与 CHANGELOG、跑发版闸门、经 Sigil 发布、打 tag、核对 crates.io / docs.rs、交接下游。
 
   触发场景：
   - 用户说「发布 / 发版 / 发一个新版本 / 发 crates.io」
   - 攒了一批新模型、新服务商或修复，要让下游用 `cargo update` 拿到
   - 公开 API 有变化，要发 minor / major 版本
-  - 要轮换或排查 crates.io 发布 token
+  - 要轮换或排查 crates.io 发布 token（Sigil 金库里的 cargo_registry 凭据）
 
-  触发词：发布、发版、release、crates.io、cargo publish、版本号、打 tag、docs.rs、发布 token、yank
+  触发词：发布、发版、release、crates.io、cargo publish、crates_publish、crates_info、版本号、打 tag、docs.rs、发布 token、yank
 ---
 
 # 发布新版本到 crates.io
 
-## 🔴 先记住两件事
+## 🔴 先记住三件事
 
 1. **crates.io 的版本永久不可撤回**（只能 yank，不能删、不能覆盖）。漏一项检查的代价是补发一个版本，
    而那个坏版本永远留在记录里 —— 0.1.0 就因为漏配 docs.rs 的 feature 只能补发 0.1.1。
-2. **`cargo publish` 必须用户当次确认**。用户确认过一次，只对那一次发布有效。
-   拦截它的钩子**取决于会话是从哪个仓库开的**（钩子跟着会话的工作目录走，不跟着命令操作的仓库走），见下方「⑥ 发布」。
+2. **发布走 Sigil 的 `mcp__sigil__crates_publish`，不直接跑 `cargo publish`**。发布 token 只在 Sigil 金库里，
+   AI 只传凭据名、拿不到明文；确认在 **Sigil 桌面端的审批弹窗**里做，弹窗写着「包名 + 版本号」。
+   Sigil 正式版还没有这个能力时，见下方「过渡期」。
+3. **Sigil 上传时不编译**（带 token 的 cargo 进程若编译，依赖的 build.rs 就能读到 token），
+   编译验证全靠你在**发布提交上**跑的 `cargo package`。Sigil 会比对两次打包的 sha256，对不上就拒绝上传 ——
+   所以 `cargo package` 之后**不要再提交任何东西**再发（哪怕一行文档）。
 
 ## 完整路线
 
@@ -29,10 +33,10 @@ description: |
 ③ 写 CHANGELOG    「## [未发布]」下的内容移到新版本标题下，写面向使用者的说明；
                   逐条对照技能 change-impact，确认每条改动的连带更新（✋ 项）都已做 —— 发版是最后能补的关口
 ④ 发版闸门        见下方清单，全部读输出实体确认通过
-⑤ 提交 + 推送     三个远程（技能 git-workflow），github 先推
-⑥ 发布            用户确认后 cargo publish -p ai-profile
-⑦ 打 tag          vX.Y.Z，推到三个远程
-⑧ 核对            crates.io 版本与元数据、docs.rs 构建出 client / media 模块
+⑤ 提交 + 推送     三个远程（技能 git-workflow），github 先推；等 CI 全绿
+⑥ 发布            在发布提交上 cargo package → crates_publish 预检 → crates_publish 正式发布（Sigil 弹窗确认）
+⑦ 打 tag          vX.Y.Z 指向发布提交，推到三个远程
+⑧ 核对            crates_info 查版本与 docs.rs；docs.rs 首页要有 client / media 模块
 ⑨ 交接            技能 downstream-sync：文档站「更新日志」、升级下游、回填登记表
 ```
 
@@ -81,49 +85,99 @@ cargo package -p ai-profile                                 # 打包 + 编译验
 
 MSRV 由 CI 的 `msrv` 任务用 1.88 真编（本机通常没装 1.88）—— **推送后等 CI 绿了再发布**。
 
-## ⑥ 发布
+## ⑥ 发布（走 Sigil）
+
+前提：⑤ 已推送、CI 全绿、**工作树干净**、HEAD 就是要发布的那个提交。
+
+**1. 在发布提交上重跑一次打包**（带编译验证，不需要 token）：
 
 ```bash
-cargo publish -p ai-profile
+cargo package -p ai-profile
 ```
 
-- 看到 `Published ai-profile vX.Y.Z at registry crates-io` 才算成功
+它留下的 `target/package/ai-profile-X.Y.Z.crate` 就是 Sigil 要比对的「闸门产物」。
+包里的 `.cargo_vcs_info.json` 记着提交号，所以**必须在发布提交上跑**：④ 里那次如果是在提交之前 / 之后又有新提交，
+哈希就对不上。实例：0.1.3 的闸门产物是 17:45 打的，之后仓库又提交了 README，预检立刻报「与闸门产物不一致」。
 
-### 会撞上哪个钩子、怎么走
+**2. 预检**（不上传、不用凭据）：
 
-| 会话从哪里开 | 拦截的钩子 | 要求 | 做法 |
-|---|---|---|---|
-| 本仓库 | `.claude/hooks/publish-guard.cjs` | 弹确认 | 用户同意后执行上面的命令 |
-| sigil 仓库（常见：在 sigil 里顺手发 crate） | sigil 的 `pre-tool-use.cjs`，Bash / PowerShell 都查 | 改走 Sigil 的 `mcp__sigil__crates_publish`（本机不存明文 token 的方案） | 见下 |
+```
+mcp__sigil__crates_publish(
+  manifest_dir = "E:\\my\\桌面软件tauri\\ai-profile",   # workspace 根目录
+  package      = "ai-profile",
+  version      = "X.Y.Z",                               # 必须等于 Cargo.toml 里的版本，否则拒绝
+  dry_run      = true
+)
+```
 
-sigil 会话里的三条路，按优先级：
+- 返回里要看到「✓ 与闸门验证过的包一致」；文件清单里有 `LICENSE` / `README.md`，**没有** `.secrets/`
+- 预检也会在 Sigil 桌面端弹一次确认（显示「预检 crate 发布（不上传）」），提醒用户点放行
 
-1. **`mcp__sigil__crates_publish`**：先 `dry_run=true` 预检，再正式发，桌面端弹确认。
-   🔴 这个能力是 sigil 2.0.0 之后才加的 —— 本会话 ToolSearch 查不到它，就说明**正在运行的 Sigil 还没有这个能力**，
-   不是没连上。先确认用户装的 Sigil 版本，别反复重试
-2. **用户自己在输入框执行** `! cd <本仓库> && cargo publish -p ai-profile`：用户亲手执行的命令不走 AI 钩子
-3. **用户明确授权后由 AI 执行**（0.1.3 就是这样发的）：必须是用户**当次**说了「你绕过就行 / 授权」这类话，
-   并在回复里明说「钩子没改，下次照样拦」。没有明确授权时，**不要**换 `cmd /c`、换 shell、写脚本去绕钩子
+**3. 正式发布**：同样的参数，去掉 `dry_run`，加 `credential_name`：
 
-不管走哪条，都不读、不显示 token 内容；`~/.cargo/credentials.toml` 由 cargo 自己读。
+- 凭据名用 `mcp__sigil__list_credentials` 查 `cargo_registry` 类的那条，**别猜**（不同金库里名字不一样）
+- Sigil 桌面端弹窗：动作「发布 crate 到 crates.io」、目标「crates.io · ai-profile X.Y.Z」，附目录与凭据名，
+  **由用户在弹窗里确认**
+- 返回「✓ 已发布 ai-profile vX.Y.Z」才算成功；返回里还带着这次发布的 HEAD 提交号，⑦ 打 tag 用它
+
+**Sigil 拒绝时怎么办**（它的报错都是人话，照着做）：
+
+| 报错里说的 | 原因 | 处理 |
+|---|---|---|
+| 版本对不上 | `version` 参数与 Cargo.toml 不符 | 核对 ② 是否已改、参数是否写对 |
+| 没找到发版闸门的打包产物 | 没跑第 1 步 | 跑第 1 步 |
+| 与闸门验证过的包不一致 | 第 1 步之后又有提交或改动 | 在当前提交上重跑第 1 步 |
+| 工作区有未提交的改动 | 工作树不干净 | 提交或还原后再来 |
+| 不是 rustup 官方渠道 / 项目级 cargo 配置里有可能劫持发布的设置 | `rust-toolchain.toml` 指向自定义路径，或 `.cargo/config.toml` 里有 `http` / `registry` / `source` / `credential-provider` 等 | 移走这些设置（本仓库的 `.cargo/config.toml` 只有 `[alias]`，不受影响） |
+| 该版本已经在 crates.io 上了 | 版本号复用 | 递增版本号 |
+| token 无效 / 权限不够 / 邮箱未验证 | 凭据或账号问题 | 见下方「发布 token」 |
+| 已有一个 crate 发布在进行中 | 同一时间只许一个发布 | 等上一个结束 |
+
+### 钩子会拦什么
+
+| 你做的事 | 会发生什么 |
+|---|---|
+| 调 `mcp__sigil__crates_publish` / `crates_info` | MCP 工具调用，**不经过任何 shell 钩子**；确认在 Sigil 弹窗里做 |
+| 在本仓库会话里直接跑 `cargo publish`（不带 `--dry-run`） | `.claude/hooks/publish-guard.cjs` 弹确认（过渡期仍是「询问」；迁移完成后改为拒绝） |
+| 在 sigil 仓库会话里直接跑 `cargo publish` | sigil 的 `pre-tool-use.cjs` 直接拦，Bash / PowerShell 都查 |
+| 在 sigil 会话里 grep「cargo publish」、或提交信息里写了这几个字 | 同样被 sigil 钩子拦 —— 它按命令文本匹配，分不清是不是真发布。搜索用 Grep 工具，提交信息写进文件用 `git commit -F` |
+
+没有明确授权时，**不要**换 `cmd /c`、换 shell、写脚本去绕钩子。
+
+### 过渡期（ToolSearch 查不到 `mcp__sigil__crates_publish` 时）
+
+查不到有两种原因，先分清再动手，别反复重试：
+
+1. **正在运行的 Sigil 还没有这个能力**（2.0.0 及之前的正式版都没有）→ 等 Sigil 新版
+2. **金库里没有 `cargo_registry` 类凭据** → 工具按凭据自动隐藏（连 `crates_info` 也看不到）；
+   请用户在 Sigil「新建凭据」里选「crates.io 发布（cargo_registry）」，填 token 后点「测试」
+
+急着发、又确实用不了 Sigil 时，只剩两条路（**都依赖 `~/.cargo/credentials.toml` 里的明文 token**，
+迁移完成、明文删掉之后就走不通了 —— 到那时删掉本节）：
+
+- **用户自己在输入框执行** `! cd <本仓库> && cargo publish -p ai-profile`：用户亲手执行的命令不走 AI 钩子
+- **用户当次明确授权后由 AI 执行**（0.1.3 就是这样发的）：必须是用户**这一次**说了「你绕过就行 / 授权」这类话，
+  并在回复里明说「钩子没改，下次照样拦」
+
+注意：走这两条时 cargo 会先**带着 token 编译一遍**，依赖的 build.rs 能读到它 —— 这正是改走 Sigil 的原因。
 
 ## 发布 token
 
 | 项 | 值 |
 |---|---|
-| 实际生效的凭据 | `~/.cargo/credentials.toml`（`cargo login` 写入，本机所有项目共用） |
-| 本仓库留存 | `.secrets/crates-io.token`（`/.secrets/` 已在 `.gitignore`，不进 git、不进 crate 包） |
-| 权限范围 | 只能发 `ai-profile`；只有 `publish-new` + `publish-update`；永不过期 |
+| 实际生效的凭据 | Sigil 金库里的 `cargo_registry` 类凭据：token + 可选的「允许发布」名单（留空 = 以 token 在 crates.io 上的权限为准） |
+| 本机明文 | 迁移完成后应**不存在**：`~/.cargo/credentials.toml` 里的 token 与 `.secrets/crates-io.token` 都要删（过渡期可能还在，见上） |
+| 权限范围 | 只能发 `ai-profile`；只有 `publish-new` + `publish-update`（刻意不给 yank / change-owners） |
 | 账号 | crates.io 用 GitHub `bkywksj` 登录，邮箱已验证 |
 
 **轮换**（怀疑泄露、或 token 在对话 / 日志里出现过）：
 
-1. crates.io → Account Settings → API Tokens：吊销旧的，按上表范围建新的
-2. 新 token 写进 `.secrets/crates-io.token`
-3. `cargo login < .secrets/crates-io.token`
-4. 🔴 不要在对话里贴 token 原文，不要 `cat` 它，不要写进任何会提交的文件
+1. crates.io → Account Settings → API Tokens：吊销旧的，按上表范围建新的（建议设过期时间）
+2. Sigil → 编辑这条凭据 → 重新填 token（token 加密不可回填；编辑时 token 与名单都要重填）→ 点「测试」
+3. 🔴 不要在对话里贴 token 原文；**不再**写 `.secrets/`、**不再** `cargo login`
 
-报 `401` / `403`：token 过期或被吊销 → 按上面轮换。报 `email not verified`：去 crates.io 验证邮箱。
+「测试」的判定：「token 有效」= 通过；「token 无效、已吊销或已过期」= 回到第 1 步重建。
+它只能判 token 有没有效，**判不出 scope 够不够** —— scope 不足会在真正发布时由 crates.io 报出来。
 
 ## ⑦ 打 tag
 
@@ -131,17 +185,22 @@ sigil 会话里的三条路，按优先级：
 git tag -a vX.Y.Z -m "ai-profile X.Y.Z：一句话说明" <发布时的提交>
 ```
 
-用 Sigil `git_push`（传 `tag` 参数）推到 `github` / `gitee` / `gitcode`。tag 要指向**发布时那个提交**，
-crates.io 包里的 `.cargo_vcs_info.json` 记着它。
+用 Sigil `git_push`（传 `tag` 参数）推到 `github` / `gitee` / `gitcode`。tag 要指向**发布时那个提交**
+（`crates_publish` 返回里的 HEAD），crates.io 包里的 `.cargo_vcs_info.json` 记着它。
 
 ## ⑧ 核对
 
-- `https://crates.io/api/v1/crates/ai-profile`：`max_version`、`rust_version`、features、`repository`
-- `https://docs.rs/ai-profile/X.Y.Z/ai_profile/`：通常 5–20 分钟构建完，首页要能看到 `client` 与 `media` 模块
+- **`mcp__sigil__crates_info(name = "ai-profile", version = "X.Y.Z")`**：一次拿到最新版本、`rust_version`、
+  `repository`、这个版本是否已发布 / 是否 yank、docs.rs 是否构建成功。
+  刚发布时 docs.rs 显示「尚无记录」属正常（通常 5–20 分钟），过会儿再查
+- `crates_info` 不返回 features；要核对就看 `https://crates.io/api/v1/crates/ai-profile` 的 `features`
+- docs.rs 首页要能看到 `client` 与 `media` 模块：`https://docs.rs/ai-profile/X.Y.Z/ai_profile/`
+  （`crates_info` 只报构建成败，模块齐不齐还得看页面）
 
 ## 发错了怎么办
 
 - **yank** 能阻止新项目选中这个版本，但已经锁定它的项目照样能下载 —— 它不是删除
+- yank 去 crates.io 网页上操作：发布 token 刻意没给 `yank` scope，Sigil 也不提供 yank 能力
 - 正确做法永远是**补发一个修正版本**，并在 CHANGELOG 里写清楚上一版的问题
 - 真出了安全问题：yank + 补发 + 通知下游，三件事同时做
 
@@ -152,5 +211,8 @@ crates.io 包里的 `.cargo_vcs_info.json` 记着它。
 | 只跑 `cargo check` 就发 | 测试代码编译不过、行为回归都查不出来 | 闸门跑全量测试 |
 | 没等 CI 的 msrv 任务就发 | 声明的最低版本其实编不过 | 推送后等 CI 绿 |
 | 忘了 docs.rs 配置 | 文档站上整块 API 消失 | 闸门里检查包内 `Cargo.toml` |
-| tag 打在发布之后的提交上 | tag 与 crates.io 包内容对不上 | tag 指向发布时的提交 |
+| `cargo package` 之后又提交了东西才发 | Sigil 拒绝上传「与闸门验证过的包不一致」 | 在当前提交上重跑 `cargo package` |
+| 直接跑 `cargo publish` | 被钩子拦；迁移完成后本机也没有 token | 走 `crates_publish` |
+| 凭据名靠猜 | 报「凭据 'xxx' 不存在」 | 用 `list_credentials` 查 `cargo_registry` 类的那条 |
+| tag 打在发布之后的提交上 | tag 与 crates.io 包内容对不上 | tag 指向 `crates_publish` 返回里的 HEAD |
 | 发完不交接 | 下游不知道有新版本 | 走 `downstream-sync` |
