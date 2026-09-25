@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "6915837",
-  "lastSyncTime": "2026-09-25T16:00:00Z",
+  "lastSyncCommit": "9504f70",
+  "lastSyncTime": "2026-09-25T16:30:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -199,6 +199,29 @@
         "xtask/src/spec.rs"
       ],
       "note": "其他语言实现：版本存档 /spec/v<版本>/、实现范围对照表、测试连接网络层流程、AI 实现提示词、跟进更新"
+    },
+    {
+      "commit": "9504f70",
+      "time": "2026-09-25T16:30:00Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "reference/changelog.md",
+        "reference/spec.md",
+        "reference/versioning.md",
+        "reference/errors.md",
+        "api/endpoint.md",
+        "api/history.md",
+        "api/limits.md",
+        "api/preset.md",
+        "public/spec/**"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/{model_filter,history,limits,endpoint,protocol}.rs",
+        "crates/ai-profile/src/client/mod.rs",
+        "spec/**",
+        "CHANGELOG.md"
+      ],
+      "note": "0.1.2 发布：四处修复、三张数据表公开、多语言规范 v0.1.2 存档"
     }
   ]
 }
