@@ -1,0 +1,2202 @@
+{
+  "crateVersion": "0.1.1",
+  "description": "全部服务商预置（对话 / 生图 / 视频 / 配音）与按厂商聚合的目录。字段含义见 https://ai-profile.ruoyi.plus/api/preset",
+  "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "presets": [
+    {
+      "applyUrl": "https://console.anthropic.com/settings/keys",
+      "baseUrl": null,
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.anthropic",
+      "groupLabel": "Anthropic / 协议档",
+      "hint": "密钥以 sk-ant- 开头；固定走 https://api.anthropic.com",
+      "hintKey": "providerTemplate.anthropicOfficial.hint",
+      "isLocal": false,
+      "key": "anthropic_official",
+      "kind": "chat",
+      "label": "Anthropic 官方",
+      "labelKey": "providerTemplate.anthropicOfficial.label",
+      "matchHosts": [
+        "api.anthropic.com"
+      ],
+      "model": "claude-opus-5-5",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "claude-opus-5-5",
+          "maxOutput": null,
+          "value": "claude-opus-5-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-opus-5",
+          "maxOutput": null,
+          "value": "claude-opus-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-sonnet-5",
+          "maxOutput": null,
+          "value": "claude-sonnet-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-fable-5-1",
+          "maxOutput": null,
+          "value": "claude-fable-5-1"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-fable-5",
+          "maxOutput": null,
+          "value": "claude-fable-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-haiku-4-5",
+          "maxOutput": null,
+          "value": "claude-haiku-4-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-opus-4-8",
+          "maxOutput": null,
+          "value": "claude-opus-4-8"
+        }
+      ],
+      "protocol": "anthropic",
+      "vendorId": "anthropic",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": null,
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.anthropic",
+      "groupLabel": "Anthropic / 协议档",
+      "hint": "走 /v1/messages 端点；适合密钥限定此端点的中转 / 代理服务",
+      "hintKey": "providerTemplate.claudeCode.hint",
+      "isLocal": false,
+      "key": "claude_code",
+      "kind": "chat",
+      "label": "Claude Code 客户端（自定义接口地址）",
+      "labelKey": "providerTemplate.claudeCode.label",
+      "matchHosts": [],
+      "model": "claude-opus-5",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "claude-opus-5-5",
+          "maxOutput": null,
+          "value": "claude-opus-5-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-opus-5",
+          "maxOutput": null,
+          "value": "claude-opus-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-sonnet-5",
+          "maxOutput": null,
+          "value": "claude-sonnet-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-fable-5-1",
+          "maxOutput": null,
+          "value": "claude-fable-5-1"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-fable-5",
+          "maxOutput": null,
+          "value": "claude-fable-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-haiku-4-5",
+          "maxOutput": null,
+          "value": "claude-haiku-4-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-opus-4-8",
+          "maxOutput": null,
+          "value": "claude-opus-4-8"
+        }
+      ],
+      "protocol": "anthropic",
+      "vendorId": "claude_code",
+      "verifiedAt": "2026-09-22"
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": null,
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.anthropic",
+      "groupLabel": "Anthropic / 协议档",
+      "hint": "走 /v1/chat/completions；适合密钥限定 Codex 端点的中转服务",
+      "hintKey": "providerTemplate.codex.hint",
+      "isLocal": false,
+      "key": "codex",
+      "kind": "chat",
+      "label": "Codex 客户端（自定义接口地址）",
+      "labelKey": "providerTemplate.codex.label",
+      "matchHosts": [],
+      "model": "gpt-5.6-terra",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "gpt-6-sol",
+          "maxOutput": null,
+          "value": "gpt-6-sol"
+        },
+        {
+          "contextWindow": null,
+          "label": "gpt-6-astra",
+          "maxOutput": null,
+          "value": "gpt-6-astra"
+        },
+        {
+          "contextWindow": null,
+          "label": "gpt-6-luna",
+          "maxOutput": null,
+          "value": "gpt-6-luna"
+        },
+        {
+          "contextWindow": null,
+          "label": "gpt-5.6-terra",
+          "maxOutput": null,
+          "value": "gpt-5.6-terra"
+        },
+        {
+          "contextWindow": null,
+          "label": "gpt-5.6-sol",
+          "maxOutput": null,
+          "value": "gpt-5.6-sol"
+        },
+        {
+          "contextWindow": null,
+          "label": "gpt-5.6-luna",
+          "maxOutput": null,
+          "value": "gpt-5.6-luna"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "codex",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://platform.deepseek.com/api_keys",
+      "baseUrl": "https://api.deepseek.com/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "deepseek-flash / v4-pro；国内直连，不需要代理",
+      "hintKey": "providerTemplate.deepseek.hint",
+      "isLocal": false,
+      "key": "deepseek",
+      "kind": "chat",
+      "label": "DeepSeek",
+      "labelKey": "providerTemplate.deepseek.label",
+      "matchHosts": [
+        "api.deepseek.com"
+      ],
+      "model": "deepseek-flash",
+      "models": [
+        {
+          "contextWindow": 1000000,
+          "label": "deepseek-flash",
+          "maxOutput": 384000,
+          "value": "deepseek-flash"
+        },
+        {
+          "contextWindow": 1000000,
+          "label": "deepseek-v4-pro",
+          "maxOutput": 384000,
+          "value": "deepseek-v4-pro"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "deepseek",
+      "verifiedAt": "2026-09-17"
+    },
+    {
+      "applyUrl": "https://open.bigmodel.cn/usercenter/apikeys",
+      "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "端点是 /v4 不是 /v1 —— 照抄预填地址即可",
+      "hintKey": "providerTemplate.zhipu.hint",
+      "isLocal": false,
+      "key": "zhipu",
+      "kind": "chat",
+      "label": "智谱 GLM",
+      "labelKey": "providerTemplate.zhipu.label",
+      "matchHosts": [
+        "open.bigmodel.cn"
+      ],
+      "model": "glm-5.3",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "glm-5.3",
+          "maxOutput": null,
+          "value": "glm-5.3"
+        },
+        {
+          "contextWindow": null,
+          "label": "glm-5.3-flash",
+          "maxOutput": null,
+          "value": "glm-5.3-flash"
+        },
+        {
+          "contextWindow": 200000,
+          "label": "glm-5",
+          "maxOutput": null,
+          "value": "glm-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "glm-4.7",
+          "maxOutput": null,
+          "value": "glm-4.7"
+        },
+        {
+          "contextWindow": null,
+          "label": "glm-4.6",
+          "maxOutput": null,
+          "value": "glm-4.6"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "zhipu",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://bailian.console.aliyun.com/",
+      "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "默认北京地域；新加坡站把 dashscope 换成 dashscope-intl",
+      "hintKey": "providerTemplate.qwen.hint",
+      "isLocal": false,
+      "key": "qwen",
+      "kind": "chat",
+      "label": "通义千问（阿里云百炼）",
+      "labelKey": "providerTemplate.qwen.label",
+      "matchHosts": [
+        "dashscope.aliyuncs.com"
+      ],
+      "model": "qwen-plus",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "qwen3-max",
+          "maxOutput": null,
+          "value": "qwen3-max"
+        },
+        {
+          "contextWindow": null,
+          "label": "qwen-plus",
+          "maxOutput": null,
+          "value": "qwen-plus"
+        },
+        {
+          "contextWindow": null,
+          "label": "qwen-max",
+          "maxOutput": null,
+          "value": "qwen-max"
+        },
+        {
+          "contextWindow": null,
+          "label": "qwen-turbo",
+          "maxOutput": null,
+          "value": "qwen-turbo"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "aliyun",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://platform.moonshot.cn/console/api-keys",
+      "baseUrl": "https://api.moonshot.cn/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "国内站 api.moonshot.cn；国际站把 .cn 换成 .ai",
+      "hintKey": "providerTemplate.moonshot.hint",
+      "isLocal": false,
+      "key": "moonshot",
+      "kind": "chat",
+      "label": "月之暗面 Kimi",
+      "labelKey": "providerTemplate.moonshot.label",
+      "matchHosts": [
+        "api.moonshot.cn",
+        "api.moonshot.ai"
+      ],
+      "model": "kimi-k3",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "kimi-k3",
+          "maxOutput": null,
+          "value": "kimi-k3"
+        },
+        {
+          "contextWindow": null,
+          "label": "kimi-k2-0711-preview",
+          "maxOutput": null,
+          "value": "kimi-k2-0711-preview"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "moonshot",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://cloud.siliconflow.cn/account/ak",
+      "baseUrl": "https://api.siliconflow.cn/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "聚合平台，在架清单变动快 —— 建议点「获取」拉当天真实清单",
+      "hintKey": "providerTemplate.siliconflow.hint",
+      "isLocal": false,
+      "key": "siliconflow",
+      "kind": "chat",
+      "label": "硅基流动 SiliconFlow",
+      "labelKey": "providerTemplate.siliconflow.label",
+      "matchHosts": [
+        "api.siliconflow.cn"
+      ],
+      "model": "deepseek-ai/DeepSeek-V3",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "deepseek-ai/DeepSeek-V3",
+          "maxOutput": null,
+          "value": "deepseek-ai/DeepSeek-V3"
+        },
+        {
+          "contextWindow": null,
+          "label": "Qwen/Qwen2.5-72B-Instruct",
+          "maxOutput": null,
+          "value": "Qwen/Qwen2.5-72B-Instruct"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "siliconflow",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
+      "baseUrl": "https://ark.cn-beijing.volces.com/api/v3",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "模型 id 带发布日期后缀，换代就变 —— 建议点「获取」拉当天真实清单",
+      "hintKey": "providerTemplate.volcengineArk.hint",
+      "isLocal": false,
+      "key": "volcengine_ark",
+      "kind": "chat",
+      "label": "火山方舟（豆包）",
+      "labelKey": "providerTemplate.volcengineArk.label",
+      "matchHosts": [
+        "ark.cn-beijing.volces.com"
+      ],
+      "model": "doubao-seed-1-6-251015",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "doubao-seed-2-1-pro-260628",
+          "maxOutput": null,
+          "value": "doubao-seed-2-1-pro-260628"
+        },
+        {
+          "contextWindow": null,
+          "label": "doubao-seed-1-6-251015",
+          "maxOutput": null,
+          "value": "doubao-seed-1-6-251015"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "volcengine",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://console.cloud.tencent.com/tokenhub/apikey",
+      "baseUrl": "https://tokenhub.tencentmaas.com/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "混元老地址 api.hunyuan.cloud.tencent.com 已停止新增模型，密钥需在 TokenHub 重新申请",
+      "hintKey": "providerTemplate.tencentTokenhub.hint",
+      "isLocal": false,
+      "key": "tencent_tokenhub",
+      "kind": "chat",
+      "label": "腾讯 TokenHub",
+      "labelKey": "providerTemplate.tencentTokenhub.label",
+      "matchHosts": [
+        "tokenhub.tencentmaas.com"
+      ],
+      "model": "hy3-preview",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "hy3-preview",
+          "maxOutput": null,
+          "value": "hy3-preview"
+        },
+        {
+          "contextWindow": null,
+          "label": "deepseek-v4-flash",
+          "maxOutput": null,
+          "value": "deepseek-v4-flash"
+        },
+        {
+          "contextWindow": null,
+          "label": "deepseek-v4-pro",
+          "maxOutput": null,
+          "value": "deepseek-v4-pro"
+        },
+        {
+          "contextWindow": null,
+          "label": "glm-5.1",
+          "maxOutput": null,
+          "value": "glm-5.1"
+        },
+        {
+          "contextWindow": null,
+          "label": "kimi-k2.6",
+          "maxOutput": null,
+          "value": "kimi-k2.6"
+        },
+        {
+          "contextWindow": null,
+          "label": "minimax-m2.7",
+          "maxOutput": null,
+          "value": "minimax-m2.7"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "tencent",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": "https://api.minimax.chat/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "国内站地址；海外账号的密钥在这里用不了",
+      "hintKey": "providerTemplate.minimax.hint",
+      "isLocal": false,
+      "key": "minimax",
+      "kind": "chat",
+      "label": "MiniMax（稀宇科技）",
+      "labelKey": "providerTemplate.minimax.label",
+      "matchHosts": [
+        "api.minimax.chat"
+      ],
+      "model": "MiniMax-M1",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "MiniMax-M1",
+          "maxOutput": null,
+          "value": "MiniMax-M1"
+        },
+        {
+          "contextWindow": null,
+          "label": "abab6.5s-chat",
+          "maxOutput": null,
+          "value": "abab6.5s-chat"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "minimax",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": "https://qianfan.baidubce.com/v2",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "文心系列；用千帆 v2 接口的 API Key，不是旧版 AK / SK",
+      "hintKey": "providerTemplate.qianfan.hint",
+      "isLocal": false,
+      "key": "qianfan",
+      "kind": "chat",
+      "label": "百度千帆",
+      "labelKey": "providerTemplate.qianfan.label",
+      "matchHosts": [
+        "qianfan.baidubce.com"
+      ],
+      "model": "ernie-4.5-turbo-128k",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "ernie-4.5-turbo-128k",
+          "maxOutput": null,
+          "value": "ernie-4.5-turbo-128k"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "baidu",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": "https://api.stepfun.com/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "Step 系列；flash 档便宜快，长文本选 16k 档",
+      "hintKey": "providerTemplate.stepfun.hint",
+      "isLocal": false,
+      "key": "stepfun",
+      "kind": "chat",
+      "label": "阶跃星辰",
+      "labelKey": "providerTemplate.stepfun.label",
+      "matchHosts": [
+        "api.stepfun.com"
+      ],
+      "model": "step-1-flash",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "step-1-flash",
+          "maxOutput": null,
+          "value": "step-1-flash"
+        },
+        {
+          "contextWindow": null,
+          "label": "step-2-16k",
+          "maxOutput": null,
+          "value": "step-2-16k"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "stepfun",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": "https://api.baichuan-ai.com/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "Baichuan 系列，国内直连",
+      "hintKey": "providerTemplate.baichuan.hint",
+      "isLocal": false,
+      "key": "baichuan",
+      "kind": "chat",
+      "label": "百川智能",
+      "labelKey": "providerTemplate.baichuan.label",
+      "matchHosts": [
+        "api.baichuan-ai.com"
+      ],
+      "model": "Baichuan4-Turbo",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "Baichuan4-Turbo",
+          "maxOutput": null,
+          "value": "Baichuan4-Turbo"
+        },
+        {
+          "contextWindow": null,
+          "label": "Baichuan3-Turbo-128k",
+          "maxOutput": null,
+          "value": "Baichuan3-Turbo-128k"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "baichuan",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": "https://api.xiaomimimo.com/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "小米自研；flash 档便宜快",
+      "hintKey": "providerTemplate.mimo.hint",
+      "isLocal": false,
+      "key": "mimo",
+      "kind": "chat",
+      "label": "小米 MiMo",
+      "labelKey": "providerTemplate.mimo.label",
+      "matchHosts": [
+        "api.xiaomimimo.com"
+      ],
+      "model": "mimo-v2-flash",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "mimo-v2-flash",
+          "maxOutput": null,
+          "value": "mimo-v2-flash"
+        },
+        {
+          "contextWindow": null,
+          "label": "mimo-v2-pro",
+          "maxOutput": null,
+          "value": "mimo-v2-pro"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "xiaomi",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://platform.openai.com/api-keys",
+      "baseUrl": "https://api.openai.com/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "hint": "国内访问需要代理",
+      "hintKey": "providerTemplate.openaiOfficial.hint",
+      "isLocal": false,
+      "key": "openai_official",
+      "kind": "chat",
+      "label": "OpenAI 官方",
+      "labelKey": "providerTemplate.openaiOfficial.label",
+      "matchHosts": [
+        "api.openai.com"
+      ],
+      "model": "gpt-5.6-terra",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "gpt-6-astra",
+          "maxOutput": null,
+          "value": "gpt-6-astra"
+        },
+        {
+          "contextWindow": null,
+          "label": "gpt-6-sol",
+          "maxOutput": null,
+          "value": "gpt-6-sol"
+        },
+        {
+          "contextWindow": null,
+          "label": "gpt-6-luna",
+          "maxOutput": null,
+          "value": "gpt-6-luna"
+        },
+        {
+          "contextWindow": null,
+          "label": "gpt-5.6-sol",
+          "maxOutput": null,
+          "value": "gpt-5.6-sol"
+        },
+        {
+          "contextWindow": null,
+          "label": "gpt-5.6-terra",
+          "maxOutput": null,
+          "value": "gpt-5.6-terra"
+        },
+        {
+          "contextWindow": null,
+          "label": "gpt-5.6-luna",
+          "maxOutput": null,
+          "value": "gpt-5.6-luna"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "openai",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://openrouter.ai/keys",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "hint": "模型 id 形如「厂商/模型」，与各家原生 id 不同名",
+      "hintKey": "providerTemplate.openrouter.hint",
+      "isLocal": false,
+      "key": "openrouter",
+      "kind": "chat",
+      "label": "OpenRouter",
+      "labelKey": "providerTemplate.openrouter.label",
+      "matchHosts": [
+        "openrouter.ai"
+      ],
+      "model": "anthropic/claude-sonnet-5",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "anthropic/claude-sonnet-5",
+          "maxOutput": null,
+          "value": "anthropic/claude-sonnet-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "anthropic/claude-opus-5.5",
+          "maxOutput": null,
+          "value": "anthropic/claude-opus-5.5"
+        },
+        {
+          "contextWindow": null,
+          "label": "openai/gpt-6-astra",
+          "maxOutput": null,
+          "value": "openai/gpt-6-astra"
+        },
+        {
+          "contextWindow": null,
+          "label": "openai/gpt-6-sol",
+          "maxOutput": null,
+          "value": "openai/gpt-6-sol"
+        },
+        {
+          "contextWindow": null,
+          "label": "openai/gpt-6-luna",
+          "maxOutput": null,
+          "value": "openai/gpt-6-luna"
+        },
+        {
+          "contextWindow": null,
+          "label": "moonshotai/kimi-k3",
+          "maxOutput": null,
+          "value": "moonshotai/kimi-k3"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "openrouter",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://aistudio.google.com/apikey",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "hint": "版本段 v1beta 不在末尾，照抄整串即可",
+      "hintKey": "providerTemplate.gemini.hint",
+      "isLocal": false,
+      "key": "gemini",
+      "kind": "chat",
+      "label": "Google Gemini（OpenAI 兼容层）",
+      "labelKey": "providerTemplate.gemini.label",
+      "matchHosts": [
+        "generativelanguage.googleapis.com"
+      ],
+      "model": "gemini-3.8-flash",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "gemini-3.8-flash",
+          "maxOutput": null,
+          "value": "gemini-3.8-flash"
+        },
+        {
+          "contextWindow": null,
+          "label": "gemini-3.1-pro-preview",
+          "maxOutput": null,
+          "value": "gemini-3.1-pro-preview"
+        },
+        {
+          "contextWindow": null,
+          "label": "gemini-3.5-flash-lite",
+          "maxOutput": null,
+          "value": "gemini-3.5-flash-lite"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "google",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://console.groq.com/keys",
+      "baseUrl": "https://api.groq.com/openai/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "hint": "推理速度快；国内访问通常需要代理",
+      "hintKey": "providerTemplate.groq.hint",
+      "isLocal": false,
+      "key": "groq",
+      "kind": "chat",
+      "label": "Groq",
+      "labelKey": "providerTemplate.groq.label",
+      "matchHosts": [
+        "api.groq.com"
+      ],
+      "model": "llama-3.3-70b-versatile",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "llama-3.3-70b-versatile",
+          "maxOutput": null,
+          "value": "llama-3.3-70b-versatile"
+        },
+        {
+          "contextWindow": null,
+          "label": "llama-3.1-8b-instant",
+          "maxOutput": null,
+          "value": "llama-3.1-8b-instant"
+        },
+        {
+          "contextWindow": null,
+          "label": "openai/gpt-oss-120b",
+          "maxOutput": null,
+          "value": "openai/gpt-oss-120b"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "groq",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://console.x.ai/",
+      "baseUrl": "https://api.x.ai/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "hint": "只支持 OpenAI 协议 —— Anthropic 兼容层已于 2026-08-01 下线",
+      "hintKey": "providerTemplate.xai.hint",
+      "isLocal": false,
+      "key": "xai",
+      "kind": "chat",
+      "label": "xAI Grok",
+      "labelKey": "providerTemplate.xai.label",
+      "matchHosts": [
+        "api.x.ai"
+      ],
+      "model": "grok-4.5",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "grok-4.7",
+          "maxOutput": null,
+          "value": "grok-4.7"
+        },
+        {
+          "contextWindow": null,
+          "label": "grok-4.6",
+          "maxOutput": null,
+          "value": "grok-4.6"
+        },
+        {
+          "contextWindow": null,
+          "label": "grok-4.5",
+          "maxOutput": null,
+          "value": "grok-4.5"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "xai",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": "https://api.together.xyz/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "hint": "开源模型托管；国内访问通常需要代理",
+      "hintKey": "providerTemplate.together.hint",
+      "isLocal": false,
+      "key": "together",
+      "kind": "chat",
+      "label": "Together AI",
+      "labelKey": "providerTemplate.together.label",
+      "matchHosts": [
+        "api.together.xyz"
+      ],
+      "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+          "maxOutput": null,
+          "value": "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "together",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": "http://localhost:11434/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "hint": "需先本机跑起 ollama serve；默认端口 11434，通常不需要密钥",
+      "hintKey": "providerTemplate.ollama.hint",
+      "isLocal": true,
+      "key": "ollama",
+      "kind": "chat",
+      "label": "Ollama（本地）",
+      "labelKey": "providerTemplate.ollama.label",
+      "matchHosts": [
+        "localhost:11434",
+        "127.0.0.1:11434"
+      ],
+      "model": "qwen3:8b",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "qwen3:8b",
+          "maxOutput": null,
+          "value": "qwen3:8b"
+        },
+        {
+          "contextWindow": null,
+          "label": "llama3.1:8b",
+          "maxOutput": null,
+          "value": "llama3.1:8b"
+        },
+        {
+          "contextWindow": null,
+          "label": "deepseek-r1:7b",
+          "maxOutput": null,
+          "value": "deepseek-r1:7b"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "ollama",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": "http://localhost:1234/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "hint": "在 LM Studio 里开启本地服务器；模型名取决于你加载了哪个",
+      "hintKey": "providerTemplate.lmstudio.hint",
+      "isLocal": true,
+      "key": "lmstudio",
+      "kind": "chat",
+      "label": "LM Studio（本地）",
+      "labelKey": "providerTemplate.lmstudio.label",
+      "matchHosts": [
+        "localhost:1234",
+        "127.0.0.1:1234"
+      ],
+      "model": "",
+      "models": [],
+      "protocol": "openai_compatible",
+      "vendorId": "lmstudio",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": "http://localhost:8000/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "hint": "任何暴露 OpenAI 兼容端点的自建服务都可用这档",
+      "hintKey": "providerTemplate.vllm.hint",
+      "isLocal": true,
+      "key": "vllm",
+      "kind": "chat",
+      "label": "vLLM / 自建推理服务",
+      "labelKey": "providerTemplate.vllm.label",
+      "matchHosts": [
+        "localhost:8000",
+        "127.0.0.1:8000"
+      ],
+      "model": "",
+      "models": [],
+      "protocol": "openai_compatible",
+      "vendorId": "vllm",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": null,
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "hint": "上面都不匹配时用这档，自己填接口地址与模型名",
+      "hintKey": "providerTemplate.openaiCompatibleCustom.hint",
+      "isLocal": false,
+      "key": "openai_compatible_custom",
+      "kind": "chat",
+      "label": "其它 OpenAI 兼容（自定义接口地址）",
+      "labelKey": "providerTemplate.openaiCompatibleCustom.label",
+      "matchHosts": [],
+      "model": "",
+      "models": [],
+      "protocol": "openai_compatible",
+      "vendorId": "custom",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
+      "baseUrl": "https://ark.cn-beijing.volces.com/api/v3",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "中文 / 人像质量最好；模型 ID 须与控制台「开通」后给的完全一致（带日期后缀）。报「does not support this api」就换 *-t2i-* 模型",
+      "hintKey": "providerTemplate.seedreamImage.hint",
+      "isLocal": false,
+      "key": "seedream_image",
+      "kind": "image",
+      "label": "即梦 Seedream（火山方舟）",
+      "labelKey": "providerTemplate.seedreamImage.label",
+      "matchHosts": [
+        "ark.cn-beijing.volces.com"
+      ],
+      "model": "doubao-seedream-4-0-250828",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "doubao-seedream-4-0-250828",
+          "maxOutput": null,
+          "value": "doubao-seedream-4-0-250828"
+        },
+        {
+          "contextWindow": null,
+          "label": "doubao-seedream-3-0-t2i-250415",
+          "maxOutput": null,
+          "value": "doubao-seedream-3-0-t2i-250415"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "volcengine",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://bailian.console.aliyun.com/?tab=model#/api-key",
+      "baseUrl": "https://dashscope.aliyuncs.com/api/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "异步任务（提交 → 轮询 → 下载）；地址是原生 api/v1，不是对话用的 compatible-mode",
+      "hintKey": "providerTemplate.wanImage.hint",
+      "isLocal": false,
+      "key": "wan_image",
+      "kind": "image",
+      "label": "通义万相（阿里百炼）",
+      "labelKey": "providerTemplate.wanImage.label",
+      "matchHosts": [
+        "dashscope.aliyuncs.com"
+      ],
+      "model": "wan2.2-t2i-flash",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "wan2.2-t2i-flash",
+          "maxOutput": null,
+          "value": "wan2.2-t2i-flash"
+        },
+        {
+          "contextWindow": null,
+          "label": "wan2.2-t2i-plus",
+          "maxOutput": null,
+          "value": "wan2.2-t2i-plus"
+        },
+        {
+          "contextWindow": null,
+          "label": "wanx2.1-t2i-turbo",
+          "maxOutput": null,
+          "value": "wanx2.1-t2i-turbo"
+        },
+        {
+          "contextWindow": null,
+          "label": "wanx2.1-t2i-plus",
+          "maxOutput": null,
+          "value": "wanx2.1-t2i-plus"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "aliyun",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://cloud.siliconflow.cn/account/ak",
+      "baseUrl": "https://api.siliconflow.cn/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "Kolors 国风 / 人像，FLUX 质感；结果图链接 1 小时失效，调用方应立即下载",
+      "hintKey": "providerTemplate.siliconflowImage.hint",
+      "isLocal": false,
+      "key": "siliconflow_image",
+      "kind": "image",
+      "label": "硅基流动 生图",
+      "labelKey": "providerTemplate.siliconflowImage.label",
+      "matchHosts": [
+        "api.siliconflow.cn"
+      ],
+      "model": "Kwai-Kolors/Kolors",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "Kwai-Kolors/Kolors",
+          "maxOutput": null,
+          "value": "Kwai-Kolors/Kolors"
+        },
+        {
+          "contextWindow": null,
+          "label": "black-forest-labs/FLUX.1-dev",
+          "maxOutput": null,
+          "value": "black-forest-labs/FLUX.1-dev"
+        },
+        {
+          "contextWindow": null,
+          "label": "black-forest-labs/FLUX.1-schnell",
+          "maxOutput": null,
+          "value": "black-forest-labs/FLUX.1-schnell"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "siliconflow",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://platform.openai.com/api-keys",
+      "baseUrl": "https://api.openai.com/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "hint": "国内访问需要代理",
+      "hintKey": "providerTemplate.openaiImage.hint",
+      "isLocal": false,
+      "key": "openai_image",
+      "kind": "image",
+      "label": "OpenAI 生图",
+      "labelKey": "providerTemplate.openaiImage.label",
+      "matchHosts": [
+        "api.openai.com"
+      ],
+      "model": "gpt-image-1",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "gpt-image-1",
+          "maxOutput": null,
+          "value": "gpt-image-1"
+        },
+        {
+          "contextWindow": null,
+          "label": "dall-e-3",
+          "maxOutput": null,
+          "value": "dall-e-3"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "openai",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": null,
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "hint": "OpenAI /images/generations 兼容的任意端点",
+      "hintKey": "providerTemplate.customImage.hint",
+      "isLocal": false,
+      "key": "custom_image",
+      "kind": "image",
+      "label": "自定义生图端点",
+      "labelKey": "providerTemplate.customImage.label",
+      "matchHosts": [],
+      "model": "",
+      "models": [],
+      "protocol": "openai_compatible",
+      "vendorId": "custom_image",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
+      "baseUrl": "https://ark.cn-beijing.volces.com/api/v3",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "图生视频，支持首尾帧；模型是 Seedance 不是 Seedream，ID 须与控制台「开通」一致。2.0 需先开通，1.0-pro 最稳",
+      "hintKey": "providerTemplate.seedance.hint",
+      "isLocal": false,
+      "key": "seedance",
+      "kind": "video",
+      "label": "即梦 Seedance（火山方舟）",
+      "labelKey": "providerTemplate.seedance.label",
+      "matchHosts": [
+        "ark.cn-beijing.volces.com"
+      ],
+      "model": "doubao-seedance-1-0-pro-250528",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "doubao-seedance-1-0-pro-250528",
+          "maxOutput": null,
+          "value": "doubao-seedance-1-0-pro-250528"
+        },
+        {
+          "contextWindow": null,
+          "label": "doubao-seedance-1-0-pro-fast-251015",
+          "maxOutput": null,
+          "value": "doubao-seedance-1-0-pro-fast-251015"
+        },
+        {
+          "contextWindow": null,
+          "label": "doubao-seedance-2-0-260128",
+          "maxOutput": null,
+          "value": "doubao-seedance-2-0-260128"
+        },
+        {
+          "contextWindow": null,
+          "label": "doubao-seedance-2-0-fast-260128",
+          "maxOutput": null,
+          "value": "doubao-seedance-2-0-fast-260128"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "volcengine",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://platform.minimaxi.com/user-center/basic-information/interface-key",
+      "baseUrl": "https://api.minimaxi.com/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "I2V-01-live 偏动漫 / 插画风；Hailuo-02 新一代高质量，支持首尾帧",
+      "hintKey": "providerTemplate.minimaxVideo.hint",
+      "isLocal": false,
+      "key": "minimax_video",
+      "kind": "video",
+      "label": "海螺 MiniMax 视频",
+      "labelKey": "providerTemplate.minimaxVideo.label",
+      "matchHosts": [
+        "api.minimaxi.com"
+      ],
+      "model": "MiniMax-Hailuo-02",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "MiniMax-Hailuo-02",
+          "maxOutput": null,
+          "value": "MiniMax-Hailuo-02"
+        },
+        {
+          "contextWindow": null,
+          "label": "I2V-01-Director",
+          "maxOutput": null,
+          "value": "I2V-01-Director"
+        },
+        {
+          "contextWindow": null,
+          "label": "I2V-01-live",
+          "maxOutput": null,
+          "value": "I2V-01-live"
+        },
+        {
+          "contextWindow": null,
+          "label": "I2V-01",
+          "maxOutput": null,
+          "value": "I2V-01"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "minimaxi",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://bailian.console.aliyun.com/?tab=model#/api-key",
+      "baseUrl": "https://dashscope.aliyuncs.com/api/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "DashScope 异步任务；审核相对宽松，写实人脸被别家拒时可换它",
+      "hintKey": "providerTemplate.viduVideo.hint",
+      "isLocal": false,
+      "key": "vidu_video",
+      "kind": "video",
+      "label": "Vidu 视频（阿里百炼）",
+      "labelKey": "providerTemplate.viduVideo.label",
+      "matchHosts": [
+        "dashscope.aliyuncs.com"
+      ],
+      "model": "vidu/viduq3-turbo_img2video",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "vidu/viduq3-pro_img2video",
+          "maxOutput": null,
+          "value": "vidu/viduq3-pro_img2video"
+        },
+        {
+          "contextWindow": null,
+          "label": "vidu/viduq3-turbo_img2video",
+          "maxOutput": null,
+          "value": "vidu/viduq3-turbo_img2video"
+        },
+        {
+          "contextWindow": null,
+          "label": "vidu/viduq2-pro_img2video",
+          "maxOutput": null,
+          "value": "vidu/viduq2-pro_img2video"
+        },
+        {
+          "contextWindow": null,
+          "label": "vidu/viduq2-turbo_img2video",
+          "maxOutput": null,
+          "value": "vidu/viduq2-turbo_img2video"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "aliyun",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://cloud.siliconflow.cn/account/ak",
+      "baseUrl": "https://api.siliconflow.cn/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "与对话 / 生图 / 配音同一个密钥",
+      "hintKey": "providerTemplate.siliconflowVideo.hint",
+      "isLocal": false,
+      "key": "siliconflow_video",
+      "kind": "video",
+      "label": "硅基流动 视频 Wan",
+      "labelKey": "providerTemplate.siliconflowVideo.label",
+      "matchHosts": [
+        "api.siliconflow.cn"
+      ],
+      "model": "Wan-AI/Wan2.2-I2V-A14B",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "Wan-AI/Wan2.2-I2V-A14B",
+          "maxOutput": null,
+          "value": "Wan-AI/Wan2.2-I2V-A14B"
+        },
+        {
+          "contextWindow": null,
+          "label": "Wan-AI/Wan2.1-I2V-14B-720P",
+          "maxOutput": null,
+          "value": "Wan-AI/Wan2.1-I2V-14B-720P"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "siliconflow",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://open.bigmodel.cn/usercenter/apikeys",
+      "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "支持首尾帧；与智谱对话同一个密钥",
+      "hintKey": "providerTemplate.zhipuVideo.hint",
+      "isLocal": false,
+      "key": "zhipu_video",
+      "kind": "video",
+      "label": "智谱 CogVideoX",
+      "labelKey": "providerTemplate.zhipuVideo.label",
+      "matchHosts": [
+        "open.bigmodel.cn"
+      ],
+      "model": "cogvideox-flash",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "cogvideox-3",
+          "maxOutput": null,
+          "value": "cogvideox-3"
+        },
+        {
+          "contextWindow": null,
+          "label": "cogvideox-flash",
+          "maxOutput": null,
+          "value": "cogvideox-flash"
+        },
+        {
+          "contextWindow": null,
+          "label": "cogvideox-2",
+          "maxOutput": null,
+          "value": "cogvideox-2"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "zhipu",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://dash.302.ai/dashboard/apikey",
+      "baseUrl": "https://api.302.ai/minimaxi/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "国内聚合，透传海螺原生协议；一个 302 密钥即可",
+      "hintKey": "providerTemplate.ai302MinimaxVideo.hint",
+      "isLocal": false,
+      "key": "ai302_minimax_video",
+      "kind": "video",
+      "label": "302.AI 视频·海螺",
+      "labelKey": "providerTemplate.ai302MinimaxVideo.label",
+      "matchHosts": [
+        "api.302.ai/minimaxi"
+      ],
+      "model": "MiniMax-Hailuo-02",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "MiniMax-Hailuo-02",
+          "maxOutput": null,
+          "value": "MiniMax-Hailuo-02"
+        },
+        {
+          "contextWindow": null,
+          "label": "I2V-01-live",
+          "maxOutput": null,
+          "value": "I2V-01-live"
+        },
+        {
+          "contextWindow": null,
+          "label": "I2V-01-Director",
+          "maxOutput": null,
+          "value": "I2V-01-Director"
+        },
+        {
+          "contextWindow": null,
+          "label": "I2V-01",
+          "maxOutput": null,
+          "value": "I2V-01"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "ai302",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://dash.302.ai/dashboard/apikey",
+      "baseUrl": "https://api.302.ai/zhipu/api/paas/v4",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "国内聚合，透传智谱 CogVideoX 协议；一个 302 密钥即可",
+      "hintKey": "providerTemplate.ai302ZhipuVideo.hint",
+      "isLocal": false,
+      "key": "ai302_zhipu_video",
+      "kind": "video",
+      "label": "302.AI 视频·智谱",
+      "labelKey": "providerTemplate.ai302ZhipuVideo.label",
+      "matchHosts": [
+        "api.302.ai/zhipu"
+      ],
+      "model": "cogvideox-flash",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "cogvideox-3",
+          "maxOutput": null,
+          "value": "cogvideox-3"
+        },
+        {
+          "contextWindow": null,
+          "label": "cogvideox-flash",
+          "maxOutput": null,
+          "value": "cogvideox-flash"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "ai302",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": null,
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "hint": "按地址识别协议，识别不出时按火山方舟处理；new-api 系聚合站请在额外配置里标 video_api=newapi",
+      "hintKey": "providerTemplate.customVideo.hint",
+      "isLocal": false,
+      "key": "custom_video",
+      "kind": "video",
+      "label": "自定义视频端点",
+      "labelKey": "providerTemplate.customVideo.label",
+      "matchHosts": [],
+      "model": "",
+      "models": [],
+      "protocol": "openai_compatible",
+      "vendorId": "custom_video",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://console.volcengine.com/speech/app",
+      "baseUrl": "https://openspeech.bytedance.com/api/v1/tts",
+      "defaultExtra": [],
+      "extraFields": [
+        {
+          "key": "appid",
+          "label": "App ID",
+          "labelKey": "providerTemplate.volcTts.appid",
+          "placeholder": "火山语音控制台应用 appid",
+          "required": true
+        },
+        {
+          "key": "cluster",
+          "label": "Cluster（集群）",
+          "labelKey": "providerTemplate.volcTts.cluster",
+          "placeholder": "默认 volcano_tts",
+          "required": false
+        }
+      ],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "中文有声书音色库大、自然稳定；需要 App ID，密钥填 access_token",
+      "hintKey": "providerTemplate.volcTts.hint",
+      "isLocal": false,
+      "key": "volc_tts",
+      "kind": "tts",
+      "label": "字节豆包 配音（火山语音）",
+      "labelKey": "providerTemplate.volcTts.label",
+      "matchHosts": [
+        "openspeech.bytedance.com"
+      ],
+      "model": "volcano_tts",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "volcano_tts",
+          "maxOutput": null,
+          "value": "volcano_tts"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "volc_speech",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://cloud.siliconflow.cn/account/ak",
+      "baseUrl": "https://api.siliconflow.cn/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "hint": "CosyVoice2 系统音色，支持情绪指令；fish-speech 可克隆",
+      "hintKey": "providerTemplate.siliconflowTts.hint",
+      "isLocal": false,
+      "key": "siliconflow_tts",
+      "kind": "tts",
+      "label": "硅基流动 配音 CosyVoice",
+      "labelKey": "providerTemplate.siliconflowTts.label",
+      "matchHosts": [
+        "api.siliconflow.cn"
+      ],
+      "model": "FunAudioLLM/CosyVoice2-0.5B",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "FunAudioLLM/CosyVoice2-0.5B",
+          "maxOutput": null,
+          "value": "FunAudioLLM/CosyVoice2-0.5B"
+        },
+        {
+          "contextWindow": null,
+          "label": "fishaudio/fish-speech-1.5",
+          "maxOutput": null,
+          "value": "fishaudio/fish-speech-1.5"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "siliconflow",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": "https://platform.openai.com/api-keys",
+      "baseUrl": "https://api.openai.com/v1",
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "hint": "国内访问需要代理",
+      "hintKey": "providerTemplate.openaiTts.hint",
+      "isLocal": false,
+      "key": "openai_tts",
+      "kind": "tts",
+      "label": "OpenAI 配音",
+      "labelKey": "providerTemplate.openaiTts.label",
+      "matchHosts": [
+        "api.openai.com"
+      ],
+      "model": "tts-1",
+      "models": [
+        {
+          "contextWindow": null,
+          "label": "tts-1",
+          "maxOutput": null,
+          "value": "tts-1"
+        },
+        {
+          "contextWindow": null,
+          "label": "tts-1-hd",
+          "maxOutput": null,
+          "value": "tts-1-hd"
+        }
+      ],
+      "protocol": "openai_compatible",
+      "vendorId": "openai",
+      "verifiedAt": null
+    },
+    {
+      "applyUrl": null,
+      "baseUrl": null,
+      "defaultExtra": [],
+      "extraFields": [],
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "hint": "OpenAI /audio/speech 兼容的任意端点",
+      "hintKey": "providerTemplate.customTts.hint",
+      "isLocal": false,
+      "key": "custom_tts",
+      "kind": "tts",
+      "label": "自定义配音端点",
+      "labelKey": "providerTemplate.customTts.label",
+      "matchHosts": [],
+      "model": "",
+      "models": [],
+      "protocol": "openai_compatible",
+      "vendorId": "custom_tts",
+      "verifiedAt": null
+    }
+  ],
+  "specVersion": 1,
+  "title": "ai-profile 预置数据",
+  "vendors": [
+    {
+      "applyUrl": "https://console.anthropic.com/settings/keys",
+      "groupKey": "providerGroup.anthropic",
+      "groupLabel": "Anthropic / 协议档",
+      "host": null,
+      "id": "anthropic",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "Anthropic 官方",
+      "presetKeys": [
+        "anthropic_official"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.anthropic",
+      "groupLabel": "Anthropic / 协议档",
+      "host": null,
+      "id": "claude_code",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "Claude Code 客户端（自定义接口地址）",
+      "presetKeys": [
+        "claude_code"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.anthropic",
+      "groupLabel": "Anthropic / 协议档",
+      "host": null,
+      "id": "codex",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "Codex 客户端（自定义接口地址）",
+      "presetKeys": [
+        "codex"
+      ]
+    },
+    {
+      "applyUrl": "https://platform.deepseek.com/api_keys",
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "api.deepseek.com",
+      "id": "deepseek",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "DeepSeek",
+      "presetKeys": [
+        "deepseek"
+      ]
+    },
+    {
+      "applyUrl": "https://open.bigmodel.cn/usercenter/apikeys",
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "open.bigmodel.cn",
+      "id": "zhipu",
+      "isLocal": false,
+      "kinds": [
+        "chat",
+        "video"
+      ],
+      "label": "智谱 GLM",
+      "presetKeys": [
+        "zhipu",
+        "zhipu_video"
+      ]
+    },
+    {
+      "applyUrl": "https://bailian.console.aliyun.com/",
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "dashscope.aliyuncs.com",
+      "id": "aliyun",
+      "isLocal": false,
+      "kinds": [
+        "chat",
+        "image",
+        "video"
+      ],
+      "label": "通义千问（阿里云百炼）",
+      "presetKeys": [
+        "qwen",
+        "wan_image",
+        "vidu_video"
+      ]
+    },
+    {
+      "applyUrl": "https://platform.moonshot.cn/console/api-keys",
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "api.moonshot.cn",
+      "id": "moonshot",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "月之暗面 Kimi",
+      "presetKeys": [
+        "moonshot"
+      ]
+    },
+    {
+      "applyUrl": "https://cloud.siliconflow.cn/account/ak",
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "api.siliconflow.cn",
+      "id": "siliconflow",
+      "isLocal": false,
+      "kinds": [
+        "chat",
+        "image",
+        "video",
+        "tts"
+      ],
+      "label": "硅基流动 SiliconFlow",
+      "presetKeys": [
+        "siliconflow",
+        "siliconflow_image",
+        "siliconflow_video",
+        "siliconflow_tts"
+      ]
+    },
+    {
+      "applyUrl": "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "ark.cn-beijing.volces.com",
+      "id": "volcengine",
+      "isLocal": false,
+      "kinds": [
+        "chat",
+        "image",
+        "video"
+      ],
+      "label": "火山方舟（豆包）",
+      "presetKeys": [
+        "volcengine_ark",
+        "seedream_image",
+        "seedance"
+      ]
+    },
+    {
+      "applyUrl": "https://console.cloud.tencent.com/tokenhub/apikey",
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "tokenhub.tencentmaas.com",
+      "id": "tencent",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "腾讯 TokenHub",
+      "presetKeys": [
+        "tencent_tokenhub"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "api.minimax.chat",
+      "id": "minimax",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "MiniMax（稀宇科技）",
+      "presetKeys": [
+        "minimax"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "qianfan.baidubce.com",
+      "id": "baidu",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "百度千帆",
+      "presetKeys": [
+        "qianfan"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "api.stepfun.com",
+      "id": "stepfun",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "阶跃星辰",
+      "presetKeys": [
+        "stepfun"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "api.baichuan-ai.com",
+      "id": "baichuan",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "百川智能",
+      "presetKeys": [
+        "baichuan"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "api.xiaomimimo.com",
+      "id": "xiaomi",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "小米 MiMo",
+      "presetKeys": [
+        "mimo"
+      ]
+    },
+    {
+      "applyUrl": "https://platform.openai.com/api-keys",
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "host": "api.openai.com",
+      "id": "openai",
+      "isLocal": false,
+      "kinds": [
+        "chat",
+        "image",
+        "tts"
+      ],
+      "label": "OpenAI 官方",
+      "presetKeys": [
+        "openai_official",
+        "openai_image",
+        "openai_tts"
+      ]
+    },
+    {
+      "applyUrl": "https://openrouter.ai/keys",
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "host": "openrouter.ai",
+      "id": "openrouter",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "OpenRouter",
+      "presetKeys": [
+        "openrouter"
+      ]
+    },
+    {
+      "applyUrl": "https://aistudio.google.com/apikey",
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "host": "generativelanguage.googleapis.com",
+      "id": "google",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "Google Gemini（OpenAI 兼容层）",
+      "presetKeys": [
+        "gemini"
+      ]
+    },
+    {
+      "applyUrl": "https://console.groq.com/keys",
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "host": "api.groq.com",
+      "id": "groq",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "Groq",
+      "presetKeys": [
+        "groq"
+      ]
+    },
+    {
+      "applyUrl": "https://console.x.ai/",
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "host": "api.x.ai",
+      "id": "xai",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "xAI Grok",
+      "presetKeys": [
+        "xai"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.international",
+      "groupLabel": "国际",
+      "host": "api.together.xyz",
+      "id": "together",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "Together AI",
+      "presetKeys": [
+        "together"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "host": "localhost:11434",
+      "id": "ollama",
+      "isLocal": true,
+      "kinds": [
+        "chat"
+      ],
+      "label": "Ollama（本地）",
+      "presetKeys": [
+        "ollama"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "host": "localhost:1234",
+      "id": "lmstudio",
+      "isLocal": true,
+      "kinds": [
+        "chat"
+      ],
+      "label": "LM Studio（本地）",
+      "presetKeys": [
+        "lmstudio"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "host": "localhost:8000",
+      "id": "vllm",
+      "isLocal": true,
+      "kinds": [
+        "chat"
+      ],
+      "label": "vLLM / 自建推理服务",
+      "presetKeys": [
+        "vllm"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "host": null,
+      "id": "custom",
+      "isLocal": false,
+      "kinds": [
+        "chat"
+      ],
+      "label": "其它 OpenAI 兼容（自定义接口地址）",
+      "presetKeys": [
+        "openai_compatible_custom"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "host": null,
+      "id": "custom_image",
+      "isLocal": false,
+      "kinds": [
+        "image"
+      ],
+      "label": "自定义生图端点",
+      "presetKeys": [
+        "custom_image"
+      ]
+    },
+    {
+      "applyUrl": "https://platform.minimaxi.com/user-center/basic-information/interface-key",
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "api.minimaxi.com",
+      "id": "minimaxi",
+      "isLocal": false,
+      "kinds": [
+        "video"
+      ],
+      "label": "海螺 MiniMax 视频",
+      "presetKeys": [
+        "minimax_video"
+      ]
+    },
+    {
+      "applyUrl": "https://dash.302.ai/dashboard/apikey",
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "api.302.ai",
+      "id": "ai302",
+      "isLocal": false,
+      "kinds": [
+        "video"
+      ],
+      "label": "302.AI 视频·海螺",
+      "presetKeys": [
+        "ai302_minimax_video",
+        "ai302_zhipu_video"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "host": null,
+      "id": "custom_video",
+      "isLocal": false,
+      "kinds": [
+        "video"
+      ],
+      "label": "自定义视频端点",
+      "presetKeys": [
+        "custom_video"
+      ]
+    },
+    {
+      "applyUrl": "https://console.volcengine.com/speech/app",
+      "groupKey": "providerGroup.china",
+      "groupLabel": "国内",
+      "host": "openspeech.bytedance.com",
+      "id": "volc_speech",
+      "isLocal": false,
+      "kinds": [
+        "tts"
+      ],
+      "label": "字节豆包 配音（火山语音）",
+      "presetKeys": [
+        "volc_tts"
+      ]
+    },
+    {
+      "applyUrl": null,
+      "groupKey": "providerGroup.local",
+      "groupLabel": "本地 / 自建",
+      "host": null,
+      "id": "custom_tts",
+      "isLocal": false,
+      "kinds": [
+        "tts"
+      ],
+      "label": "自定义配音端点",
+      "presetKeys": [
+        "custom_tts"
+      ]
+    }
+  ]
+}

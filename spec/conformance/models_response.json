@@ -1,0 +1,128 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "ids": [
+          "gpt-4o",
+          "gpt-4o-mini"
+        ],
+        "limits": []
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "{\"object\":\"list\",\"data\":[{\"id\":\"gpt-4o\",\"object\":\"model\",\"owned_by\":\"openai\"},{\"id\":\"gpt-4o-mini\",\"object\":\"model\"}]}"
+      },
+      "name": "OpenAI 规范"
+    },
+    {
+      "expected": {
+        "ids": [
+          "gpt-4o",
+          "deepseek-flash"
+        ],
+        "limits": []
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "[\"gpt-4o\",\"deepseek-flash\"]"
+      },
+      "name": "裸数组（字符串）"
+    },
+    {
+      "expected": {
+        "ids": [
+          "a",
+          "b"
+        ],
+        "limits": []
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "[{\"id\":\"a\"},{\"id\":\"b\"}]"
+      },
+      "name": "裸数组（对象）"
+    },
+    {
+      "expected": {
+        "ids": [
+          "deepseek-flash"
+        ],
+        "limits": [
+          {
+            "id": "deepseek-flash",
+            "limits": {
+              "contextWindow": 1048576,
+              "maxOutput": 393216,
+              "source": "endpoint"
+            }
+          }
+        ]
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "{\"data\":[{\"id\":\"deepseek-flash\",\"context_window\":1048576,\"max_output_tokens\":393216}]}"
+      },
+      "name": "DeepSeek 报限额"
+    },
+    {
+      "expected": {
+        "ids": [
+          "anthropic/claude-opus-5"
+        ],
+        "limits": [
+          {
+            "id": "anthropic/claude-opus-5",
+            "limits": {
+              "contextWindow": 200000,
+              "maxOutput": 32000,
+              "source": "endpoint"
+            }
+          }
+        ]
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "{\"data\":[{\"id\":\"anthropic/claude-opus-5\",\"context_length\":1000000,\"top_provider\":{\"context_length\":200000,\"max_completion_tokens\":32000}}]}"
+      },
+      "name": "OpenRouter 取当前服务商"
+    },
+    {
+      "expected": {
+        "ids": [
+          "m"
+        ],
+        "limits": [
+          {
+            "id": "m",
+            "limits": {
+              "contextWindow": 65536,
+              "maxOutput": null,
+              "source": "endpoint"
+            }
+          }
+        ]
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "{\"data\":[{\"id\":\"m\",\"context_length\":\"65536\"}]}"
+      },
+      "name": "数字写成字符串"
+    },
+    {
+      "expected": {
+        "ids": [],
+        "limits": []
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "<!doctype html><html></html>"
+      },
+      "name": "不是 JSON"
+    }
+  ],
+  "crateVersion": "0.1.1",
+  "description": "ids：{data:[{id}]} 或裸数组都接受。limits：只收录报了限额的模型，字段名按固定顺序尝试 （context_length / context_window / max_input_tokens…），OpenRouter 优先取 top_provider。",
+  "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "specVersion": 1,
+  "title": "/models 响应解析"
+}

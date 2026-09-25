@@ -1,0 +1,119 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "contextWindow": 64000,
+        "maxOutput": 8192,
+        "source": "user"
+      },
+      "fn": "merge_limits",
+      "input": {
+        "layers": [
+          {
+            "contextWindow": 64000,
+            "maxOutput": null,
+            "source": "user"
+          },
+          {
+            "contextWindow": 128000,
+            "maxOutput": 8192,
+            "source": "endpoint"
+          },
+          {
+            "contextWindow": 1000000,
+            "maxOutput": 384000,
+            "source": "preset"
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "contextWindow": 128000,
+        "maxOutput": 384000,
+        "source": "endpoint"
+      },
+      "fn": "merge_limits",
+      "input": {
+        "layers": [
+          {
+            "contextWindow": 128000,
+            "maxOutput": null,
+            "source": "endpoint"
+          },
+          {
+            "contextWindow": 1000000,
+            "maxOutput": 384000,
+            "source": "preset"
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "contextWindow": 200000,
+        "maxOutput": 4096,
+        "source": "user"
+      },
+      "fn": "merge_limits",
+      "input": {
+        "layers": [
+          {
+            "contextWindow": null,
+            "maxOutput": 4096,
+            "source": "user"
+          },
+          {
+            "contextWindow": 200000,
+            "maxOutput": null,
+            "source": "preset"
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "contextWindow": 1000000,
+        "maxOutput": 384000,
+        "source": "preset"
+      },
+      "fn": "merge_limits",
+      "input": {
+        "layers": [
+          {
+            "contextWindow": 1000000,
+            "maxOutput": 384000,
+            "source": "preset"
+          }
+        ]
+      }
+    },
+    {
+      "expected": {
+        "contextWindow": null,
+        "maxOutput": null,
+        "source": "endpoint"
+      },
+      "fn": "merge_limits",
+      "input": {
+        "layers": [
+          {
+            "contextWindow": null,
+            "maxOutput": null,
+            "source": "user"
+          },
+          {
+            "contextWindow": null,
+            "maxOutput": null,
+            "source": "endpoint"
+          }
+        ]
+      }
+    }
+  ],
+  "crateVersion": "0.1.1",
+  "description": "layers 按优先级从高到低（user > endpoint > preset），从左往右两两合并 merge(merge(l0, l1), l2)。merge(hi, lo)：hi 两个字段都为空时整条换成 lo（连 source 一起，空的用户设置不能冒充来源）；否则逐字段取 hi 的值、为空才用 lo 的，source 保留 hi 的。",
+  "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "specVersion": 1,
+  "title": "限额逐字段取值"
+}

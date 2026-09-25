@@ -1,0 +1,171 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "code": "auth_failed",
+        "detail": "invalid key"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "https://api.deepseek.com/v1",
+        "body": "{\"error\":{\"message\":\"invalid key\"}}",
+        "requestedUrl": "https://api.deepseek.com/v1/models",
+        "status": 401
+      }
+    },
+    {
+      "expected": {
+        "code": "auth_failed",
+        "detail": "HTTP 403"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "https://api.deepseek.com/v1",
+        "body": "{}",
+        "requestedUrl": "https://api.deepseek.com/v1/models",
+        "status": 403
+      }
+    },
+    {
+      "expected": {
+        "code": "not_found",
+        "requested_url": "https://api.deepseek.com/models",
+        "suggested_url": "https://api.deepseek.com/v1"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "https://api.deepseek.com",
+        "body": "{}",
+        "requestedUrl": "https://api.deepseek.com/models",
+        "status": 404
+      }
+    },
+    {
+      "expected": {
+        "code": "not_found",
+        "requested_url": "https://api.deepseek.com/v1/models",
+        "suggested_url": null
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "https://api.deepseek.com/v1",
+        "body": "{}",
+        "requestedUrl": "https://api.deepseek.com/v1/models",
+        "status": 404
+      }
+    },
+    {
+      "expected": {
+        "code": "not_found",
+        "requested_url": "https://x.com/v1beta/openai/models",
+        "suggested_url": null
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "https://x.com/v1beta/openai",
+        "body": "{}",
+        "requestedUrl": "https://x.com/v1beta/openai/models",
+        "status": 404
+      }
+    },
+    {
+      "expected": {
+        "code": "malformed",
+        "detail": "bad request"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "b",
+        "body": "{\"message\":\"bad request\"}",
+        "requestedUrl": "u",
+        "status": 400
+      }
+    },
+    {
+      "expected": {
+        "code": "malformed",
+        "detail": "HTTP 429"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "b",
+        "body": "Too Many Requests",
+        "requestedUrl": "u",
+        "status": 429
+      }
+    },
+    {
+      "expected": {
+        "code": "malformed",
+        "detail": "HTTP 500"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "b",
+        "body": "{}",
+        "requestedUrl": "u",
+        "status": 500
+      }
+    },
+    {
+      "expected": {
+        "code": "malformed",
+        "detail": "HTTP 502"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "b",
+        "body": "<html>Bad Gateway</html>",
+        "requestedUrl": "u",
+        "status": 502
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1",
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": "https://api.deepseek.com"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1",
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": "https://api.deepseek.com/"
+      }
+    },
+    {
+      "expected": null,
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": "https://api.deepseek.com/v1"
+      }
+    },
+    {
+      "expected": null,
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": "https://open.bigmodel.cn/api/paas/v4"
+      }
+    },
+    {
+      "expected": null,
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai"
+      }
+    },
+    {
+      "expected": null,
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": ""
+      }
+    }
+  ],
+  "crateVersion": "0.1.1",
+  "description": "HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；404 → not_found，看不到版本段时带 suggested_url；其余 → malformed。detail 优先取 error.message / message。unreachable / model_not_found / protocol_mismatch / missing_extra_field 不由本函数产生。",
+  "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "specVersion": 1,
+  "title": "验证错误判定"
+}

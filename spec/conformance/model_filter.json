@@ -1,0 +1,235 @@
+{
+  "cases": [
+    {
+      "expected": true,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "deepseek-flash"
+      }
+    },
+    {
+      "expected": true,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "gpt-4o"
+      }
+    },
+    {
+      "expected": true,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "gpt-6-sol"
+      }
+    },
+    {
+      "expected": true,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "claude-opus-5"
+      }
+    },
+    {
+      "expected": true,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "qwen-plus"
+      }
+    },
+    {
+      "expected": true,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "glm-4.6"
+      }
+    },
+    {
+      "expected": true,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "Qwen/Qwen3-VL-32B-Instruct"
+      }
+    },
+    {
+      "expected": true,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "Qwen3-Omni-30B-A3B-Instruct"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "Qwen3-Omni-30B-A3B-Captioner"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "Qwen/Qwen-Image-Edit-2509"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "BAAI/bge-large-zh-v1.5"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "bge-m3"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "BAAI/bge-reranker-v2-m3"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "text-embedding-3-large"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "FunAudioLLM/CosyVoice2-0.5B"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "Kwai-Kolors/Kolors"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "whisper-1"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "tts-1"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "omni-moderation-latest"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "Llama-Guard-4-12B"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "LoRA/Qwen/Qwen2.5-7B-Instruct"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "BGE-M3"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": ""
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
+        "id": "   "
+      }
+    },
+    {
+      "expected": {
+        "dropped": 3,
+        "droppedModels": [
+          "BAAI/bge-large-zh-v1.5",
+          "FunAudioLLM/CosyVoice2-0.5B",
+          "Kwai-Kolors/Kolors"
+        ],
+        "models": [
+          "deepseek-flash",
+          "Qwen/Qwen3-VL-32B-Instruct"
+        ]
+      },
+      "fn": "clean_fetched_models",
+      "input": {
+        "ids": [
+          "deepseek-flash",
+          "BAAI/bge-large-zh-v1.5",
+          "Qwen/Qwen3-VL-32B-Instruct",
+          "FunAudioLLM/CosyVoice2-0.5B",
+          "Kwai-Kolors/Kolors"
+        ]
+      }
+    },
+    {
+      "expected": {
+        "dropped": 0,
+        "droppedModels": [],
+        "models": [
+          "gpt-4o"
+        ]
+      },
+      "fn": "clean_fetched_models",
+      "input": {
+        "ids": [
+          " gpt-4o ",
+          "gpt-4o",
+          "gpt-4o"
+        ]
+      }
+    },
+    {
+      "expected": {
+        "dropped": 0,
+        "droppedModels": [],
+        "models": [
+          "bge-m3",
+          "text-embedding-3-large"
+        ]
+      },
+      "fn": "clean_fetched_models",
+      "input": {
+        "ids": [
+          "bge-m3",
+          "text-embedding-3-large"
+        ]
+      }
+    }
+  ],
+  "crateVersion": "0.1.1",
+  "description": "排除法：按特征词滤掉向量 / 重排 / 语音 / 生图 / 审核等非对话模型；去重去空白；全被滤光时返回原始清单（dropped 为 0）。",
+  "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "specVersion": 1,
+  "title": "模型清单清洗"
+}

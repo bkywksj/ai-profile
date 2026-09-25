@@ -58,8 +58,13 @@ cargo test -p ai-profile --features client
 cargo test --workspace --all-features                       # 含 wiremock 模拟服务端测试
 RUSTDOCFLAGS="-D warnings --cfg docsrs" cargo doc -p ai-profile --all-features --no-deps
 cargo xtask gen-docs && git diff --exit-code docs/providers.md
+cargo xtask gen-spec                                        # 🔴 改版本号后必跑，见下
 cargo package -p ai-profile                                 # 打包 + 编译验证
 ```
+
+🔴 `spec/` 每个文件头都带 `crateVersion`，**改了版本号就一定会变**：先改版本号、再 `gen-spec`、
+把 `spec/` 的变化和版本号放进同一个 release 提交。漏了的话守卫测试 `spec_files_in_sync` 会红 ——
+这是故意的，保证公开出去的用例永远标着产出它的版本。发布后还要把 `spec/` 同步到文档站（技能 `downstream-sync`）。
 
 再做两项（0.1.0 就是漏了它们）：
 

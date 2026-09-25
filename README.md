@@ -70,6 +70,12 @@ println!("{:?} / {}", p.base_url, p.model);
 
 提示词模板与各工具的放置方式见[用 AI 接入](https://ai-profile.ruoyi.plus/guide/ai-assisted)。
 
+## 其他语言
+
+目前只有 Rust 实现。预置数据与规则另以与语言无关的形式发布在 [`spec/`](https://github.com/bkywksj/ai-profile/tree/master/spec)：
+`presets.json` 可直接拿去用，一致性用例（输入 → 期望输出）供其他语言的实现对照，
+跑通即与本库行为一致。说明见[其他语言实现](https://ai-profile.ruoyi.plus/reference/spec)。
+
 ## 三条设计铁律
 
 1. **`base_url` 原样使用，绝不推断版本段** —— 各家不统一（多数 `/v1`、智谱 `/v4`、Gemini `/v1beta/openai`）。

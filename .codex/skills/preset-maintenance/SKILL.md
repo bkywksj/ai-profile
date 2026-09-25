@@ -65,7 +65,9 @@ description: |
 
 ```bash
 cargo xtask gen-docs                            # 重新生成 docs/providers.md
+cargo xtask gen-spec                            # 重新生成 spec/presets.json（给其他语言用的预置数据）
 cargo test -p ai-profile --features client      # providers_md_in_sync 会拦下没重新生成的情况
+cargo test -p xtask                             # spec_files_in_sync 同理（它在 xtask 里，上一条跑不到）
 cargo fmt --all --check
 ```
 

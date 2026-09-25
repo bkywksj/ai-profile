@@ -1,0 +1,316 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "ok": {
+          "bundle": false,
+          "profiles": [
+            {
+              "apiKey": "sk-1",
+              "baseUrl": "https://api.deepseek.com/v1",
+              "model": "deepseek-flash",
+              "modelFallback": false,
+              "name": "DeepSeek",
+              "protocol": "openai_compatible",
+              "rawProvider": "openai"
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":1,\"data\":{\"name\":\"DeepSeek\",\"provider\":\"openai\",\"baseURL\":\"https://api.deepseek.com/v1\",\"apiKey\":\"sk-1\",\"model\":\"deepseek-flash\"}}"
+      },
+      "name": "规范单条"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": false,
+          "profiles": [
+            {
+              "apiKey": "k",
+              "baseUrl": "https://a/v1",
+              "model": "m",
+              "modelFallback": false,
+              "name": "x",
+              "protocol": "openai_compatible",
+              "rawProvider": ""
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":1,\"data\":{\"name\":\"x\",\"baseUrl\":\"https://a/v1\",\"apiKey\":\"k\",\"model\":\"m\"}}"
+      },
+      "name": "字段别名 baseUrl"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": false,
+          "profiles": [
+            {
+              "apiKey": "k",
+              "baseUrl": "https://a/v1",
+              "model": "m",
+              "modelFallback": false,
+              "name": "x",
+              "protocol": "openai_compatible",
+              "rawProvider": ""
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":1,\"data\":{\"name\":\"x\",\"base_url\":\"https://a/v1\",\"api_key\":\"k\",\"model\":\"m\"}}"
+      },
+      "name": "字段别名 base_url / api_key"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": false,
+          "profiles": [
+            {
+              "apiKey": "sk-1",
+              "baseUrl": "https://a/v1",
+              "model": "deepseek-flash",
+              "modelFallback": true,
+              "name": "x",
+              "protocol": "openai_compatible",
+              "rawProvider": ""
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":1,\"data\":{\"name\":\"x\",\"baseURL\":\"https://a/v1\",\"apiKey\":\"sk-1\"}}"
+      },
+      "name": "没给 model：用兜底值"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": false,
+          "profiles": [
+            {
+              "apiKey": "sk-x",
+              "baseUrl": "https://relay.example.com",
+              "model": "claude-opus-5",
+              "modelFallback": false,
+              "name": "中转",
+              "protocol": "anthropic",
+              "rawProvider": "anthropic"
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":1,\"data\":{\"name\":\"中转\",\"provider\":\"anthropic\",\"baseURL\":\"https://relay.example.com\",\"apiKey\":\"sk-x\",\"model\":\"claude-opus-5\"}}"
+      },
+      "name": "Anthropic 只填主机名"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": false,
+          "profiles": [
+            {
+              "apiKey": "k",
+              "baseUrl": "https://a",
+              "model": "claude-sonnet-5",
+              "modelFallback": false,
+              "name": "x",
+              "protocol": "anthropic",
+              "rawProvider": "custom"
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":1,\"data\":{\"name\":\"x\",\"provider\":\"custom\",\"baseURL\":\"https://a\",\"apiKey\":\"k\",\"model\":\"claude-sonnet-5\"}}"
+      },
+      "name": "model 名推断 Anthropic"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": true,
+          "profiles": [
+            {
+              "apiKey": "k1",
+              "baseUrl": "https://api.deepseek.com/v1",
+              "model": "deepseek-flash",
+              "modelFallback": false,
+              "name": "a",
+              "protocol": "openai_compatible",
+              "rawProvider": "deepseek"
+            },
+            {
+              "apiKey": "k2",
+              "baseUrl": "https://api.anthropic.com/v1",
+              "model": "claude-opus-5",
+              "modelFallback": false,
+              "name": "b",
+              "protocol": "anthropic",
+              "rawProvider": "anthropic"
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile.bundle\",\"v\":1,\"data\":{\"profiles\":[{\"name\":\"a\",\"provider\":\"deepseek\",\"baseURL\":\"https://api.deepseek.com/v1\",\"apiKey\":\"k1\",\"model\":\"deepseek-flash\"},{\"name\":\"b\",\"provider\":\"anthropic\",\"baseUrl\":\"https://api.anthropic.com/v1\",\"apiKey\":\"k2\",\"model\":\"claude-opus-5\"}]}}"
+      },
+      "name": "规范打包"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": true,
+          "profiles": [
+            {
+              "apiKey": "sk-ds",
+              "baseUrl": "https://api.deepseek.com/v1",
+              "model": "deepseek-flash",
+              "modelFallback": false,
+              "name": "DeepSeek",
+              "protocol": "openai_compatible",
+              "rawProvider": "deepseek"
+            }
+          ],
+          "skipped": 1
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile.bundle\",\"v\":1,\"data\":{\"api_profiles\":[{\"name\":\"登录\",\"auth_type\":\"oauth\",\"model\":\"gpt-6\"},{\"name\":\"DeepSeek\",\"provider\":\"deepseek\",\"api_key\":\"sk-ds\",\"base_url\":\"https://api.deepseek.com/v1\",\"model\":\"deepseek-flash\",\"auth_type\":\"api_key\"}]}}"
+      },
+      "name": "打包：OAuth 条目跳过"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "empty_bundle",
+          "skipped": 1
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile.bundle\",\"v\":1,\"data\":{\"api_profiles\":[{\"name\":\"x\",\"auth_type\":\"oauth\"}]}}"
+      },
+      "name": "打包：全是 OAuth"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "unsupported_version",
+          "found": 99,
+          "supported": 1
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":99,\"data\":{\"model\":\"m\"}}"
+      },
+      "name": "更高版本"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "not_ai_profile",
+          "found": ""
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"hello\":\"world\"}"
+      },
+      "name": "不是 ai.profile"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "empty"
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": ""
+      },
+      "name": "空内容"
+    },
+    {
+      "expected": {
+        "data": {
+          "apiKey": "sk-示例",
+          "baseURL": "https://api.deepseek.com/v1",
+          "model": "some-model",
+          "name": "示例",
+          "provider": "openai"
+        },
+        "kind": "ai.profile",
+        "v": 1
+      },
+      "fn": "to_profile",
+      "input": {
+        "apiKey": "sk-示例",
+        "baseUrl": "https://api.deepseek.com/v1",
+        "model": "some-model",
+        "name": "示例",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": {
+        "data": {
+          "apiKey": "sk-示例",
+          "baseURL": "https://api.anthropic.com/v1",
+          "model": "some-model",
+          "name": "示例",
+          "provider": "anthropic"
+        },
+        "kind": "ai.profile",
+        "v": 1
+      },
+      "fn": "to_profile",
+      "input": {
+        "apiKey": "sk-示例",
+        "baseUrl": "https://api.anthropic.com/v1",
+        "model": "some-model",
+        "name": "示例",
+        "protocol": "anthropic"
+      }
+    }
+  ],
+  "crateVersion": "0.1.1",
+  "description": "解析宽进：接受 baseURL / baseUrl / base_url 等多种拼写，单条与打包统一返回列表，OAuth 条目跳过并计数。生成严出：只产出规范写法。格式规范见 https://ai-profile.ruoyi.plus/api/protocol",
+  "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "specVersion": 1,
+  "title": "ai.profile 解析与生成"
+}

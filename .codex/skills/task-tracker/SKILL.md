@@ -152,7 +152,7 @@ description: |
 - [ ] 改代码 / 预置（`crates/ai-profile/src/…`）
 - [ ] 公开入参类型 → `tests/smoke.rs` 补一条从外部调用的测试
 - [ ] 真实端点行为 → 拿真实响应补测试（不靠文档推测）
-- [ ] `cargo xtask gen-docs`（改了预置时）
+- [ ] `cargo xtask gen-docs` + `cargo xtask gen-spec`（改了预置 / 端点 / 解析 / 清洗规则时）
 - [ ] `cargo test -p ai-profile --features client` 与不带 client 各跑一次
 - [ ] `cargo clippy --workspace --all-targets -- -D warnings` / `cargo fmt --all --check`
 - [ ] `CHANGELOG.md`「未发布」

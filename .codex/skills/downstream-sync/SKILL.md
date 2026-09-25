@@ -42,6 +42,7 @@ description: |
 ```bash
 # 在 ../ai-profile-docs
 pnpm sync-providers        # 把 docs/providers.md 同步到 reference/providers.md
+pnpm sync-spec             # 把 spec/*.json 同步到 public/spec/（其他语言从这里下载，改了规则 / 预置 / 版本号都要跑）
 pnpm build                 # 必须构建通过
 pnpm check-links           # 站内链接
 ```

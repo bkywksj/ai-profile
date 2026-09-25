@@ -82,6 +82,7 @@ cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo fmt --all --check
 cargo xtask gen-docs                                        # 确认 providers.md 无变化
+cargo xtask gen-spec                                        # 改版本号后 spec/ 的 crateVersion 必变，一并提交
 RUSTDOCFLAGS="-D warnings --cfg docsrs" cargo doc -p ai-profile --all-features --no-deps
 cargo package -p ai-profile                                 # 打包 + 编译验证
 ```

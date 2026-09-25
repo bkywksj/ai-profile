@@ -3,6 +3,7 @@
 //! ```bash
 //! cargo xtask gen-docs   # 重新生成 docs/providers.md
 //! cargo xtask probe      # 打所有预置端点，验证 base_url 还通不通
+//! cargo xtask gen-spec   # 重新生成 spec/（预置 JSON + 一致性用例，给其他语言用）
 //! ```
 //!
 //! # 🔴 probe 绝不能进 CI
@@ -12,6 +13,8 @@
 //!
 //! gen-docs 则相反 —— 它是纯本地计算，CI 里由守卫测试 `providers_md_in_sync`
 //! 检查结果是否已提交。
+
+mod spec;
 
 use std::path::PathBuf;
 
@@ -39,6 +42,27 @@ fn gen_docs() -> Result<(), Box<dyn std::error::Error>> {
         path.display(),
         content.len()
     );
+    Ok(())
+}
+
+fn gen_spec() -> Result<(), Box<dyn std::error::Error>> {
+    let root = repo_root().join("spec");
+    let mut changed = 0usize;
+    for (rel, content) in spec::render_all() {
+        let path = root.join(rel);
+        if let Some(dir) = path.parent() {
+            std::fs::create_dir_all(dir)?;
+        }
+        if std::fs::read_to_string(&path)
+            .map(|old| old != content)
+            .unwrap_or(true)
+        {
+            std::fs::write(&path, &content)?;
+            changed += 1;
+            println!("已更新 spec/{rel}");
+        }
+    }
+    println!("{changed} 个文件有变化");
     Ok(())
 }
 
@@ -113,8 +137,9 @@ async fn main() {
     let r = match cmd.as_str() {
         "gen-docs" => gen_docs(),
         "probe" => probe().await,
+        "gen-spec" => gen_spec(),
         _ => {
-            eprintln!("用法:\n  cargo xtask gen-docs   重新生成 docs/providers.md\n  cargo xtask probe      探活所有预置端点（人工触发，勿进 CI）");
+            eprintln!("用法:\n  cargo xtask gen-docs   重新生成 docs/providers.md\n  cargo xtask probe      探活所有预置端点（人工触发，勿进 CI）\n  cargo xtask gen-spec   重新生成 spec/（预置 JSON + 一致性用例）");
             std::process::exit(2);
         }
     };

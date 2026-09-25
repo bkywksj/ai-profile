@@ -1,0 +1,432 @@
+{
+  "cases": [
+    {
+      "expected": "https://api.deepseek.com/v1/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://api.deepseek.com/v1",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://api.deepseek.com/v1",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://api.deepseek.com/v1",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://api.deepseek.com/v1/",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://api.deepseek.com/v1/",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://api.deepseek.com/v1/",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "  https://api.deepseek.com/v1  ",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "  https://api.deepseek.com/v1  ",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "  https://api.deepseek.com/v1  ",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://api.deepseek.com",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://api.deepseek.com",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://api.deepseek.com",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://open.bigmodel.cn/api/paas/v4/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://open.bigmodel.cn/api/paas/v4",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://open.bigmodel.cn/api/paas/v4",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://open.bigmodel.cn/api/paas/v4/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://open.bigmodel.cn/api/paas/v4",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://generativelanguage.googleapis.com/v1beta/openai/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://generativelanguage.googleapis.com/v1beta/openai/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://generativelanguage.googleapis.com/v1beta/openai/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://generativelanguage.googleapis.com/v1beta/openai#",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://generativelanguage.googleapis.com/v1beta/openai#",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://generativelanguage.googleapis.com/v1beta/openai/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://generativelanguage.googleapis.com/v1beta/openai#",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/chat/completions",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/chat/completions",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/chat/completions",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/messages",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/messages",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/messages",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/chat/completions",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://api.deepseek.com/v1",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/messages",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://api.deepseek.com/v1",
+        "path": "messages"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/chat/completions",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://api.deepseek.com",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1/messages",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://api.deepseek.com",
+        "path": "messages"
+      }
+    },
+    {
+      "expected": "https://relay.example.com/v1/chat/completions",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://relay.example.com/v1/chat/completions",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://relay.example.com/v1/messages",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://relay.example.com/v1/chat/completions",
+        "path": "messages"
+      }
+    },
+    {
+      "expected": "https://api.anthropic.com/chat/completions",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://api.anthropic.com",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://api.anthropic.com/v1/messages",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://api.anthropic.com",
+        "path": "messages"
+      }
+    },
+    {
+      "expected": "https://api.anthropic.com/v1/chat/completions",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://api.anthropic.com/v1",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://api.anthropic.com/v1/messages",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://api.anthropic.com/v1",
+        "path": "messages"
+      }
+    },
+    {
+      "expected": "https://cc.example.top:8443/chat/completions",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://cc.example.top:8443",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://cc.example.top:8443/v1/messages",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://cc.example.top:8443",
+        "path": "messages"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/anthropic/chat/completions",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://api.deepseek.com/anthropic",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/anthropic/v1/messages",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://api.deepseek.com/anthropic",
+        "path": "messages"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/chat/completions",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://proxy.example.com/v1/messages",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/messages",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://proxy.example.com/v1/messages",
+        "path": "messages"
+      }
+    },
+    {
+      "expected": "https://odd.gateway.com/raw/chat/completions",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://odd.gateway.com/raw#",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://odd.gateway.com/raw/messages",
+      "fn": "join_chat_endpoint",
+      "input": {
+        "base": "https://odd.gateway.com/raw#",
+        "path": "messages"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1",
+      "fn": "anthropic_base_url",
+      "input": {
+        "base": "https://api.deepseek.com/v1"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/v1",
+      "fn": "anthropic_base_url",
+      "input": {
+        "base": "https://api.deepseek.com"
+      }
+    },
+    {
+      "expected": "https://relay.example.com/v1",
+      "fn": "anthropic_base_url",
+      "input": {
+        "base": "https://relay.example.com/v1/chat/completions"
+      }
+    },
+    {
+      "expected": "https://api.anthropic.com/v1",
+      "fn": "anthropic_base_url",
+      "input": {
+        "base": "https://api.anthropic.com"
+      }
+    },
+    {
+      "expected": "https://api.anthropic.com/v1",
+      "fn": "anthropic_base_url",
+      "input": {
+        "base": "https://api.anthropic.com/v1"
+      }
+    },
+    {
+      "expected": "https://cc.example.top:8443/v1",
+      "fn": "anthropic_base_url",
+      "input": {
+        "base": "https://cc.example.top:8443"
+      }
+    },
+    {
+      "expected": "https://api.deepseek.com/anthropic/v1",
+      "fn": "anthropic_base_url",
+      "input": {
+        "base": "https://api.deepseek.com/anthropic"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1",
+      "fn": "anthropic_base_url",
+      "input": {
+        "base": "https://proxy.example.com/v1/messages"
+      }
+    },
+    {
+      "expected": "https://odd.gateway.com/raw",
+      "fn": "anthropic_base_url",
+      "input": {
+        "base": "https://odd.gateway.com/raw#"
+      }
+    }
+  ],
+  "crateVersion": "0.1.1",
+  "description": "join_api_path：base_url 原样使用，只剥掉误填的对话端点后缀与末尾 #。join_chat_endpoint：对话端点允许整条粘进来；path 为 messages（Anthropic）时按 anthropic_base_url 补 /v1。anthropic_base_url：末段不是 v<数字> 就补 /v1，末尾 # 表示别补。",
+  "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "specVersion": 1,
+  "title": "端点拼接"
+}

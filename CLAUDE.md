@@ -132,7 +132,8 @@ crates/ai-profile/src/
 │   └── docgen.rs     生成 docs/providers.md
 └── client/mod.rs     feature = "client"：Verifier（零成本验证）+ 诊断纯函数
 crates/ai-profile/tests/smoke.rs   从下游视角调用公开 API 的集成测试
-xtask/                cargo xtask probe（手动探活）/ gen-docs（生成服务商清单）
+xtask/                cargo xtask probe（手动探活）/ gen-docs（生成服务商清单）/ gen-spec（生成 spec/）
+spec/                 🔴 生成物，勿手改：给其他语言用的预置 JSON + 一致性用例（见 spec/README.md）
 docs/
 ├── downstream.md     🔴 下游登记表
 ├── providers.md      生成物，勿手改
@@ -153,6 +154,7 @@ cargo test -p ai-profile                     # 不带 client：确认纯数据�
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --all --check
 cargo xtask gen-docs    # 重新生成 docs/providers.md（改预置后必跑，守卫测试会拦）
+cargo xtask gen-spec    # 重新生成 spec/（改预置 / 公开规则 / 版本号后必跑，cargo test -p xtask 会拦）
 cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 CI
 ```
 
@@ -186,6 +188,7 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 | `oversized_first_user_is_not_forced_back` | 首条消息超大时不强行补回，否则会话永远降不下来 |
 | `detects_real_overflow_errors` / `does_not_misfire` | 超长识别：真实报错必须命中；限流、输出上限太大绝不能误判 |
 | `providers_md_in_sync` | 防止文档变成又一份会漂移的副本 |
+| `spec_files_in_sync`（xtask） | 其他语言照着 `spec/` 实现；用例与代码不同步，别的语言就会悄悄分叉 |
 | `service_config_builder_is_usable_from_outside` | 🔴 集成测试：`non_exhaustive` 入参缺 builder 时下游报 E0639 |
 | `verifier_is_shareable_and_concurrent` | 🔴 集成测试：`Verifier` 必须 `Send + Sync + 'static` |
 
