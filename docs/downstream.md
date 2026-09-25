@@ -18,7 +18,7 @@
 
 > ⏳ 五家的界面改动都**尚未实机验证**；代码测试全绿。
 >
-> story_loom **只本地提交、未推送**。它的本机 lib 单测有 WebView2 入口崩溃（环境问题），
+> story_loom 的本机 lib 单测有 WebView2 入口崩溃（环境问题），
 > 应用侧纯函数测试（`legacy_endpoint` / `provider_share`）是在临时 crate 里 `#[path]` 引入实跑的。
 >
 > 🔴 **只属于个别应用的服务商不进 crate**（2026-09-24 撤回中宇AI智行）：那个应用用 `PresetCatalog::new().extend(&LOCAL)` 自己加，
@@ -27,7 +27,7 @@
 > onestop 的多模态预置已改用 crate（`850eb77`）。它自己的生图 / 视频 / 配音调用只支持三种协议，所以预置按协议过滤；
 > 要支持海螺 / Vidu / 火山语音等，得先把调用换成 `media`（StoryLoom 在用），再放开过滤。
 >
-> 2026-09-25：五家升到 **`0.1.3`**，做法同 0.1.2，零代码改动，锁文件只动 ai-profile 一个包，均只本地提交、未推送。
+> 2026-09-25：五家升到 **`0.1.3`**，做法同 0.1.2，零代码改动，锁文件只动 ai-profile 一个包，2026-09-25 已推送（连同技能更新提交；sigil 同批推了 crates.io 发布能力的 7 个提交）。
 > 测试：sigil 1468 / reeve 1104 / knowledge_base 890 / onestop 199 全过；story_loom 测试代码编译通过。
 > 提交：sigil `d14e3a9`、reeve `e9d3b81`、knowledge_base `f81e2f7`、onestop `6279cb3`、story_loom `26bd357`。
 > 用户能感知的变化：「Anthropic 官方」档不填地址也能「获取模型」；地址填到网站根目录时报「地址不对」而不是假成功。
