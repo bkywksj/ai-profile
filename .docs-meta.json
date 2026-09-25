@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "9504f70",
-  "lastSyncTime": "2026-09-25T16:30:00Z",
+  "lastSyncCommit": "4fa9d36",
+  "lastSyncTime": "2026-09-25T18:30:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -222,6 +222,27 @@
         "CHANGELOG.md"
       ],
       "note": "0.1.2 发布：四处修复、三张数据表公开、多语言规范 v0.1.2 存档"
+    },
+    {
+      "commit": "4fa9d36",
+      "time": "2026-09-25T18:30:00Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "reference/changelog.md",
+        "reference/spec.md",
+        "reference/versioning.md",
+        "reference/errors.md",
+        "api/limits.md",
+        "public/spec/**"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/preset/mod.rs",
+        "crates/ai-profile/src/client/mod.rs",
+        "crates/ai-profile/src/limits.rs",
+        "spec/**",
+        "CHANGELOG.md"
+      ],
+      "note": "0.1.3：官方档回落端点、2xx 返回网页判 not_found、限额逐字段来源；规范 v0.1.3 存档（259 条用例）"
     }
   ]
 }
