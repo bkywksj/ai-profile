@@ -104,39 +104,44 @@ pub struct TokenLimits {
     /// 用途：填请求里的 `max_tokens`。此前各应用普遍硬编码 4096 ——
     /// 对支持 64K 输出的模型来说白白浪费了大半能力。
     pub max_output: Option<u32>,
-    /// 这两个数字是谁给的，见 [`LimitSource`]
+    /// 整条的来源：优先级最高、真正起作用的那一层，见 [`LimitSource`]。
+    ///
+    /// 两个值可能来自不同的层（用户只填了窗口、输出上限由预置补），
+    /// 要分别标注请用 [`Self::context_window_source`] / [`Self::max_output_source`]。
     pub source: LimitSource,
+    /// `context_window` 这个值来自哪一层；值为 `None` 时也为 `None`。
+    pub context_window_source: Option<LimitSource>,
+    /// `max_output` 这个值来自哪一层；值为 `None` 时也为 `None`。
+    pub max_output_source: Option<LimitSource>,
+}
+
+/// 有值才有来源。
+const fn source_of(value: Option<u32>, source: LimitSource) -> Option<LimitSource> {
+    match value {
+        Some(_) => Some(source),
+        None => None,
+    }
 }
 
 impl TokenLimits {
     /// 端点上报的限额。
     pub const fn from_endpoint(context_window: Option<u32>, max_output: Option<u32>) -> Self {
-        Self {
-            context_window,
-            max_output,
-            source: LimitSource::Endpoint,
-        }
+        Self::with_source(context_window, max_output, LimitSource::Endpoint)
     }
 
     /// 预置静态兜底。
     pub const fn from_preset(context_window: Option<u32>, max_output: Option<u32>) -> Self {
-        Self {
-            context_window,
-            max_output,
-            source: LimitSource::Preset,
-        }
+        Self::with_source(context_window, max_output, LimitSource::Preset)
     }
 
     /// 用户手填的限额。
     pub const fn from_user(context_window: Option<u32>, max_output: Option<u32>) -> Self {
-        Self {
-            context_window,
-            max_output,
-            source: LimitSource::User,
-        }
+        Self::with_source(context_window, max_output, LimitSource::User)
     }
 
     /// 按来源构造 —— 调用方从存储里读回 `(窗口, 输出, 来源)` 时用。
+    ///
+    /// 两个值都记为同一来源；逐字段来源只在 [`Self::or`] 合并不同层时才会不同。
     pub const fn with_source(
         context_window: Option<u32>,
         max_output: Option<u32>,
@@ -146,13 +151,16 @@ impl TokenLimits {
             context_window,
             max_output,
             source,
+            context_window_source: source_of(context_window, source),
+            max_output_source: source_of(max_output, source),
         }
     }
 
-    /// 逐字段回退：自己缺的字段从 `fallback` 补。
+    /// 逐字段回退：自己缺的字段从 `fallback` 补，**值和它的来源一起补**。
     ///
-    /// `source` 取**自己的**（只要自己至少有一个字段）—— 它标的是优先级最高、
+    /// 整条的 `source` 取**自己的**（只要自己至少有一个字段）—— 它标的是优先级最高、
     /// 真正起作用的那一层。自己全空时整个换成 `fallback`。
+    /// 每个值实际来自哪一层看 `context_window_source` / `max_output_source`。
     ///
     /// 🔴 为什么要逐字段：用户常常只知道窗口大小（文档写了），不知道输出上限。
     /// 整条替换的话，填了窗口就丢了预置里的输出上限，等于填了反而变差。
@@ -170,16 +178,20 @@ impl TokenLimits {
         if self.is_empty() {
             return fallback;
         }
+        let (context_window, context_window_source) = match self.context_window {
+            Some(v) => (Some(v), self.context_window_source),
+            None => (fallback.context_window, fallback.context_window_source),
+        };
+        let (max_output, max_output_source) = match self.max_output {
+            Some(v) => (Some(v), self.max_output_source),
+            None => (fallback.max_output, fallback.max_output_source),
+        };
         TokenLimits {
-            context_window: match self.context_window {
-                Some(v) => Some(v),
-                None => fallback.context_window,
-            },
-            max_output: match self.max_output {
-                Some(v) => Some(v),
-                None => fallback.max_output,
-            },
+            context_window,
+            max_output,
             source: self.source,
+            context_window_source,
+            max_output_source,
         }
     }
 
@@ -340,6 +352,41 @@ mod tests {
         assert_eq!(l.context_window, Some(1_048_576));
         assert_eq!(l.max_output, Some(393_216));
         assert_eq!(l.source, LimitSource::Endpoint);
+    }
+
+    /// 🔴 来源也要逐字段：用户只填了窗口、输出上限来自预置时，界面要能分别标出
+    /// 「窗口：你填的」「输出上限：预估，可修改」。整条只有一个 `source` 时两个都会被标成「你填的」。
+    #[test]
+    fn or_tracks_source_per_field() {
+        let user = TokenLimits::from_user(Some(64_000), None);
+        let endpoint = TokenLimits::from_endpoint(None, None);
+        let preset = TokenLimits::from_preset(Some(128_000), Some(8192));
+        let l = user.or(endpoint).or(preset);
+        assert_eq!(l.context_window_source, Some(LimitSource::User));
+        assert_eq!(l.max_output_source, Some(LimitSource::Preset));
+        assert_eq!(
+            l.source,
+            LimitSource::User,
+            "整条的 source 语义不变，兼容已有调用方"
+        );
+
+        // 没有值的字段没有来源
+        let only_window = TokenLimits::from_endpoint(Some(200_000), None);
+        assert_eq!(
+            only_window.context_window_source,
+            Some(LimitSource::Endpoint)
+        );
+        assert_eq!(only_window.max_output_source, None);
+
+        // 从存储读回（with_source）同样逐字段标注
+        let stored = TokenLimits::with_source(Some(1), Some(2), LimitSource::User);
+        assert_eq!(stored.context_window_source, Some(LimitSource::User));
+        assert_eq!(stored.max_output_source, Some(LimitSource::User));
+
+        // 线格式：前端按字段读来源
+        let j = serde_json::to_string(&l).unwrap();
+        assert!(j.contains(r#""contextWindowSource":"user""#), "{j}");
+        assert!(j.contains(r#""maxOutputSource":"preset""#), "{j}");
     }
 
     /// 逐字段回退 + 来源取高优先级那层；自己全空时整条换成 fallback。

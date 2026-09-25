@@ -227,26 +227,8 @@ impl Verifier {
         // 1. 必填的专有字段 —— 不发请求就能判
         check_required_fields(cfg.preset_key, cfg.extra)?;
 
-        // 2. 定端点：表单填的优先，空则用预置的
-        let base = if cfg.base_url.trim().is_empty() {
-            cfg.preset_key
-                .and_then(preset_by_key)
-                .and_then(|p| p.base_url)
-                .unwrap_or("")
-        } else {
-            cfg.base_url.trim()
-        };
-        if base.is_empty() {
-            return Err(VerifyError::MissingExtraField {
-                key: "base_url".to_string(),
-            });
-        }
-        // Anthropic 与对话同一口径补 /v1，否则会出现「获取通过、对话 404」或反过来。
-        // 诊断也用补过的 base：已经替用户补了 /v1，404 时再建议「补 /v1」就是误导
-        let effective_base = match cfg.protocol {
-            Protocol::Anthropic => anthropic_base_url(base),
-            _ => base.to_string(),
-        };
+        // 2. 定端点
+        let effective_base = resolve_base_url(cfg.base_url, cfg.preset_key, cfg.protocol)?;
         let base = effective_base.as_str();
         let url = join_api_path(base, "models");
 
@@ -278,6 +260,9 @@ impl Verifier {
 
         if !(200..300).contains(&status) {
             return Err(diagnose(status, &body, &url, base));
+        }
+        if let Some(e) = diagnose_success(&body, &url, base) {
+            return Err(e);
         }
 
         // 4. 成功：清洗清单 + 校验当前 model 是否在里面
@@ -369,6 +354,52 @@ pub fn suggest_url(base_url: &str) -> Option<String> {
         return None;
     }
     Some(format!("{trimmed}/v1"))
+}
+
+/// 定下「获取模型」要请求的 base：表单填的 → 预置的端点（含官方档的协议默认地址）→ 都没有则报缺字段。
+///
+/// Anthropic 协议再按 [`anthropic_base_url`] 补版本段，与对话同一口径 —— 否则会出现「获取通过、对话 404」。
+/// 诊断也用补过的 base：已经替用户补了 `/v1`，404 时再建议「补 /v1」就是误导。
+fn resolve_base_url(
+    form: &str,
+    preset_key: Option<&str>,
+    protocol: Protocol,
+) -> Result<String, VerifyError> {
+    let form = form.trim();
+    let base = if form.is_empty() {
+        preset_key
+            .and_then(preset_by_key)
+            .and_then(crate::preset::ProviderPreset::endpoint)
+            .unwrap_or("")
+    } else {
+        form
+    };
+    if base.is_empty() {
+        return Err(VerifyError::MissingExtraField {
+            key: "base_url".to_string(),
+        });
+    }
+    Ok(match protocol {
+        Protocol::Anthropic => anthropic_base_url(base),
+        _ => base.to_string(),
+    })
+}
+
+/// 2xx 响应的二次判定：状态码说成功，但响应体根本不是接口返回的东西。
+///
+/// 典型场景：base_url 指到了网站根目录（少了 `/v1` 之类的路径），网站把任何未知路径都回成首页 HTML、
+/// 状态码 200 —— 此前这会被当成「验证成功、模型清单为空」，用户看到绿色的对勾却什么也用不了。
+///
+/// 响应体不是合法 JSON 时按 [`VerifyError::NotFound`] 报（「接口不在这个地址」），
+/// 并照常给出 [`suggest_url`] 的「一键改用」建议；是 JSON 就返回 `None`（空清单 `{"data":[]}` 是合法的）。
+pub fn diagnose_success(body: &str, requested_url: &str, base_url: &str) -> Option<VerifyError> {
+    if serde_json::from_str::<serde_json::Value>(body).is_ok() {
+        return None;
+    }
+    Some(VerifyError::NotFound {
+        requested_url: requested_url.to_string(),
+        suggested_url: suggest_url(base_url),
+    })
 }
 
 /// HTTP 状态码 + 响应体 → 结构化错误。
@@ -560,6 +591,59 @@ mod tests {
         assert_eq!(suggest_url("https://x.com/v1beta"), None);
         assert_eq!(suggest_url("https://x.com/v1beta/"), None);
         assert_eq!(suggest_url("https://x.com/v1/"), None);
+    }
+
+    /// 「Anthropic 官方」不填地址也要能验证 —— 它恰恰是界面隐藏地址框的那一档。
+    /// 此前这里只看预置的 base_url（刻意为空），直接报「缺 base_url」。
+    #[test]
+    fn official_preset_without_address_resolves_to_official_endpoint() {
+        assert_eq!(
+            resolve_base_url("", Some("anthropic_official"), Protocol::Anthropic).unwrap(),
+            "https://api.anthropic.com/v1"
+        );
+        // 表单填了就用表单的
+        assert_eq!(
+            resolve_base_url(
+                " https://relay.example.com ",
+                Some("anthropic_official"),
+                Protocol::Anthropic
+            )
+            .unwrap(),
+            "https://relay.example.com/v1"
+        );
+        // 自定义档没填地址：照旧报缺字段，不替用户猜
+        assert_eq!(
+            resolve_base_url("", Some("claude_code"), Protocol::Anthropic),
+            Err(VerifyError::MissingExtraField {
+                key: "base_url".into()
+            })
+        );
+        assert_eq!(
+            resolve_base_url("", None, Protocol::OpenAiCompatible),
+            Err(VerifyError::MissingExtraField {
+                key: "base_url".into()
+            })
+        );
+    }
+
+    /// 2xx 却回了网页：地址指到了网站根目录。此前判为「成功、清单为空」。
+    #[test]
+    fn success_status_with_html_body_is_not_found() {
+        let e = diagnose_success(
+            "<!doctype html><html><body>Welcome</body></html>",
+            "https://relay.example.com/models",
+            "https://relay.example.com",
+        );
+        assert_eq!(
+            e,
+            Some(VerifyError::NotFound {
+                requested_url: "https://relay.example.com/models".into(),
+                suggested_url: Some("https://relay.example.com/v1".into()),
+            })
+        );
+        // 合法 JSON（包括空清单）不拦
+        assert_eq!(diagnose_success(r#"{"data":[]}"#, "u", "b"), None);
+        assert_eq!(diagnose_success(r#"["a"]"#, "u", "b"), None);
     }
 
     /// 状态码要映射到能驱动 UI 动作的变体。

@@ -5,6 +5,21 @@
 
 ## [未发布]
 
+外部实现者（AgileShot，C++）照规范实现时指出的三处问题。
+
+### 修复
+- **「Anthropic 官方」不填地址时，「获取模型」验证直接报缺 `base_url`**。这一档的 `base_url` 刻意留空
+  （调用方据此隐藏地址框），验证却只看 `base_url`。新增 `ProviderPreset::endpoint()`：预置没写地址、
+  但协议官方端点落在它的 `match_hosts` 里时，回落到官方端点；自定义端点类预置不受影响，照旧要求用户填
+- **端点 2xx 却返回网页时，验证判为「成功、模型清单为空」**。地址指到网站根目录时，网站会把未知路径回成首页、
+  状态码 200。新增纯函数 `client::diagnose_success`：2xx 但响应体不是 JSON → `NotFound`（带一键改用建议）
+
+### 新增
+- `TokenLimits` 增加逐字段来源 `context_window_source` / `max_output_source`（线格式 `contextWindowSource` /
+  `maxOutputSource`）。用户只填了窗口、输出上限由预置补时，界面可以分别标注；
+  原有的整条 `source` 语义不变，已有调用方无需改动
+- 多语言规范：`preset_endpoint`、`diagnose_success` 两组用例，`preset_lookup.json` 的 `rules` 带上各协议官方端点
+
 ## [0.1.2] - 2026-09-25
 
 **升级只需 `cargo update -p ai-profile`，不用改代码。** 行为变化只涉及下面列出的输入，正常配置结果不变。

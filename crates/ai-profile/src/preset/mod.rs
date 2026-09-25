@@ -218,7 +218,7 @@ pub struct ProviderPreset {
     /// 用这条预置新建配置时，自动写进调用方 `extra` 的固定键值（用户不用填、也不该改）。
     ///
     /// 用途是**显式指定协议**，让 crate 不必认识品牌：比如某 New API 视频中转站带
-    /// `("video_api", "newapi")`，[`crate::media::video::VideoProtocol::detect`] 就按 New API 处理。
+    /// `("video_api", "newapi")`，`media::video::VideoProtocol::detect`（`video` feature）就按 New API 处理。
     /// 与 [`Self::extra_fields`] 的区别：那是让用户**填**的，这是预置**定死**的。
     /// 线格式是 `[[key, value], …]`。
     pub default_extra: &'static [(&'static str, &'static str)],
@@ -236,6 +236,28 @@ pub struct ProviderPreset {
     ///
     /// `None` = 未核实，仅供参考。调用方可对久未核实的预置给一个淡色提示。
     pub verified_at: Option<&'static str>,
+}
+
+impl ProviderPreset {
+    /// 用户没填地址时，这条预置实际该请求的端点。
+    ///
+    /// - 预置写了 `base_url` → 就是它
+    /// - 没写，但**协议的官方端点落在它声明的 `match_hosts` 里** → 协议官方端点
+    ///   （「Anthropic 官方」这类固定走官方地址、界面隐藏地址框的预置）
+    /// - 其余（自定义端点、各类中转档，`match_hosts` 为空）→ `None`，必须由用户填
+    ///
+    /// 🔴 「Anthropic 官方」的 `base_url` 刻意留空（调用方据此隐藏输入框），但请求总得有个地址。
+    /// 此前「获取模型」验证（`client::Verifier::verify`）只看 `base_url`，用户不填地址时直接报
+    /// 「缺 base_url」—— 官方档恰恰是最不该让用户填地址的那一档。
+    pub fn endpoint(&self) -> Option<&'static str> {
+        self.base_url.or_else(|| {
+            let official = self.protocol.default_base_url();
+            self.match_hosts
+                .iter()
+                .any(|h| official.contains(h))
+                .then_some(official)
+        })
+    }
 }
 
 /// 下游自建预置用的 const 构造器（crate 自己的预置照旧写字面量）。
@@ -456,6 +478,39 @@ pub fn model_limits(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 官方档没写地址也要有端点；自定义档没写地址就是没有，必须让用户填。
+    #[test]
+    fn endpoint_falls_back_to_official_only_for_fixed_presets() {
+        let official = preset_by_key("anthropic_official").unwrap();
+        assert!(
+            official.base_url.is_none(),
+            "官方档的 base_url 要留空（界面据此隐藏地址框）"
+        );
+        assert_eq!(official.endpoint(), Some("https://api.anthropic.com/v1"));
+
+        for key in ["claude_code", "codex", CUSTOM_PRESET_KEY] {
+            let p = preset_by_key(key).unwrap();
+            assert_eq!(p.endpoint(), None, "{key} 是让用户自填地址的档，不能替他猜");
+        }
+        let deepseek = preset_by_key("deepseek").unwrap();
+        assert_eq!(deepseek.endpoint(), deepseek.base_url);
+    }
+
+    /// 守卫：所有「没写地址却声明了主机名」的预置，都必须能解析出端点 ——
+    /// 否则它既不让用户填（界面隐藏地址框），又没有地址可请求。
+    #[test]
+    fn fixed_presets_without_base_url_resolve_an_endpoint() {
+        for p in presets() {
+            if p.base_url.is_none() && !p.match_hosts.is_empty() {
+                assert!(
+                    p.endpoint().is_some(),
+                    "{} 没写地址也解析不出官方端点",
+                    p.key
+                );
+            }
+        }
+    }
 
     /// 🔴 同一 kind 内同组必须连续 —— 不连续会让下拉切出两个同名分组标题。
     ///
