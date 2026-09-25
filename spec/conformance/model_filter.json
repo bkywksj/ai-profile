@@ -130,6 +130,13 @@
       "expected": false,
       "fn": "is_chat_model_id",
       "input": {
+        "id": "gpt-4o-transcribe"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
         "id": "tts-1"
       }
     },
@@ -342,6 +349,7 @@
       "cogvideo",
       "hailuo",
       "speech",
+      "transcribe",
       "captioner",
       "ocr",
       "moderation",

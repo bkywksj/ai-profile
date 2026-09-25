@@ -96,6 +96,13 @@ fn endpoint_json() -> Value {
         "https://api.deepseek.com/anthropic",
         "https://proxy.example.com/v1/messages",
         "https://odd.gateway.com/raw#",
+        // 末尾 # 同时带着误填的端点：照样剥后缀，只是不补 /v1
+        "https://odd.gateway.com/raw/messages#",
+        // 版本段判定区分大小写：大写 V1 不算
+        "https://relay.example.com/V1",
+        // 后缀按路径段匹配：mymessages 不是误填的 /messages（曾经的 bug：会被剥成 …/v1/my）
+        "https://relay.example.com/v1/mymessages",
+        "",
     ];
     let mut cases = Vec::new();
     for base in api_bases {
@@ -132,6 +139,10 @@ fn endpoint_json() -> Value {
         "https://x.com/v1beta",
         "https://api.deepseek.com",
         "https://v4.example.com",
+        // 只看最后一个 / 之后的那段，不区分它是主机名还是路径
+        "https://v4",
+        "https://x.com/v1//",
+        "https://x.com/V1",
         "https://x.com/v",
         "",
     ] {
@@ -144,11 +155,17 @@ fn endpoint_json() -> Value {
     with_cases(
         header(
             "端点拼接",
-            "join_api_path：base_url 原样使用。处理顺序：去两端空白 → 去末尾所有 # → 去末尾所有 / → \
-             若以 chat/completions 或 messages 结尾（只认这两种，按此顺序、只剥一次）则剥掉并再去末尾 / → 拼上 /path。\
-             join_chat_endpoint：对话端点允许整条粘进来；path 为 messages（Anthropic）时按 anthropic_base_url 补 /v1。\
-             anthropic_base_url：末段不是 v<数字> 就补 /v1，末尾 # 表示别补。\
-             ends_with_version_segment：末段（去掉末尾 /）是否形如 v + 纯数字；v1beta、主机名 v4.example.com 都不算。",
+            "下文「剥端点后缀」指：若字符串以 /chat/completions 或 /messages 结尾（按路径段匹配，前面必须是 /；\
+             区分大小写；按此顺序、只剥一次），去掉该后缀及其前面所有 /。\
+             join_api_path(base, path)：去两端空白 → 去末尾所有 # → 去末尾所有 / → 剥端点后缀 → 拼上 \"/\" + path。\
+             base 为空时结果是 \"/\" + path —— 空地址不在本函数职责内，调用方应先校验。\
+             anthropic_base_url(base)：去两端空白，记下末尾是否有 # → 去末尾所有 # → 去末尾所有 / → 剥端点后缀，得到 b；\
+             原来末尾有 #、或 b 为空、或 ends_with_version_segment(b) → 返回 b；否则返回 b + \"/v1\"。\
+             join_chat_endpoint(base, path)：去两端空白、去末尾所有 #、去末尾所有 / 后，若以 \"/\" + path 结尾 → 原样返回\
+             （只有粘进来的端点与请求的 path 一致时才原样用）；否则 path 为 messages → join_api_path(anthropic_base_url(base), path)；\
+             其余 → join_api_path(base, path)。\
+             ends_with_version_segment(base)：去两端空白、去末尾所有 / 后，取最后一个 / 之后的部分（不区分它是主机名还是路径，\
+             所以 https://v4 也算），它是否为小写 v 后跟至少一位 ASCII 数字；v1beta、V1、单独的 v 都不算。",
         ),
         cases,
     )
@@ -177,6 +194,7 @@ fn model_filter_json() -> Value {
         // 外部试写时凑出的词表恰好漏了它 —— 特征词见 rules.nonChatMarkers 的 flux
         "black-forest-labs/FLUX.1-dev",
         "whisper-1",
+        "gpt-4o-transcribe",
         "tts-1",
         // 生图 / 视频 / 配音（来自本库非对话预置）
         "dall-e-3",
@@ -330,7 +348,7 @@ fn models_response_json() -> Value {
 
 fn diagnose_json() -> Value {
     let long_message = format!(r#"{{"error":{{"message":"{}"}}}}"#, "很长的报错".repeat(80));
-    let inputs: [(u16, &str, &str, &str); 13] = [
+    let inputs: [(u16, &str, &str, &str); 14] = [
         (
             401,
             r#"{"error":{"message":"invalid key"}}"#,
@@ -376,6 +394,8 @@ fn diagnose_json() -> Value {
         ),
         // 只有空白的 message 等于没有 → 退回 HTTP 状态码
         (400, r#"{"message":"   "}"#, "u", "b"),
+        // 响应体顶层是数组（Gemini 兼容层就这样包）：取不到 → HTTP 状态码
+        (400, r#"[{"error":{"message":"bad"}}]"#, "u", "b"),
         // 超过 300 个字符（按字符数，不按字节）截断
         (400, &long_message, "u", "b"),
     ];
@@ -398,6 +418,9 @@ fn diagnose_json() -> Value {
         // 路径里只认字面的 /v1beta/ 与 /v1/；其它非版本路径照样建议补 /v1
         "https://x.com/api",
         "https://x.com/v2beta/openai",
+        // 版本段恰好是最后一段（曾经的 bug：会建议出 …/v1beta/v1）
+        "https://x.com/v1beta",
+        "https://x.com/v1beta/",
         "https://x.com/v1/extra",
         "",
     ] {
@@ -438,13 +461,14 @@ fn diagnose_json() -> Value {
             "验证错误判定",
             "diagnose：HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；\
              404 → not_found（requested_url 原样，suggested_url = suggest_url(baseUrl)）；其余 → malformed。\
-             detail：响应体是 JSON 时依次取 error.message、error（本身是字符串时）、顶层 message，去两端空白后非空即用，\
-             超过 300 个字符（按字符数）截断；都取不到时为「HTTP <状态码>」。响应体的其余内容不进 detail。\
-             suggest_url：去两端空白与末尾 / 后，为空、或末段是版本段（见 endpoint.json 的 ends_with_version_segment）、\
-             或包含字面的 /v1beta/ 或 /v1/ → null；否则建议「<去掉末尾 / 的地址>/v1」。\
+             detail：响应体是 JSON **对象**时依次取 error.message、error（本身是字符串时）、顶层 message（都须是字符串），\
+             去两端空白后非空即用，再取前 300 个字符（按字符数，截断后不再去空白）；\
+             响应体不是 JSON、顶层是数组、或都取不到 → 「HTTP <状态码>」。响应体的其余内容不进 detail。\
+             suggest_url：去两端空白、去末尾所有 / 后记为 t。t 为空 → null；ends_with_version_segment(t) → null；\
+             t + \"/\" 包含 /v1beta/ 或 /v1/ → null；否则返回 t + \"/v1\"。\
              check_required_fields：按 presetKey 在 presets.json 里找预置（找不到、或为 null → 放行，返回 ok）；\
-             对它 extraFields 中 required 为 true 的每一项，extra 里要有同 key 且值去空白后非空的条目，\
-             否则返回第一个缺的 missing_extra_field。defaultExtra 不算已填。extra 在用例里写成 [{key, value}]。\
+             按 extraFields 的顺序，对 required 为 true 的每一项，取 extra 里**第一条**同 key 的条目，其值去空白后须非空，\
+             否则返回这一项的 missing_extra_field（只报第一个缺的）。defaultExtra 不算已填。extra 在用例里写成 [{key, value}]。\
              返回值为空的 Result 在用例里写成 {\"ok\": null}。unreachable 由网络层产生，不在本文件范围。",
         ),
         cases,
@@ -454,7 +478,7 @@ fn diagnose_json() -> Value {
 // ── ai.profile 解析 / 生成 ───────────────────────────────────────
 
 fn ai_profile_json() -> Value {
-    let inputs: [(&str, &str); 20] = [
+    let inputs: [(&str, &str); 32] = [
         (
             "规范单条",
             r#"{"kind":"ai.profile","v":1,"data":{"name":"DeepSeek","provider":"openai","baseURL":"https://api.deepseek.com/v1","apiKey":"sk-1","model":"deepseek-flash"}}"#,
@@ -514,6 +538,52 @@ fn ai_profile_json() -> Value {
         (
             "打包缺 profiles 字段",
             r#"{"kind":"ai.profile.bundle","v":1,"data":{}}"#,
+        ),
+        // 以下是外部试写第二轮提出的「文档允许多种读法」，用 Rust 的真实结果钉死
+        (
+            "信封写成数组（按字段顺序）",
+            r#"["ai.profile",1,{"name":"x","baseURL":"https://a/v1","apiKey":"k","model":"m"}]"#,
+        ),
+        ("v 写成字符串", r#"{"kind":"ai.profile","v":"1","data":{}}"#),
+        (
+            "v 缺失：按当前版本处理",
+            r#"{"kind":"ai.profile","data":{"name":"x","baseURL":"https://a/v1","apiKey":"k","model":"m"}}"#,
+        ),
+        (
+            "同一字段的别名同时出现",
+            r#"{"kind":"ai.profile","v":1,"data":{"name":"x","baseURL":"https://a/v1","base_url":"https://b/v1","apiKey":"k","model":"m"}}"#,
+        ),
+        (
+            "打包里 profiles 与 api_profiles 同时出现",
+            r#"{"kind":"ai.profile.bundle","v":1,"data":{"profiles":[{"name":"a","baseURL":"https://a/v1","apiKey":"k","model":"m"}],"api_profiles":[{"name":"b","baseURL":"https://b/v1","apiKey":"k","model":"m"}]}}"#,
+        ),
+        (
+            "单条带 auth_type: oauth（跳过规则只对打包生效）",
+            r#"{"kind":"ai.profile","v":1,"data":{"name":"x","baseURL":"https://a/v1","apiKey":"k","model":"m","auth_type":"oauth"}}"#,
+        ),
+        (
+            "字段类型不对（name 是数字）",
+            r#"{"kind":"ai.profile","v":1,"data":{"name":123,"baseURL":"https://a/v1"}}"#,
+        ),
+        (
+            "hints 里的 tool_id 别名",
+            r#"{"kind":"ai.profile","v":1,"data":{"name":"x","baseURL":"https://a","apiKey":"k","model":"m","hints":{"tool_id":"claude-code"}}}"#,
+        ),
+        (
+            "打包的 profiles 不是数组",
+            r#"{"kind":"ai.profile.bundle","v":1,"data":{"profiles":"x"}}"#,
+        ),
+        (
+            "打包的 data 不是对象",
+            r#"{"kind":"ai.profile.bundle","v":1,"data":"x"}"#,
+        ),
+        (
+            "打包里某一条字段类型不对：整个打包失败",
+            r#"{"kind":"ai.profile.bundle","v":1,"data":{"profiles":[{"name":"a","baseURL":"https://a/v1","apiKey":"k","model":"m"},{"name":123}]}}"#,
+        ),
+        (
+            "打包里有不是对象的条目",
+            r#"{"kind":"ai.profile.bundle","v":1,"data":{"profiles":[1,{"name":"a","baseURL":"https://a/v1","apiKey":"k","model":"m"}]}}"#,
         ),
     ];
     let mut cases: Vec<Value> = inputs
@@ -585,16 +655,25 @@ fn ai_profile_json() -> Value {
     with_cases(
         header(
             "ai.profile 解析与生成",
-            "parse_profiles 检查顺序：去两端空白后为空 → empty；不是 JSON 对象 → invalid_json（detail 是自由文本，用例里标了 ignore）；\
-             v 大于 1 → unsupported_version（先于 kind 检查）；kind 既不是 ai.profile 也不是 ai.profile.bundle → not_ai_profile（found 为读到的 kind，缺失为空串）；\
-             data 缺失或不是对象 → missing_data。\
-             单条：data 里 baseURL / baseUrl / base_url、apiKey / api_key、toolId / tool_id 都认；各字段去两端空白；\
-             model 去空白后为空 → 用 defaultModel 并标 modelFallback: true。\
-             协议推断（看原始 model，不看兜底值）：provider 小写后含 anthropic 或 claude → anthropic；否则 model 小写后以 claude- 开头 → anthropic；\
-             否则 toolId（hints.toolId 优先，其次顶层 toolId）小写后含 claude 或 anthropic → anthropic；其余 → openai_compatible。rawProvider 为去空白的原始 provider。\
-             打包：条目在 data.profiles（或 data.api_profiles），authType / auth_type 为 oauth（不区分大小写）的跳过并计入 skipped；\
+            "parse_profiles 检查顺序：① 去两端空白后为空 → empty；② 不是合法 JSON、或顶层不是对象（数组也不行）→ invalid_json；\
+             ③ 信封字段类型不对 → invalid_json：kind 须为字符串（缺失当空串）、v 须为非负整数（缺失当 1；写成字符串 \"1\" 也不行）；\
+             ④ v 大于 1 → unsupported_version（先于 kind 检查）；\
+             ⑤ kind 既不是 ai.profile 也不是 ai.profile.bundle → not_ai_profile（found 为读到的 kind，缺失为空串）；\
+             ⑥ data 缺失 → missing_data；单条的 data 不是对象 → missing_data，打包的 data 不是对象 → invalid_json。\
+             invalid_json 的 detail 是自由文本，用例里标了 ignore。\
+             单条：data 的字段 name、provider、model 与下列别名都须是字符串（缺失当空串），类型不对 → invalid_json：\
+             baseURL / baseUrl / base_url、apiKey / api_key、toolId / tool_id、authType / auth_type；hints 为对象，其中 toolId / tool_id。\
+             🔴 同一字段的多个别名同时出现（如 baseURL 与 base_url）→ invalid_json，不做优先级选择。\
+             各字段去两端空白；model 去空白后为空 → 用 defaultModel（去空白）并标 modelFallback: true。\
+             协议推断（看原始 model，不看兜底值；「小写」均指 ASCII 小写）：provider 小写后含 anthropic 或 claude → anthropic；\
+             否则 model 小写后以 claude- 开头 → anthropic；否则 toolId（hints.toolId 非空时用它，否则用顶层 toolId）小写后含 claude 或 anthropic → anthropic；\
+             其余 → openai_compatible。rawProvider 为去空白的原始 provider。单条信封里的 authType 不起作用（跳过规则只对打包生效）。\
+             打包：data 里取 profiles（或别名 api_profiles；两者同时出现 → invalid_json；缺失当空数组；不是数组 → invalid_json）。\
+             逐条：不是对象的条目静默丢弃、不计数；是对象但字段类型不对 → **整个打包** invalid_json；\
+             authType 为 oauth（不区分大小写）的跳过并计入 skipped；其余按单条规则解析。\
              一条都没剩 → empty_bundle（skipped 为跳过数）。\
-             to_profile：只产出规范写法（baseURL / apiKey），provider 为 anthropic 或 openai，model 为空也照样输出空串字段。\
+             to_profile：输入原样写入（不去空白），只产出规范写法 {kind: ai.profile, v: 1, data: {name, provider, baseURL, apiKey, model}}；\
+             provider 为 anthropic（Anthropic 协议）或 openai（其余）；model 为空也照样输出空串字段。\
              格式规范见 https://ai-profile.ruoyi.plus/api/protocol",
         ),
         cases,

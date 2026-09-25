@@ -162,6 +162,19 @@
     {
       "expected": {
         "code": "malformed",
+        "detail": "HTTP 400"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "b",
+        "body": "[{\"error\":{\"message\":\"bad\"}}]",
+        "requestedUrl": "u",
+        "status": 400
+      }
+    },
+    {
+      "expected": {
+        "code": "malformed",
         "detail": "很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错"
       },
       "fn": "diagnose",
@@ -219,6 +232,20 @@
       "fn": "suggest_url",
       "input": {
         "baseUrl": "https://x.com/v2beta/openai"
+      }
+    },
+    {
+      "expected": null,
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": "https://x.com/v1beta"
+      }
+    },
+    {
+      "expected": null,
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": "https://x.com/v1beta/"
       }
     },
     {
@@ -322,7 +349,7 @@
     }
   ],
   "crateVersion": "0.1.1",
-  "description": "diagnose：HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；404 → not_found（requested_url 原样，suggested_url = suggest_url(baseUrl)）；其余 → malformed。detail：响应体是 JSON 时依次取 error.message、error（本身是字符串时）、顶层 message，去两端空白后非空即用，超过 300 个字符（按字符数）截断；都取不到时为「HTTP <状态码>」。响应体的其余内容不进 detail。suggest_url：去两端空白与末尾 / 后，为空、或末段是版本段（见 endpoint.json 的 ends_with_version_segment）、或包含字面的 /v1beta/ 或 /v1/ → null；否则建议「<去掉末尾 / 的地址>/v1」。check_required_fields：按 presetKey 在 presets.json 里找预置（找不到、或为 null → 放行，返回 ok）；对它 extraFields 中 required 为 true 的每一项，extra 里要有同 key 且值去空白后非空的条目，否则返回第一个缺的 missing_extra_field。defaultExtra 不算已填。extra 在用例里写成 [{key, value}]。返回值为空的 Result 在用例里写成 {\"ok\": null}。unreachable 由网络层产生，不在本文件范围。",
+  "description": "diagnose：HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；404 → not_found（requested_url 原样，suggested_url = suggest_url(baseUrl)）；其余 → malformed。detail：响应体是 JSON **对象**时依次取 error.message、error（本身是字符串时）、顶层 message（都须是字符串），去两端空白后非空即用，再取前 300 个字符（按字符数，截断后不再去空白）；响应体不是 JSON、顶层是数组、或都取不到 → 「HTTP <状态码>」。响应体的其余内容不进 detail。suggest_url：去两端空白、去末尾所有 / 后记为 t。t 为空 → null；ends_with_version_segment(t) → null；t + \"/\" 包含 /v1beta/ 或 /v1/ → null；否则返回 t + \"/v1\"。check_required_fields：按 presetKey 在 presets.json 里找预置（找不到、或为 null → 放行，返回 ok）；按 extraFields 的顺序，对 required 为 true 的每一项，取 extra 里**第一条**同 key 的条目，其值去空白后须非空，否则返回这一项的 missing_extra_field（只报第一个缺的）。defaultExtra 不算已填。extra 在用例里写成 [{key, value}]。返回值为空的 Result 在用例里写成 {\"ok\": null}。unreachable 由网络层产生，不在本文件范围。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "specVersion": 1,
   "title": "验证错误判定"

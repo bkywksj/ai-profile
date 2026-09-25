@@ -299,7 +299,7 @@
       "expected": {
         "error": {
           "code": "invalid_json",
-          "detail": "invalid type: integer `1`, expected a string at line 1 column 2"
+          "detail": "顶层必须是 JSON 对象"
         }
       },
       "fn": "parse_profiles",
@@ -403,6 +403,242 @@
         "text": "{\"kind\":\"ai.profile.bundle\",\"v\":1,\"data\":{}}"
       },
       "name": "打包缺 profiles 字段"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "invalid_json",
+          "detail": "顶层必须是 JSON 对象"
+        }
+      },
+      "fn": "parse_profiles",
+      "ignore": [
+        "error.detail"
+      ],
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "[\"ai.profile\",1,{\"name\":\"x\",\"baseURL\":\"https://a/v1\",\"apiKey\":\"k\",\"model\":\"m\"}]"
+      },
+      "name": "信封写成数组（按字段顺序）"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "invalid_json",
+          "detail": "invalid type: string \"1\", expected u32"
+        }
+      },
+      "fn": "parse_profiles",
+      "ignore": [
+        "error.detail"
+      ],
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":\"1\",\"data\":{}}"
+      },
+      "name": "v 写成字符串"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": false,
+          "profiles": [
+            {
+              "apiKey": "k",
+              "baseUrl": "https://a/v1",
+              "model": "m",
+              "modelFallback": false,
+              "name": "x",
+              "protocol": "openai_compatible",
+              "rawProvider": ""
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"data\":{\"name\":\"x\",\"baseURL\":\"https://a/v1\",\"apiKey\":\"k\",\"model\":\"m\"}}"
+      },
+      "name": "v 缺失：按当前版本处理"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "invalid_json",
+          "detail": "duplicate field `baseURL`"
+        }
+      },
+      "fn": "parse_profiles",
+      "ignore": [
+        "error.detail"
+      ],
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":1,\"data\":{\"name\":\"x\",\"baseURL\":\"https://a/v1\",\"base_url\":\"https://b/v1\",\"apiKey\":\"k\",\"model\":\"m\"}}"
+      },
+      "name": "同一字段的别名同时出现"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "invalid_json",
+          "detail": "duplicate field `profiles`"
+        }
+      },
+      "fn": "parse_profiles",
+      "ignore": [
+        "error.detail"
+      ],
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile.bundle\",\"v\":1,\"data\":{\"profiles\":[{\"name\":\"a\",\"baseURL\":\"https://a/v1\",\"apiKey\":\"k\",\"model\":\"m\"}],\"api_profiles\":[{\"name\":\"b\",\"baseURL\":\"https://b/v1\",\"apiKey\":\"k\",\"model\":\"m\"}]}}"
+      },
+      "name": "打包里 profiles 与 api_profiles 同时出现"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": false,
+          "profiles": [
+            {
+              "apiKey": "k",
+              "baseUrl": "https://a/v1",
+              "model": "m",
+              "modelFallback": false,
+              "name": "x",
+              "protocol": "openai_compatible",
+              "rawProvider": ""
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":1,\"data\":{\"name\":\"x\",\"baseURL\":\"https://a/v1\",\"apiKey\":\"k\",\"model\":\"m\",\"auth_type\":\"oauth\"}}"
+      },
+      "name": "单条带 auth_type: oauth（跳过规则只对打包生效）"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "invalid_json",
+          "detail": "invalid type: integer `123`, expected a string"
+        }
+      },
+      "fn": "parse_profiles",
+      "ignore": [
+        "error.detail"
+      ],
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":1,\"data\":{\"name\":123,\"baseURL\":\"https://a/v1\"}}"
+      },
+      "name": "字段类型不对（name 是数字）"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": false,
+          "profiles": [
+            {
+              "apiKey": "k",
+              "baseUrl": "https://a",
+              "model": "m",
+              "modelFallback": false,
+              "name": "x",
+              "protocol": "anthropic",
+              "rawProvider": ""
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile\",\"v\":1,\"data\":{\"name\":\"x\",\"baseURL\":\"https://a\",\"apiKey\":\"k\",\"model\":\"m\",\"hints\":{\"tool_id\":\"claude-code\"}}}"
+      },
+      "name": "hints 里的 tool_id 别名"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "invalid_json",
+          "detail": "invalid type: string \"x\", expected a sequence"
+        }
+      },
+      "fn": "parse_profiles",
+      "ignore": [
+        "error.detail"
+      ],
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile.bundle\",\"v\":1,\"data\":{\"profiles\":\"x\"}}"
+      },
+      "name": "打包的 profiles 不是数组"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "invalid_json",
+          "detail": "invalid type: string \"x\", expected struct BundleData"
+        }
+      },
+      "fn": "parse_profiles",
+      "ignore": [
+        "error.detail"
+      ],
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile.bundle\",\"v\":1,\"data\":\"x\"}"
+      },
+      "name": "打包的 data 不是对象"
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "invalid_json",
+          "detail": "invalid type: integer `123`, expected a string"
+        }
+      },
+      "fn": "parse_profiles",
+      "ignore": [
+        "error.detail"
+      ],
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile.bundle\",\"v\":1,\"data\":{\"profiles\":[{\"name\":\"a\",\"baseURL\":\"https://a/v1\",\"apiKey\":\"k\",\"model\":\"m\"},{\"name\":123}]}}"
+      },
+      "name": "打包里某一条字段类型不对：整个打包失败"
+    },
+    {
+      "expected": {
+        "ok": {
+          "bundle": true,
+          "profiles": [
+            {
+              "apiKey": "k",
+              "baseUrl": "https://a/v1",
+              "model": "m",
+              "modelFallback": false,
+              "name": "a",
+              "protocol": "openai_compatible",
+              "rawProvider": ""
+            }
+          ],
+          "skipped": 0
+        }
+      },
+      "fn": "parse_profiles",
+      "input": {
+        "defaultModel": "deepseek-flash",
+        "text": "{\"kind\":\"ai.profile.bundle\",\"v\":1,\"data\":{\"profiles\":[1,{\"name\":\"a\",\"baseURL\":\"https://a/v1\",\"apiKey\":\"k\",\"model\":\"m\"}]}}"
+      },
+      "name": "打包里有不是对象的条目"
     },
     {
       "expected": {
@@ -519,7 +755,7 @@
     }
   ],
   "crateVersion": "0.1.1",
-  "description": "parse_profiles 检查顺序：去两端空白后为空 → empty；不是 JSON 对象 → invalid_json（detail 是自由文本，用例里标了 ignore）；v 大于 1 → unsupported_version（先于 kind 检查）；kind 既不是 ai.profile 也不是 ai.profile.bundle → not_ai_profile（found 为读到的 kind，缺失为空串）；data 缺失或不是对象 → missing_data。单条：data 里 baseURL / baseUrl / base_url、apiKey / api_key、toolId / tool_id 都认；各字段去两端空白；model 去空白后为空 → 用 defaultModel 并标 modelFallback: true。协议推断（看原始 model，不看兜底值）：provider 小写后含 anthropic 或 claude → anthropic；否则 model 小写后以 claude- 开头 → anthropic；否则 toolId（hints.toolId 优先，其次顶层 toolId）小写后含 claude 或 anthropic → anthropic；其余 → openai_compatible。rawProvider 为去空白的原始 provider。打包：条目在 data.profiles（或 data.api_profiles），authType / auth_type 为 oauth（不区分大小写）的跳过并计入 skipped；一条都没剩 → empty_bundle（skipped 为跳过数）。to_profile：只产出规范写法（baseURL / apiKey），provider 为 anthropic 或 openai，model 为空也照样输出空串字段。格式规范见 https://ai-profile.ruoyi.plus/api/protocol",
+  "description": "parse_profiles 检查顺序：① 去两端空白后为空 → empty；② 不是合法 JSON、或顶层不是对象（数组也不行）→ invalid_json；③ 信封字段类型不对 → invalid_json：kind 须为字符串（缺失当空串）、v 须为非负整数（缺失当 1；写成字符串 \"1\" 也不行）；④ v 大于 1 → unsupported_version（先于 kind 检查）；⑤ kind 既不是 ai.profile 也不是 ai.profile.bundle → not_ai_profile（found 为读到的 kind，缺失为空串）；⑥ data 缺失 → missing_data；单条的 data 不是对象 → missing_data，打包的 data 不是对象 → invalid_json。invalid_json 的 detail 是自由文本，用例里标了 ignore。单条：data 的字段 name、provider、model 与下列别名都须是字符串（缺失当空串），类型不对 → invalid_json：baseURL / baseUrl / base_url、apiKey / api_key、toolId / tool_id、authType / auth_type；hints 为对象，其中 toolId / tool_id。🔴 同一字段的多个别名同时出现（如 baseURL 与 base_url）→ invalid_json，不做优先级选择。各字段去两端空白；model 去空白后为空 → 用 defaultModel（去空白）并标 modelFallback: true。协议推断（看原始 model，不看兜底值；「小写」均指 ASCII 小写）：provider 小写后含 anthropic 或 claude → anthropic；否则 model 小写后以 claude- 开头 → anthropic；否则 toolId（hints.toolId 非空时用它，否则用顶层 toolId）小写后含 claude 或 anthropic → anthropic；其余 → openai_compatible。rawProvider 为去空白的原始 provider。单条信封里的 authType 不起作用（跳过规则只对打包生效）。打包：data 里取 profiles（或别名 api_profiles；两者同时出现 → invalid_json；缺失当空数组；不是数组 → invalid_json）。逐条：不是对象的条目静默丢弃、不计数；是对象但字段类型不对 → **整个打包** invalid_json；authType 为 oauth（不区分大小写）的跳过并计入 skipped；其余按单条规则解析。一条都没剩 → empty_bundle（skipped 为跳过数）。to_profile：输入原样写入（不去空白），只产出规范写法 {kind: ai.profile, v: 1, data: {name, provider, baseURL, apiKey, model}}；provider 为 anthropic（Anthropic 协议）或 openai（其余）；model 为空也照样输出空串字段。格式规范见 https://ai-profile.ruoyi.plus/api/protocol",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "specVersion": 1,
   "title": "ai.profile 解析与生成"
