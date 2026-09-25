@@ -196,6 +196,9 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 
 ## 技能索引
 
+每次提问由钩子 `.claude/hooks/skill-forced-eval.cjs` 注入技能清单并要求先评估。清单是**运行时读** `.claude/skills/*/SKILL.md`
+的 `name` 与「触发词：」那一行生成的 —— 新增 / 改名技能只要写好 YAML 头，**不用改钩子**（与 Tauri 框架写死清单的做法不同）。
+
 | 技能 | 什么时候用 |
 |---|---|
 | `crate-boundary` | 「这段该放 crate 还是应用」；发现下游有重复实现 |
