@@ -52,9 +52,16 @@ description: |
 
 ## 升级 ai-profile
 
-1. 改 `{Cargo.toml 路径}` 里的 `rev`
-2. 跑全量测试：`{本项目的测试命令}`
-3. 回 ai-profile 仓库更新 `docs/downstream.md` 本项目那一行
+0. **先弄清要不要升、升到哪、会变什么**：
+   - 最新版本：<https://crates.io/crates/ai-profile>，或 ai-profile 仓库 `docs/versioning.md` 的「当前版本」
+   - 读 ai-profile 仓库 `CHANGELOG.md` 里**当前版本到目标版本之间**的每一节
+   - 🔴 0.x 阶段 `0.1 → 0.2` 这种改第二位的是**破坏性升级**：按 CHANGELOG 里的迁移说明改代码，和版本号放**同一个提交**，别留编译不过的中间态；`0.1.x` 补丁位是兼容升级，通常零代码改动
+   - CHANGELOG「修复」里界面能看到的变化，写进提交说明的「用户能感知的变化」，并提醒用户实机点一下 —— 行为变更测试证明不了
+1. 改 `{Cargo.toml 路径}` 里 ai-profile 的 `version`（🔴 补丁版本也要改：只跑 `cargo update` 的话，锁在旧版本的环境不会自动升级，用到新接口时直接编译失败），再 `cargo update -p ai-profile`，确认 `Cargo.lock` 只动了这一个包；提交时按路径只 add 这几个依赖文件（工作区里可能有别的会话的改动）。{不止一个 Cargo.toml 引用时逐个列出，必须同值}
+2. 跑全量测试：`{本项目的测试命令}`（读 `test result:` 行的实体，别只看退出码）
+3. 回 ai-profile 仓库更新 `docs/downstream.md` 本项目那一行（「当前引用」「最后同步」）
+
+完整流程见 ai-profile 仓库技能 `downstream-sync`。
 
 ## 本项目特有的坑
 
