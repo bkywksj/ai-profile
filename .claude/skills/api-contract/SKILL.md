@@ -68,6 +68,11 @@ serde 线格式、`as_str()`、`parse()` 必须一致（守卫 `protocol_spellin
 `Verifier` 必须 `Send + Sync + 'static` 且 `verify(&self)`，否则批量并发验证与放进全局状态都做不到
 （守卫 `verifier_is_shareable_and_concurrent`）。
 
+## ⚠️ 本技能不管「行为变更」
+
+接口一个字没变、结果变了（拼地址规则、模型清洗、错误判定），本技能判不出来，却最容易让下游出事 ——
+Anthropic 自动补 `/v1` 就是这样逼出了 onestop 的数据迁移。这类改动走技能 `change-impact` 第三节。
+
 ## 改完的检查清单
 
 - [ ] 判定版本位，写进 `CHANGELOG.md`（破坏性的标 ⚠️，写迁移方法）

@@ -127,7 +127,7 @@ crates/ai-profile/src/
 ├── protocol.rs       ai.profile 解析 / 生成（宽进严出）
 ├── preset/
 │   ├── mod.rs        ProviderPreset / ModelOption / ExtraField + 查询函数 + model_limits
-│   ├── chat.rs       🔴 对话预置（26 家）—— 加一家只碰这一个文件
+│   ├── chat.rs       🔴 对话预置 —— 加一家只碰这一个文件（数量见生成的 docs/providers.md，别在这写死）
 │   ├── vendor.rs     vendor_id 聚合（服务商目录用）
 │   └── docgen.rs     生成 docs/providers.md
 └── client/mod.rs     feature = "client"：Verifier（零成本验证）+ 诊断纯函数
@@ -207,6 +207,7 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 | `task-tracker` | 跨会话的多步骤任务（每个下游接入各开一份） |
 | `git-workflow` | 提交规范与推送 |
 | `crate-release` | 发新版本到 crates.io（版本号、CHANGELOG、发版闸门、发布、tag、发布 token） |
+| `change-impact` | 🔴 改完代码 / 预置后：还有哪些地方要跟着改（生成物、文档站、多语言规范、下游）；行为变更的下游影响评估 |
 
 ---
 

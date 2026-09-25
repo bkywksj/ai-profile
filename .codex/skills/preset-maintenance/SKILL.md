@@ -67,7 +67,9 @@ description: |
 cargo xtask gen-docs                            # 重新生成 docs/providers.md
 cargo xtask gen-spec                            # 重新生成 spec/presets.json（给其他语言用的预置数据）
 cargo test -p ai-profile --features client      # providers_md_in_sync 会拦下没重新生成的情况
-cargo test -p xtask                             # spec_files_in_sync 同理（它在 xtask 里，上一条跑不到）
+cargo test -p xtask                             # spec_files_in_sync 同理（它在 xtask 里，上一条跑不到）；
+                                                # readme_preset_counts_match 核对 README 里的预置数量
+cargo test -p ai-profile --all-features         # non_chat_presets_are_filtered：新生图 / 视频 / 配音模型没被清洗识别出来会红
 cargo fmt --all --check
 ```
 
@@ -75,7 +77,9 @@ cargo fmt --all --check
 
 1. `CHANGELOG.md` 的「未发布」下写一条（新模型 / 默认值变更要写**为什么**）
 2. 提交说明里注明 id 的核对来源
-3. 推送后走技能 `downstream-sync`：文档站同步 `reference/providers.md`、升级已接入的下游
+3. 数量变了：README 的「对话 N 家 + …」（守卫会拦）、文档站首页 / 介绍页（发版同步后 `pnpm check` 会拦）；
+   其余连带项见技能 `change-impact` 的 A 类
+4. 推送后走技能 `downstream-sync`：文档站同步 `reference/providers.md`、升级已接入的下游
 
 ## 版本位
 

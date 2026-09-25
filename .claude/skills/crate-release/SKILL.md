@@ -26,7 +26,8 @@ description: |
 ```
 ① 定版本位        技能 api-contract：patch / minor / major
 ② 改版本号        根 Cargo.toml 的 [workspace.package] version（只有这一处）
-③ 写 CHANGELOG    「## [未发布]」下的内容移到新版本标题下，写面向使用者的说明
+③ 写 CHANGELOG    「## [未发布]」下的内容移到新版本标题下，写面向使用者的说明；
+                  逐条对照技能 change-impact，确认每条改动的连带更新（✋ 项）都已做 —— 发版是最后能补的关口
 ④ 发版闸门        见下方清单，全部读输出实体确认通过
 ⑤ 提交 + 推送     三个远程（技能 git-workflow），github 先推
 ⑥ 发布            用户确认后 cargo publish -p ai-profile
@@ -67,6 +68,8 @@ cargo package -p ai-profile                                 # 打包 + 编译验
 这是故意的，保证公开出去的用例永远标着产出它的版本。发布后还要把 `spec/` 同步到文档站（技能 `downstream-sync`）：
 `pnpm sync-spec` 会同时更新 `/spec/`（最新）并新建 `/spec/v<新版本>/` 存档，旧版本目录不动 ——
 其他语言的实现锁的就是这些存档地址，**已发布版本的目录绝不能手改或删除**。
+同步后在文档站跑 `pnpm check`：`check-facts` 会核对版本策略页「当前版本」、规范页里的示例版本号 ——
+发了新版这几处必须跟着改，它会逐条点名。
 
 再做两项（0.1.0 就是漏了它们）：
 

@@ -22,7 +22,7 @@ description: |
 ## 一次改动的完整路线
 
 ```
-① 在本仓库改            测试 + gen-docs + CHANGELOG → 提交 → 推送 → 发新版本（技能 crate-release）
+① 在本仓库改            测试 + 连带更新（技能 change-impact）+ CHANGELOG → 提交 → 推送 → 发新版本（技能 crate-release）
 ② 同步文档站            ai-profile-docs（见下，含「更新日志」页）→ 回写 .docs-meta.json
 ③ 读 docs/downstream.md  「已接入」表：哪些项目、各引用哪个版本
 ④ 逐个升级已接入的下游    cargo update / 改 version → 全量测试 → 按该项目节奏发版
@@ -42,10 +42,14 @@ description: |
 ```bash
 # 在 ../ai-profile-docs
 pnpm sync-providers        # 把 docs/providers.md 同步到 reference/providers.md
-pnpm sync-spec             # 把 spec/*.json 同步到 public/spec/（其他语言从这里下载，改了规则 / 预置 / 版本号都要跑）
+pnpm sync-spec             # 🔴 只在发版升版本号之后跑：把 spec/ 同步到 public/spec/ 并新建 v<版本>/ 存档
 pnpm build                 # 必须构建通过
-pnpm check-links           # 站内链接
+pnpm check                 # 站内链接 + 手写文档里的数量 / 当前版本号与代码一致（check-links + check-facts）
 ```
+
+🔴 `sync-spec` 的时机：crate 改了规则但还没升版本号时，`spec/` 头里仍是旧版本号；
+这时同步会改写已发布版本的冻结存档，脚本会拒绝并报错。**别删存档目录绕过** ——
+先发版（技能 `crate-release`），再来同步。未发布期间，文档站里引用新用例的改动先在本地提交、随发版一起推。
 
 提交后文档仓库同样**三个远程都推**（`github` / `gitee` / `gitcode`）。
 🔴 **上线由 Gitee 触发**：只推 GitHub 的话线上文档不会更新。
