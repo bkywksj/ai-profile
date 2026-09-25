@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "a388e11",
-  "lastSyncTime": "2026-09-25T15:00:00Z",
+  "lastSyncCommit": "6915837",
+  "lastSyncTime": "2026-09-25T16:00:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -183,6 +183,22 @@
         "xtask/src/spec.rs"
       ],
       "note": "其他语言实现：预置 JSON + 一致性用例下载与格式说明"
+    },
+    {
+      "commit": "6915837",
+      "time": "2026-09-25T16:00:00Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "reference/spec.md",
+        "guide/ai-assisted.md",
+        "public/spec/**"
+      ],
+      "sourceChanges": [
+        "spec/conformance/diagnose.json",
+        "spec/README.md",
+        "xtask/src/spec.rs"
+      ],
+      "note": "其他语言实现：版本存档 /spec/v<版本>/、实现范围对照表、测试连接网络层流程、AI 实现提示词、跟进更新"
     }
   ]
 }
