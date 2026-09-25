@@ -213,16 +213,35 @@ impl TokenLimits {
     }
 }
 
+/// `/models` 条目里表示上下文窗口的字段，**按顺序**取第一个有效值。
+///
+/// 这两张表公开是为了让多语言规范直接导出（`spec/conformance/models_response.json` 的 `rules`），
+/// 顺序本身就是规则的一部分。
+pub const CONTEXT_WINDOW_FIELDS: &[&str] = &[
+    "context_length",
+    "context_window",
+    "max_context_length",
+    "max_input_tokens",
+];
+
+/// `/models` 条目里表示单次输出上限的字段，**按顺序**取第一个有效值。
+pub const MAX_OUTPUT_FIELDS: &[&str] =
+    &["max_completion_tokens", "max_output_tokens", "max_tokens"];
+
 /// 从 `/models` 响应的**单条**模型对象里抽限额。
 ///
-/// 各家字段名不统一，按下表依次尝试（前者优先）：
+/// 各家字段名不统一。每个值的取法（上下文窗口用 [`CONTEXT_WINDOW_FIELDS`]，输出上限用
+/// [`MAX_OUTPUT_FIELDS`]）：
 ///
-/// | 我们要的 | 依次尝试的字段 |
-/// |---|---|
-/// | 上下文窗口 | `context_length`、`context_window`、`max_context_length`、`max_input_tokens`、`top_provider.context_length` |
-/// | 输出上限 | `max_completion_tokens`、`max_output_tokens`、`max_tokens`、`top_provider.max_completion_tokens` |
+/// 1. 先按表的顺序查 `top_provider` 对象里的字段，取第一个有效值
+/// 2. 都没有，再按同样顺序查顶层字段
 ///
-/// 🔴 `top_provider` 那两条不是凑数：OpenRouter 的顶层 `context_length` 是**模型本体**的，
+/// 两个值各自独立走这个过程 —— `top_provider` 只报了窗口时，输出上限仍会回落到顶层。
+///
+/// 「有效值」：正整数；非负浮点取整；数字字符串（两端空白去掉后）按整数解析；
+/// **0 视为没有**（有的端点用 0 表示未知）；负数、超出 u32 的值视为没有。
+///
+/// 🔴 `top_provider` 优先不是凑数：OpenRouter 的顶层 `context_length` 是**模型本体**的，
 /// 而 `top_provider.context_length` 是**当前这家服务商实际提供**的，后者才是用户
 /// 真正能用到的。实测两者会不一致，所以嵌套那份优先级更高。
 ///
@@ -253,13 +272,8 @@ pub fn parse_model_limits(item: &serde_json::Value) -> Option<TokenLimits> {
         keys.iter().find_map(|k| num(item.get(*k)))
     };
 
-    let context_window = pick(&[
-        "context_length",
-        "context_window",
-        "max_context_length",
-        "max_input_tokens",
-    ]);
-    let max_output = pick(&["max_completion_tokens", "max_output_tokens", "max_tokens"]);
+    let context_window = pick(CONTEXT_WINDOW_FIELDS);
+    let max_output = pick(MAX_OUTPUT_FIELDS);
 
     if context_window.is_none() && max_output.is_none() {
         return None;

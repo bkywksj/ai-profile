@@ -291,29 +291,34 @@ pub fn is_context_overflow(status: u16, body: &str) -> bool {
         return false;
     }
 
-    const PATTERNS: &[&str] = &[
-        "context_length_exceeded",
-        "maximum context length",
-        "context length",
-        "context window",
-        "prompt is too long",
-        "prompt too long",
-        "too many tokens",
-        "exceeds the maximum number of tokens",
-        "exceeded model token limit",
-        "input is too long",
-        "input length",
-        "input tokens exceed",
-        "请求内容过长",
-        "超长",
-        "输入长度",
-        "超过最大长度",
-        "上下文长度",
-        "超出模型",
-    ];
-    // 中文模式是原文比较（to_ascii_lowercase 不动非 ASCII）
-    PATTERNS.iter().any(|p| b.contains(p))
+    CONTEXT_OVERFLOW_PATTERNS.iter().any(|p| b.contains(p))
 }
+
+/// 「上下文超长」报错的特征片段。响应体 ASCII 小写后做子串匹配；
+/// 中文片段原文比较（ASCII 小写化不动非 ASCII 字符）。
+///
+/// 公开是为了让多语言规范直接导出这张表（`spec/conformance/history.json` 的 `rules`）——
+/// 各家措辞只有真实报错里才看得到，不给表，其他语言只能对着用例里那几句凑。
+pub const CONTEXT_OVERFLOW_PATTERNS: &[&str] = &[
+    "context_length_exceeded",
+    "maximum context length",
+    "context length",
+    "context window",
+    "prompt is too long",
+    "prompt too long",
+    "too many tokens",
+    "exceeds the maximum number of tokens",
+    "exceeded model token limit",
+    "input is too long",
+    "input length",
+    "input tokens exceed",
+    "请求内容过长",
+    "超长",
+    "输入长度",
+    "超过最大长度",
+    "上下文长度",
+    "超出模型",
+];
 
 #[cfg(test)]
 mod tests {

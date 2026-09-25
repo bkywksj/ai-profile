@@ -18,7 +18,10 @@
 //! （他不知道本该有这一条），比"多留几条让他自己判断"糟糕得多。
 
 /// 非对话模型的名称特征（全部小写子串匹配）。
-const NON_CHAT_MARKERS: &[&str] = &[
+///
+/// 公开是为了让规则**可以被照抄**：多语言规范（`spec/conformance/model_filter.json` 的 `rules`）
+/// 直接导出这张表。只给用例、不给表，其他语言的实现只能对着用例凑，凑出来的必然漏词。
+pub const NON_CHAT_MARKERS: &[&str] = &[
     "embedding",
     "embed",
     "bge-",
@@ -60,6 +63,10 @@ const NON_CHAT_MARKERS: &[&str] = &[
     "guard",
 ];
 
+/// 按**前缀**排除的模型 id（小写后比较）。与 [`NON_CHAT_MARKERS`] 分开：
+/// 这类只在开头出现才有意义，当子串匹配会误伤名字中间碰巧带这几个字的模型。
+pub const NON_CHAT_PREFIXES: &[&str] = &["lora/"];
+
 /// 单个模型 id 看起来是不是对话模型。
 pub fn is_chat_model_id(id: &str) -> bool {
     let s = id.trim().to_ascii_lowercase();
@@ -67,7 +74,7 @@ pub fn is_chat_model_id(id: &str) -> bool {
         return false;
     }
     // `LoRA/xxx` 是微调变体（聚合平台会连带返回），不是可直接对话的基座
-    if s.starts_with("lora/") {
+    if NON_CHAT_PREFIXES.iter().any(|p| s.starts_with(p)) {
         return false;
     }
     !NON_CHAT_MARKERS.iter().any(|m| s.contains(m))
