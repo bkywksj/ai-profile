@@ -5,6 +5,11 @@
 
 ## [未发布]
 
+### 新增
+- 公开常量 `model_filter::{NON_CHAT_MARKERS, NON_CHAT_PREFIXES}`、`history::CONTEXT_OVERFLOW_PATTERNS`、
+  `limits::{CONTEXT_WINDOW_FIELDS, MAX_OUTPUT_FIELDS}`：模型清洗、超长识别、限额解析用到的数据表。
+  只是把原有的私有表公开，行为不变；多语言规范直接导出它们
+
 ### 新增（仓库层面，不影响 crate 代码）
 - `spec/`：与语言无关的预置数据 `presets.json` + 6 组一致性用例，供其他语言实现对照；
   由 `cargo xtask gen-spec` 从 Rust 参考实现生成，守卫测试 `spec_files_in_sync` 保证与代码同步
