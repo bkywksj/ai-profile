@@ -8,7 +8,7 @@
 | `conformance/endpoint.json` | 端点拼接：`join_api_path` / `join_chat_endpoint` / `anthropic_base_url` |
 | `conformance/model_filter.json` | 模型清单清洗：`is_chat_model_id` / `clean_fetched_models` |
 | `conformance/models_response.json` | `/models` 响应解析：模型 id 与限额 |
-| `conformance/diagnose.json` | 验证失败的错误判定：`diagnose` / `suggest_url` |
+| `conformance/diagnose.json` | 验证失败的错误判定：`diagnose` / `suggest_url` / `check_required_fields` |
 | `conformance/ai_profile.json` | `ai.profile` 解析（宽进）与生成（严出） |
 | `conformance/limits.json` | token 限额三层合并 |
 
@@ -100,8 +100,9 @@ def test_endpoint(case):
 
 `code` 是判别字段：401/403 → `auth_failed`；404 → `not_found`，看不出版本段时带 `suggested_url`；
 其余 → `malformed`。`detail` 优先取响应体里的 `error.message` / `message`。
-`unreachable`、`model_not_found`、`protocol_mismatch`、`missing_extra_field` 由网络层或发请求前的
-检查产生，不在本函数范围。
+`check_required_fields` 在发请求前按预置的 `extraFields` 查必填项，缺了或只有空白 → `missing_extra_field`。
+`unreachable` 由网络层产生（连不上、超时）。`model_not_found`、`protocol_mismatch` 目前 Rust 版并不产生，
+是为后续预留的；「模型不在清单里」用验证成功结果里的 `modelInList: false` 表示，而不是报错。
 
 ### ai.profile
 

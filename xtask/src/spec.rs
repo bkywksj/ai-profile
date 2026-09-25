@@ -16,7 +16,9 @@
 
 use std::collections::BTreeMap;
 
-use ai_profile::client::{diagnose, parse_model_ids, parse_model_limits, suggest_url};
+use ai_profile::client::{
+    check_required_fields, diagnose, parse_model_ids, parse_model_limits, suggest_url,
+};
 use ai_profile::endpoint::{anthropic_base_url, join_api_path, join_chat_endpoint};
 use ai_profile::model_filter::{clean_fetched_models, is_chat_model_id};
 use ai_profile::preset::{presets, vendors_all};
@@ -300,12 +302,38 @@ fn diagnose_json() -> Value {
             "expected": suggest_url(base),
         }));
     }
+    // 发请求前的必填字段检查：结果只取决于预置数据，其他语言用 presets.json 就能复现
+    type ExtraCase<'a> = (Option<&'a str>, &'a [(&'a str, &'a str)]);
+    let extras: [ExtraCase; 5] = [
+        (Some("volc_tts"), &[("appid", "123"), ("cluster", "")]),
+        (Some("volc_tts"), &[("cluster", "volcano_tts")]),
+        // 只有空白等于没填
+        (Some("volc_tts"), &[("appid", "   ")]),
+        (Some("deepseek"), &[]),
+        // 未知预置 / 自定义服务商：没有可查的必填项，放行
+        (None, &[]),
+    ];
+    for (preset_key, extra) in extras {
+        let expected = match check_required_fields(preset_key, extra) {
+            Ok(()) => json!({ "ok": null }),
+            Err(e) => json!({ "error": e }),
+        };
+        cases.push(json!({
+            "fn": "check_required_fields",
+            "input": {
+                "presetKey": preset_key,
+                "extra": extra.iter().map(|(k, v)| json!({ "key": k, "value": v })).collect::<Vec<_>>(),
+            },
+            "expected": expected,
+        }));
+    }
     with_cases(
         header(
             "验证错误判定",
-            "HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；404 → not_found，\
+            "diagnose：HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；404 → not_found，\
              看不到版本段时带 suggested_url；其余 → malformed。detail 优先取 error.message / message。\
-             unreachable / model_not_found / protocol_mismatch / missing_extra_field 不由本函数产生。",
+             check_required_fields：发请求前按预置的 extraFields 查必填项，缺了（或只有空白）→ missing_extra_field。\
+             unreachable 由网络层产生，不在本文件范围。",
         ),
         cases,
     )

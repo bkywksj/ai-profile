@@ -161,10 +161,85 @@
       "input": {
         "baseUrl": ""
       }
+    },
+    {
+      "expected": {
+        "ok": null
+      },
+      "fn": "check_required_fields",
+      "input": {
+        "extra": [
+          {
+            "key": "appid",
+            "value": "123"
+          },
+          {
+            "key": "cluster",
+            "value": ""
+          }
+        ],
+        "presetKey": "volc_tts"
+      }
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "missing_extra_field",
+          "key": "appid"
+        }
+      },
+      "fn": "check_required_fields",
+      "input": {
+        "extra": [
+          {
+            "key": "cluster",
+            "value": "volcano_tts"
+          }
+        ],
+        "presetKey": "volc_tts"
+      }
+    },
+    {
+      "expected": {
+        "error": {
+          "code": "missing_extra_field",
+          "key": "appid"
+        }
+      },
+      "fn": "check_required_fields",
+      "input": {
+        "extra": [
+          {
+            "key": "appid",
+            "value": "   "
+          }
+        ],
+        "presetKey": "volc_tts"
+      }
+    },
+    {
+      "expected": {
+        "ok": null
+      },
+      "fn": "check_required_fields",
+      "input": {
+        "extra": [],
+        "presetKey": "deepseek"
+      }
+    },
+    {
+      "expected": {
+        "ok": null
+      },
+      "fn": "check_required_fields",
+      "input": {
+        "extra": [],
+        "presetKey": null
+      }
     }
   ],
   "crateVersion": "0.1.1",
-  "description": "HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；404 → not_found，看不到版本段时带 suggested_url；其余 → malformed。detail 优先取 error.message / message。unreachable / model_not_found / protocol_mismatch / missing_extra_field 不由本函数产生。",
+  "description": "diagnose：HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；404 → not_found，看不到版本段时带 suggested_url；其余 → malformed。detail 优先取 error.message / message。check_required_fields：发请求前按预置的 extraFields 查必填项，缺了（或只有空白）→ missing_extra_field。unreachable 由网络层产生，不在本文件范围。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "specVersion": 1,
   "title": "验证错误判定"
