@@ -32,6 +32,17 @@ description: |
 | 改 serde 线格式（rename、tag、字段名） | **major** | 前端静默错配 |
 | 升级被重导出的 `reqwest` 大版本 | **major** | `pub use reqwest`，下游用它建 `ClientBuilder` |
 
+🔴 **上表按 1.0 之后的语义写；0.x 阶段 Cargo 把版本位整体右移一位**，实际发版时这样换算：
+
+| 表中的判定 | 含义 | 0.x 阶段实际改的位 | 下游 |
+|---|---|---|---|
+| patch | 数据 / 修 bug | `0.1.x` | `cargo update` 自动拿到 |
+| minor | **兼容**的新增（加字段、加函数、加变体） | `0.1.x`（同样是补丁位） | `cargo update` 自动拿到 |
+| major | 破坏性变更 | `0.x.0` | 必须改 `Cargo.toml` 的版本号 |
+
+所以 0.x 阶段「只增不破坏」一律发补丁位，写进 CHANGELOG「新增」即可（0.1.2 加公开常量、0.1.3 加
+`TokenLimits` 逐字段来源都是这样）；只有真正的破坏性变更才动 `0.x.0`。
+
 1.0 之前 semver 允许 minor 带破坏性变更，但**仍要写进 CHANGELOG 并标 ⚠️**，
 且要同步改所有已接入下游（本仓库改过一次：`Protocol` 线格式 `open_ai_compatible` → `openai_compatible`）。
 

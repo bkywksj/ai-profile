@@ -16,6 +16,10 @@
 | 改 `preset.key` | **major** | 🔴 见下 |
 | 改 `ai.profile` 的**规范**字段名 | **major** | 见下 |
 
+> 🔴 **0.x 阶段的换算**：上表按 1.0 之后的语义写。0.x 期间 Cargo 把版本位整体右移一位 ——
+> 表中 patch 与 minor（兼容的新增）都发 `0.1.x` 补丁位，下游 `cargo update` 自动拿到；
+> 表中 major（破坏性）才发 `0.x.0`，下游必须改 `Cargo.toml`。0.1.2、0.1.3 的新增公开 API 都按补丁位发。
+
 ### 🔴 reqwest 的大版本在公开 API 里
 
 `Verifier::from_builder` 收 `reqwest::ClientBuilder`，`lib.rs` 重导出了 `reqwest`。
