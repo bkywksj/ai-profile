@@ -3,7 +3,9 @@
     {
       "expected": {
         "contextWindow": 64000,
+        "contextWindowSource": "user",
         "maxOutput": 8192,
+        "maxOutputSource": "endpoint",
         "source": "user"
       },
       "fn": "merge_limits",
@@ -30,7 +32,9 @@
     {
       "expected": {
         "contextWindow": 128000,
+        "contextWindowSource": "endpoint",
         "maxOutput": 384000,
+        "maxOutputSource": "preset",
         "source": "endpoint"
       },
       "fn": "merge_limits",
@@ -52,7 +56,9 @@
     {
       "expected": {
         "contextWindow": 200000,
+        "contextWindowSource": "preset",
         "maxOutput": 4096,
+        "maxOutputSource": "user",
         "source": "user"
       },
       "fn": "merge_limits",
@@ -74,7 +80,9 @@
     {
       "expected": {
         "contextWindow": 1000000,
+        "contextWindowSource": "preset",
         "maxOutput": 384000,
+        "maxOutputSource": "preset",
         "source": "preset"
       },
       "fn": "merge_limits",
@@ -91,7 +99,9 @@
     {
       "expected": {
         "contextWindow": null,
+        "contextWindowSource": null,
         "maxOutput": null,
+        "maxOutputSource": null,
         "source": "endpoint"
       },
       "fn": "merge_limits",
@@ -112,7 +122,7 @@
     }
   ],
   "crateVersion": "0.1.2",
-  "description": "layers 按优先级从高到低（user > endpoint > preset），从左往右两两合并 merge(merge(l0, l1), l2)。merge(hi, lo)：hi 两个字段都为空时整条换成 lo（连 source 一起，空的用户设置不能冒充来源）；否则逐字段取 hi 的值、为空才用 lo 的，source 保留 hi 的。推论：所有层都为空时，结果是最后一层（两个 null + 最后一层的 source）—— 调用方看两个值都是 null 即视为「未知」，不看 source。",
+  "description": "layers 按优先级从高到低（user > endpoint > preset），从左往右两两合并 merge(merge(l0, l1), l2)。merge(hi, lo)：hi 两个字段都为空时整条换成 lo（连 source 一起，空的用户设置不能冒充来源）；否则逐字段取 hi 的值、为空才用 lo 的，source 保留 hi 的。逐字段来源：每一层的 contextWindowSource / maxOutputSource = 该字段有值时为该层的 source、否则 null；合并时值与它的来源一起取（hi 有值取 hi 的值和来源，否则取 lo 的）。界面按逐字段来源分别标注，例如「窗口：用户填的」「输出上限：预估」。推论：所有层都为空时，结果是最后一层（两个 null + 最后一层的 source）—— 调用方看两个值都是 null 即视为「未知」，不看 source。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "specVersion": 1,
   "title": "限额逐字段取值"

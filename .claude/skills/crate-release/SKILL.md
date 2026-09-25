@@ -58,6 +58,7 @@ cargo test -p ai-profile --no-default-features --features chat
 cargo test -p ai-profile --features client
 cargo test --workspace --all-features                       # 含 wiremock 模拟服务端测试
 RUSTDOCFLAGS="-D warnings --cfg docsrs" cargo doc -p ai-profile --all-features --no-deps
+RUSTDOCFLAGS="-D warnings" cargo doc -p ai-profile --no-deps   # 默认 feature：指向 client / media 的文档链接在这里会断
 cargo xtask gen-docs && git diff --exit-code docs/providers.md
 cargo xtask gen-spec                                        # 🔴 改版本号后必跑，见下
 cargo package -p ai-profile                                 # 打包 + 编译验证

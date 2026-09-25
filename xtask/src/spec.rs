@@ -17,14 +17,15 @@
 use std::collections::BTreeMap;
 
 use ai_profile::client::{
-    check_required_fields, diagnose, parse_model_ids, parse_model_limits, suggest_url,
+    check_required_fields, diagnose, diagnose_success, parse_model_ids, parse_model_limits,
+    suggest_url,
 };
 use ai_profile::endpoint::{
     anthropic_base_url, ends_with_version_segment, join_api_path, join_chat_endpoint,
 };
 use ai_profile::history::is_context_overflow;
 use ai_profile::model_filter::{clean_fetched_models, is_chat_model_id};
-use ai_profile::preset::{infer_preset_key, model_limits, presets, vendors_all};
+use ai_profile::preset::{infer_preset_key, model_limits, preset_by_key, presets, vendors_all};
 use ai_profile::{parse_profiles, to_profile, Protocol, TokenLimits};
 use serde_json::{json, Value};
 
@@ -430,6 +431,33 @@ fn diagnose_json() -> Value {
             "expected": suggest_url(base),
         }));
     }
+    // 2xx 的二次判定：状态码说成功，但响应体不是接口返回的东西（多半是地址指到了网站根目录）
+    for (body, url, base) in [
+        (
+            "<!doctype html><html><body>Welcome</body></html>",
+            "https://relay.example.com/models",
+            "https://relay.example.com",
+        ),
+        (
+            "<html>login</html>",
+            "https://relay.example.com/v1/models",
+            "https://relay.example.com/v1",
+        ),
+        (
+            "",
+            "https://relay.example.com/models",
+            "https://relay.example.com",
+        ),
+        (r#"{"data":[]}"#, "u", "b"),
+        (r#"["gpt-4o"]"#, "u", "b"),
+        (r#"{"object":"list","data":[{"id":"m"}]}"#, "u", "b"),
+    ] {
+        cases.push(json!({
+            "fn": "diagnose_success",
+            "input": { "body": body, "requestedUrl": url, "baseUrl": base },
+            "expected": diagnose_success(body, url, base),
+        }));
+    }
     // 发请求前的必填字段检查：结果只取决于预置数据，其他语言用 presets.json 就能复现
     type ExtraCase<'a> = (Option<&'a str>, &'a [(&'a str, &'a str)]);
     let extras: [ExtraCase; 6] = [
@@ -466,6 +494,9 @@ fn diagnose_json() -> Value {
              响应体不是 JSON、顶层是数组、或都取不到 → 「HTTP <状态码>」。响应体的其余内容不进 detail。\
              suggest_url：去两端空白、去末尾所有 / 后记为 t。t 为空 → null；ends_with_version_segment(t) → null；\
              t + \"/\" 包含 /v1beta/ 或 /v1/ → null；否则返回 t + \"/v1\"。\
+             diagnose_success：状态码 2xx 之后的二次判定。响应体是合法 JSON（任何类型，含空清单）→ null（真的成功）；\
+             否则（网页、空串等）→ not_found（requested_url 原样，suggested_url = suggest_url(baseUrl)）——\
+             多半是地址指到了网站根目录，网站把未知路径都回成首页、状态码 200。\
              check_required_fields：按 presetKey 在 presets.json 里找预置（找不到、或为 null → 放行，返回 ok）；\
              按 extraFields 的顺序，对 required 为 true 的每一项，取 extra 里**第一条**同 key 的条目，其值去空白后须非空，\
              否则返回这一项的 missing_extra_field（只报第一个缺的）。defaultExtra 不算已填。extra 在用例里写成 [{key, value}]。\
@@ -726,6 +757,9 @@ fn limits_json() -> Value {
             "layers 按优先级从高到低（user > endpoint > preset），从左往右两两合并 merge(merge(l0, l1), l2)。\
              merge(hi, lo)：hi 两个字段都为空时整条换成 lo（连 source 一起，空的用户设置不能冒充来源）；\
              否则逐字段取 hi 的值、为空才用 lo 的，source 保留 hi 的。\
+             逐字段来源：每一层的 contextWindowSource / maxOutputSource = 该字段有值时为该层的 source、否则 null；\
+             合并时值与它的来源一起取（hi 有值取 hi 的值和来源，否则取 lo 的）。界面按逐字段来源分别标注，\
+             例如「窗口：用户填的」「输出上限：预估」。\
              推论：所有层都为空时，结果是最后一层（两个 null + 最后一层的 source）—— 调用方看两个值都是 null 即视为「未知」，不看 source。",
         ),
         cases,
@@ -818,7 +852,23 @@ fn preset_lookup_json() -> Value {
             "expected": model_limits(protocol, base, model),
         }));
     }
-    with_cases(
+    // 用户没填地址时预置实际该请求的端点：官方档（地址留空、界面隐藏地址框）回落到协议官方端点
+    for key in [
+        "anthropic_official",
+        "deepseek",
+        "zhipu",
+        "claude_code",
+        "codex",
+        "openai_compatible_custom",
+        "ollama",
+    ] {
+        cases.push(json!({
+            "fn": "preset_endpoint",
+            "input": { "presetKey": key },
+            "expected": preset_by_key(key).expect("预置存在").endpoint(),
+        }));
+    }
+    with_rules(with_cases(
         header(
             "从已存配置反推预置",
             "infer_preset_key：baseUrl（null 当空串）去两端空白、ASCII 小写后记为 url。\
@@ -827,10 +877,20 @@ fn preset_lookup_json() -> Value {
              openai_compatible 的预置，url 包含它 matchHosts 里任一项（子串，可带端口）即返回它的 key；都不中 → openai_compatible_custom。\
              子串匹配让不带版本段的老地址也能认出来。\
              model_limits：先 infer_preset_key 找到预置，再用 model（去两端空白）与它 models 的 value 精确匹配；\
-             匹配到且 contextWindow、maxOutput 至少一个非空 → 返回这两个值加 source: preset；其余情况一律 null，不猜。",
+             匹配到且 contextWindow、maxOutput 至少一个非空 → 返回预置限额（字段同 limits.json：source 与逐字段来源都是 preset）；\
+             其余情况一律 null，不猜。\
+             preset_endpoint：用户没填地址时该预置实际请求的端点。预置有 baseUrl → 就是它；没有，但 \
+             rules.protocolDefaultBaseUrls[protocol] 包含它 matchHosts 里任一项（子串）→ 这个官方端点；\
+             其余（自定义端点、中转档，matchHosts 为空）→ null，必须由用户填。\
+             「Anthropic 官方」的 baseUrl 刻意为 null（界面据此隐藏地址框），靠这条规则得到地址。",
         ),
         cases,
-    )
+    ), json!({
+        "protocolDefaultBaseUrls": {
+            "anthropic": Protocol::Anthropic.default_base_url(),
+            "openai_compatible": Protocol::OpenAiCompatible.default_base_url(),
+        },
+    }))
 }
 
 // ── 超长报错识别 ─────────────────────────────────────────────────

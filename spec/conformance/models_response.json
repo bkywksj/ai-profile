@@ -52,7 +52,9 @@
             "id": "deepseek-flash",
             "limits": {
               "contextWindow": 1048576,
+              "contextWindowSource": "endpoint",
               "maxOutput": 393216,
+              "maxOutputSource": "endpoint",
               "source": "endpoint"
             }
           }
@@ -74,7 +76,9 @@
             "id": "anthropic/claude-opus-5",
             "limits": {
               "contextWindow": 200000,
+              "contextWindowSource": "endpoint",
               "maxOutput": 32000,
+              "maxOutputSource": "endpoint",
               "source": "endpoint"
             }
           }
@@ -96,7 +100,9 @@
             "id": "m",
             "limits": {
               "contextWindow": 65536,
+              "contextWindowSource": "endpoint",
               "maxOutput": null,
+              "maxOutputSource": null,
               "source": "endpoint"
             }
           }
@@ -119,7 +125,9 @@
             "id": "a",
             "limits": {
               "contextWindow": 65536,
+              "contextWindowSource": "endpoint",
               "maxOutput": null,
+              "maxOutputSource": null,
               "source": "endpoint"
             }
           }
@@ -143,7 +151,9 @@
             "id": "a",
             "limits": {
               "contextWindow": null,
+              "contextWindowSource": null,
               "maxOutput": 4096,
+              "maxOutputSource": "endpoint",
               "source": "endpoint"
             }
           },
@@ -151,7 +161,9 @@
             "id": "c",
             "limits": {
               "contextWindow": 131072,
+              "contextWindowSource": "endpoint",
               "maxOutput": null,
+              "maxOutputSource": null,
               "source": "endpoint"
             }
           }
@@ -173,7 +185,9 @@
             "id": "m",
             "limits": {
               "contextWindow": 200000,
+              "contextWindowSource": "endpoint",
               "maxOutput": 8192,
+              "maxOutputSource": "endpoint",
               "source": "endpoint"
             }
           }
@@ -195,7 +209,9 @@
             "id": "m",
             "limits": {
               "contextWindow": 200,
+              "contextWindowSource": "endpoint",
               "maxOutput": 20,
+              "maxOutputSource": "endpoint",
               "source": "endpoint"
             }
           }
