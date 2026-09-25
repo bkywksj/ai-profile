@@ -25,7 +25,7 @@ description: |
 ① 在本仓库改            测试 + 连带更新（技能 change-impact）+ CHANGELOG → 提交 → 推送 → 发新版本（技能 crate-release）
 ② 同步文档站            ai-profile-docs（见下，含「更新日志」页）→ 回写 .docs-meta.json
 ③ 读 docs/downstream.md  「已接入」表：哪些项目、各引用哪个版本
-④ 逐个升级已接入的下游    cargo update / 改 version → 全量测试 → 按该项目节奏发版
+④ 逐个升级已接入的下游    改 Cargo.toml 的 version + cargo update -p → 全量测试 → 只提交依赖文件
 ⑤ 回填登记表            改「当前引用」「最后同步」→ 提交本仓库
 ```
 
@@ -61,17 +61,52 @@ API / 限额 / 协议有变 → 同步改对应页（`api/*.md`、`guide/fronten
 
 ## ④ 升级一个已接入的下游
 
-以 sigil 为例：
+### 1. 改版本号：`Cargo.toml` 与 `Cargo.lock` 两处都动
 
 ```bash
-# 1. 同一小版本内（0.1.x）：cargo update -p ai-profile，只动 Cargo.lock
-#    跨小版本（0.1 → 0.2，有破坏性变更）：改 src-tauri/Cargo.toml 的 version，再按 CHANGELOG 改代码
-# 2. 该项目的全量测试（sigil 必须 PowerShell + src-tauri 为工作目录 + --workspace）
-Push-Location src-tauri; cargo test --workspace; Pop-Location
-npx tsc --noEmit
+# 把 Cargo.toml 里 ai-profile 的 version 改成新版本（补丁版本也改），再只更新这一个包
+cargo update -p ai-profile        # 在该项目 Cargo.lock 所在目录跑
+git diff Cargo.lock               # 🔴 确认只动了 ai-profile 一个包（version + checksum 两行）
 ```
 
-- 提交只含 `Cargo.toml` + `Cargo.lock` 时，说明里写「只升依赖，零代码改动」—— 这正是 crate 该达到的效果
+🔴 **补丁版本也要改 `Cargo.toml` 的最低版本**，不能只跑 `cargo update`：
+
+- 下游一旦用上新版本才有的接口（如 0.1.3 的 `ProviderPreset::endpoint()`），最低版本还写着旧值，
+  而某个分支 / 另一台机器的 `Cargo.lock` 仍锁在旧版本 —— cargo 认为旧版本满足要求、不会自动升级，
+  直接编译失败。最低版本写成新值，cargo 会发现锁文件不满足而自己更新它
+- 登记表「当前引用」记的是 `Cargo.toml` 的值 —— 只动锁文件的话，表和实际对不上，下次判断谁落后会看错
+
+跨小版本（0.1 → 0.2，有破坏性变更）同样改 `version`，再按 CHANGELOG 改代码。
+
+有的项目**不止一个 `Cargo.toml`** 引用 ai-profile（reeve 两处、必须同值），以登记表「引用方式」一列为准。
+
+### 2. 全量测试
+
+| 项目 | 工作目录 | 命令 | 备注 |
+|---|---|---|---|
+| sigil | `src-tauri` | `cargo test --workspace` + 仓库根 `npx tsc --noEmit` | 🔴 必须 PowerShell（SQLCipher 要原生 Perl）；`--workspace` 不能省 |
+| reeve | `src-tauri` | `cargo test --workspace` | 两处 `Cargo.toml` 同值 |
+| knowledge_base | `src-tauri` | `cargo test --workspace` | |
+| onestop | `src-tauri` | `cargo test --workspace` | 仓库在 `E:/my/backend_tauri/onestop` |
+| story_loom | `src-tauri` | `cargo test --workspace --no-run` | 本机 lib 单测有 WebView2 入口崩溃（环境问题），只能验证测试代码编译通过 |
+
+各项目的特有细节以它自己的 `ai-profile-integration` 技能为准。几家可以并行跑（各自独立的 target 目录）。
+判定通过要读 `test result:` 行的实体，别只看退出码。
+
+### 3. 提交：只提交这几个依赖文件
+
+🔴 下游工作区里常有**别的会话的未提交改动**（升 0.1.3 时 sigil 有 46 个）。提交前先 `git status -s` 看一眼，
+然后**按路径**只 add `Cargo.toml`（可能不止一个）和 `Cargo.lock`，`git diff --cached --name-only` 确认后再提交。
+禁止 `git add -A` / `git add .`，也不要 stash 别人的改动。
+
+提交说明写三件事：
+
+- 「只升依赖，零代码改动」（如果是）—— 这正是 crate 该达到的效果
+- 🔴 **用户能感知的变化**：这次升级让用户在界面上看到什么不同（如 0.1.3「Anthropic 官方档不填地址也能获取模型」
+  「地址填到网站根目录时报地址不对，不再假成功」）。行为变更靠测试证明不了，下游有人要照这句去实机验证；
+  同一句话也写进登记表的备注
+- 版本号范围（`0.1.2 → 0.1.3`）
+
 - 线格式 / API 有破坏性变更 → 下游要跟着改代码，**同一个提交里改**，别留中间态
 - 下游仓库的推送、发版遵循**该项目自己的**规则（sigil 推 Gitee + GitHub，发版是另一套流程），
   并先征得用户同意

@@ -18,8 +18,8 @@ description: |
 
 1. **crates.io 的版本永久不可撤回**（只能 yank，不能删、不能覆盖）。漏一项检查的代价是补发一个版本，
    而那个坏版本永远留在记录里 —— 0.1.0 就因为漏配 docs.rs 的 feature 只能补发 0.1.1。
-2. **`cargo publish` 必须用户当次确认**。本仓库的钩子（`.claude/hooks/publish-guard.cjs`）会拦下它并弹确认；
-   **不要换 shell、换写法绕开**。用户确认过一次，只对那一次发布有效。
+2. **`cargo publish` 必须用户当次确认**。用户确认过一次，只对那一次发布有效。
+   拦截它的钩子**取决于会话是从哪个仓库开的**（钩子跟着会话的工作目录走，不跟着命令操作的仓库走），见下方「⑥ 发布」。
 
 ## 完整路线
 
@@ -88,7 +88,24 @@ cargo publish -p ai-profile
 ```
 
 - 看到 `Published ai-profile vX.Y.Z at registry crates-io` 才算成功
-- 钩子会弹确认；用户同意后执行。**不要**用 `cmd /c`、PowerShell、别的 shell 去绕钩子
+
+### 会撞上哪个钩子、怎么走
+
+| 会话从哪里开 | 拦截的钩子 | 要求 | 做法 |
+|---|---|---|---|
+| 本仓库 | `.claude/hooks/publish-guard.cjs` | 弹确认 | 用户同意后执行上面的命令 |
+| sigil 仓库（常见：在 sigil 里顺手发 crate） | sigil 的 `pre-tool-use.cjs`，Bash / PowerShell 都查 | 改走 Sigil 的 `mcp__sigil__crates_publish`（本机不存明文 token 的方案） | 见下 |
+
+sigil 会话里的三条路，按优先级：
+
+1. **`mcp__sigil__crates_publish`**：先 `dry_run=true` 预检，再正式发，桌面端弹确认。
+   🔴 这个能力是 sigil 2.0.0 之后才加的 —— 本会话 ToolSearch 查不到它，就说明**正在运行的 Sigil 还没有这个能力**，
+   不是没连上。先确认用户装的 Sigil 版本，别反复重试
+2. **用户自己在输入框执行** `! cd <本仓库> && cargo publish -p ai-profile`：用户亲手执行的命令不走 AI 钩子
+3. **用户明确授权后由 AI 执行**（0.1.3 就是这样发的）：必须是用户**当次**说了「你绕过就行 / 授权」这类话，
+   并在回复里明说「钩子没改，下次照样拦」。没有明确授权时，**不要**换 `cmd /c`、换 shell、写脚本去绕钩子
+
+不管走哪条，都不读、不显示 token 内容；`~/.cargo/credentials.toml` 由 cargo 自己读。
 
 ## 发布 token
 

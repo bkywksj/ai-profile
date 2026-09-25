@@ -46,7 +46,7 @@
 > ⚠️ 0.1.1 起 Anthropic 协议自动补 `/v1`。onestop 的 v16 迁移因此把「带路径、无版本段」的 Anthropic 地址钉上 `#`，
 > 保证升级前后请求同一地址；reeve / knowledge_base / sigil / story_loom 的旧规则本来就补 `/v1`，不受影响。
 
-> 升级一个下游 = 改它 `Cargo.toml` 里的 `version`（`cargo update -p ai-profile` 拿同一小版本内的补丁）→
+> 升级一个下游 = 改它 `Cargo.toml` 里的 `version`（补丁版本也改）+ `cargo update -p ai-profile`（锁文件只动这一个包）→
 > 在该项目跑全量测试 → 按它自己的节奏发版 → **回来改上表的「当前引用」和「最后同步」**。
 > 漏了最后一步，下次就不知道它落后多少。
 
@@ -97,7 +97,7 @@ hindsight、cross_pilot、shop_sage、zhongyu_comic。
 
 ## 发布形态
 
-已发布到 crates.io（`0.1.0` / `0.1.1`，2026-09-24），五个下游都按**版本号**引用。
+已发布到 crates.io（`0.1.0` 起，最新以 `docs/versioning.md` 与 crates.io 为准），五个下游都按**版本号**引用。
 发版流程见技能 `crate-release`；0.x 阶段 minor 视为破坏性版本，判定规则见 `docs/versioning.md`。
 
 发布前（2026-09-22 ~ 24）下游按 git 提交号引用 —— 那段时间改 API 不必背 semver 包袱，
