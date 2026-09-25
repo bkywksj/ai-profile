@@ -121,6 +121,58 @@
       }
     },
     {
+      "expected": {
+        "code": "malformed",
+        "detail": "model not supported"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "b",
+        "body": "{\"error\":\"model not supported\"}",
+        "requestedUrl": "u",
+        "status": 400
+      }
+    },
+    {
+      "expected": {
+        "code": "malformed",
+        "detail": "from error"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "b",
+        "body": "{\"error\":{\"message\":\"  from error  \"},\"message\":\"from top\"}",
+        "requestedUrl": "u",
+        "status": 400
+      }
+    },
+    {
+      "expected": {
+        "code": "malformed",
+        "detail": "HTTP 400"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "b",
+        "body": "{\"message\":\"   \"}",
+        "requestedUrl": "u",
+        "status": 400
+      }
+    },
+    {
+      "expected": {
+        "code": "malformed",
+        "detail": "很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错"
+      },
+      "fn": "diagnose",
+      "input": {
+        "baseUrl": "b",
+        "body": "{\"error\":{\"message\":\"很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错很长的报错\"}}",
+        "requestedUrl": "u",
+        "status": 400
+      }
+    },
+    {
       "expected": "https://api.deepseek.com/v1",
       "fn": "suggest_url",
       "input": {
@@ -153,6 +205,27 @@
       "fn": "suggest_url",
       "input": {
         "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai"
+      }
+    },
+    {
+      "expected": "https://x.com/api/v1",
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": "https://x.com/api"
+      }
+    },
+    {
+      "expected": "https://x.com/v2beta/openai/v1",
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": "https://x.com/v2beta/openai"
+      }
+    },
+    {
+      "expected": null,
+      "fn": "suggest_url",
+      "input": {
+        "baseUrl": "https://x.com/v1/extra"
       }
     },
     {
@@ -236,10 +309,20 @@
         "extra": [],
         "presetKey": null
       }
+    },
+    {
+      "expected": {
+        "ok": null
+      },
+      "fn": "check_required_fields",
+      "input": {
+        "extra": [],
+        "presetKey": "no_such_preset"
+      }
     }
   ],
   "crateVersion": "0.1.1",
-  "description": "diagnose：HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；404 → not_found，看不到版本段时带 suggested_url；其余 → malformed。detail 优先取 error.message / message。check_required_fields：发请求前按预置的 extraFields 查必填项，缺了（或只有空白）→ missing_extra_field。unreachable 由网络层产生，不在本文件范围。",
+  "description": "diagnose：HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；404 → not_found（requested_url 原样，suggested_url = suggest_url(baseUrl)）；其余 → malformed。detail：响应体是 JSON 时依次取 error.message、error（本身是字符串时）、顶层 message，去两端空白后非空即用，超过 300 个字符（按字符数）截断；都取不到时为「HTTP <状态码>」。响应体的其余内容不进 detail。suggest_url：去两端空白与末尾 / 后，为空、或末段是版本段（见 endpoint.json 的 ends_with_version_segment）、或包含字面的 /v1beta/ 或 /v1/ → null；否则建议「<去掉末尾 / 的地址>/v1」。check_required_fields：按 presetKey 在 presets.json 里找预置（找不到、或为 null → 放行，返回 ok）；对它 extraFields 中 required 为 true 的每一项，extra 里要有同 key 且值去空白后非空的条目，否则返回第一个缺的 missing_extra_field。defaultExtra 不算已填。extra 在用例里写成 [{key, value}]。返回值为空的 Result 在用例里写成 {\"ok\": null}。unreachable 由网络层产生，不在本文件范围。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "specVersion": 1,
   "title": "验证错误判定"

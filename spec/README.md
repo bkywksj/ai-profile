@@ -47,7 +47,30 @@
   （如 `suggested_url`、`requested_url`）。这是已发布的格式，实现时照抄，别统一成一种。
 - 返回 `Result` 的函数，`expected` 是 `{"ok": …}` 或 `{"error": …}` 二选一。
 - 比较时按 **JSON 值**比较（对象键无序），不要比字符串。`to_profile` 的输出也先解析再比。
+  🔴 注意语言里的「宽松相等」：Python 的 `True == 1`、`1 == 1.0` 都成立，会放过类型错误 ——
+  先把两边规范化成 JSON 文本（键排序）再比。
+- 返回空的 `Result`（成功时没有值）写成 `{"ok": null}`。
+- 用例可能带 `"ignore": ["error.detail"]`：比较前从两边删掉这些路径。目前只用于 `invalid_json` 的
+  `detail` —— 那是 Rust JSON 库的报错原文，其他语言不可能逐字复现，只要求 `code` 一致。
+- 部分文件带 **`rules`**：规则用到的数据表（模型清洗的特征词、超长报错片段、限额字段名），
+  直接取自 crate 的公开常量。**实现时读这张表，不要对着用例凑** —— 用例只是抽样，
+  凑出来的词表必然漏（第一次外部试写就把 `FLUX.1-dev` 判成了对话模型）。
+- 每个文件的 `description` 写的是**完整规则**（处理顺序、边界值），不只是摘要。
 - 键按字母序排列只是生成器的输出习惯，没有语义。
+
+### 用例里的 `fn` 与 Rust 函数
+
+多数一一对应；下面几个是为了便于跨语言测试而合并或改写了形状：
+
+| 用例 `fn` | Rust | 说明 |
+|---|---|---|
+| `parse_models_response` | `parse_model_ids` + `parse_model_limits` | 两个函数吃同一个响应体，合成一条用例：`{ids, limits}`，`limits` 每项写成 `{id, limits}` |
+| `merge_limits` | 从左往右 `TokenLimits::or` 折叠 | `input.layers` 按优先级从高到低 |
+| `check_required_fields` | 同名，`extra` 是 `&[(&str, &str)]` | 用例里 `extra` 写成 `[{key, value}]` |
+| 其余 | 同名 | |
+
+🔴 `verify` 的成功结果里有一个同内容的字段 `modelLimits`，它的**线格式是 `[id, 限额]` 二元数组**，
+与这里用例的 `{id, limits}` 不同。实现 `verify` 时照 `[id, 限额]` 输出。
 
 ## 怎么接进你的测试
 
@@ -65,9 +88,24 @@ FNS = {
 spec = json.loads(pathlib.Path("spec/conformance/endpoint.json").read_text("utf-8"))
 assert spec["specVersion"] == 1
 
+def canon(v):
+    # 规范化后再比：避免 True == 1、1 == 1.0 这类宽松相等放过类型错误
+    return json.dumps(v, sort_keys=True, ensure_ascii=False)
+
+def drop(v, path):
+    # 处理用例的 "ignore"：删掉 "error.detail" 这样的路径
+    *parents, last = path.split(".")
+    for p in parents:
+        v = v.get(p, {}) if isinstance(v, dict) else {}
+    if isinstance(v, dict):
+        v.pop(last, None)
+
 @pytest.mark.parametrize("case", spec["cases"], ids=lambda c: f'{c["fn"]}:{c["input"]}')
 def test_endpoint(case):
-    assert FNS[case["fn"]](case["input"]) == case["expected"]
+    got, want = FNS[case["fn"]](case["input"]), case["expected"]
+    for path in case.get("ignore", []):
+        drop(got, path); drop(want, path)
+    assert canon(got) == canon(want)
 ```
 
 建议把 `spec/` 整个目录复制进你的仓库并记下来源的 `crateVersion`，升级时整体替换，再看哪些用例红了。
@@ -91,7 +129,7 @@ def test_endpoint(case):
 排除法：只滤掉名字里带明确非对话特征的（向量 / 重排 / 语音 / 生图 / OCR / 审核…，大小写不敏感；
 `LoRA/` 前缀的微调变体也滤），**未知名称一律放行** —— 白名单会把新模型悄悄藏起来，而用户不会知道
 本该有那一条。清洗同时去空白、去重、保持原顺序；全部被滤光时原样返回（`dropped` 为 0），
-不给用户一个空下拉。特征词表见 crate 源码 `model_filter.rs`。
+不给用户一个空下拉。特征词表在 `model_filter.json` 的 `rules` 里。
 
 ### `/models` 响应解析
 
@@ -101,7 +139,8 @@ def test_endpoint(case):
 ### 验证错误判定
 
 `code` 是判别字段：401/403 → `auth_failed`；404 → `not_found`，看不出版本段时带 `suggested_url`；
-其余 → `malformed`。`detail` 优先取响应体里的 `error.message` / `message`。
+其余 → `malformed`。`detail` 依次取响应体里的 `error.message`、`error`（字符串时）、`message`，
+截断到 300 个字符；都没有时为 `HTTP <状态码>`。完整规则见 `diagnose.json` 的 `description`。
 `check_required_fields` 在发请求前按预置的 `extraFields` 查必填项，缺了或只有空白 → `missing_extra_field`。
 `unreachable` 由网络层产生（连不上、超时）。`model_not_found`、`protocol_mismatch` 目前 Rust 版并不产生，
 是为后续预留的；「模型不在清单里」用验证成功结果里的 `modelInList: false` 表示，而不是报错。

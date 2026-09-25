@@ -46,6 +46,15 @@ fn with_cases(mut head: Value, cases: Vec<Value>) -> Value {
     head
 }
 
+/// 附上规则用到的数据表。
+///
+/// 🔴 只给用例不给表，其他语言的实现只能对着用例凑特征词 —— 第一次外部试写（Python）就是这样：
+/// 用例全过，但凑出来的词表把 `FLUX.1-dev` 判成了对话模型。表直接取自 crate 的公开常量，不另抄一份。
+fn with_rules(mut v: Value, rules: Value) -> Value {
+    v["rules"] = rules;
+    v
+}
+
 // ── 预置数据 ─────────────────────────────────────────────────────
 
 fn presets_json() -> Value {
@@ -71,6 +80,11 @@ fn endpoint_json() -> Value {
         "https://generativelanguage.googleapis.com/v1beta/openai#",
         "https://proxy.example.com/v1/chat/completions",
         "https://proxy.example.com/v1/messages",
+        // 只剥 chat/completions 与 messages 两种；其它端点名原样当 base
+        "https://proxy.example.com/v1/completions",
+        "https://proxy.example.com/v1/responses",
+        // 先去末尾 #、再去末尾 /、再剥后缀
+        "https://proxy.example.com/v1/chat/completions/#",
     ];
     let chat_bases = [
         "https://api.deepseek.com/v1",
@@ -130,7 +144,8 @@ fn endpoint_json() -> Value {
     with_cases(
         header(
             "端点拼接",
-            "join_api_path：base_url 原样使用，只剥掉误填的对话端点后缀与末尾 #。\
+            "join_api_path：base_url 原样使用。处理顺序：去两端空白 → 去末尾所有 # → 去末尾所有 / → \
+             若以 chat/completions 或 messages 结尾（只认这两种，按此顺序、只剥一次）则剥掉并再去末尾 / → 拼上 /path。\
              join_chat_endpoint：对话端点允许整条粘进来；path 为 messages（Anthropic）时按 anthropic_base_url 补 /v1。\
              anthropic_base_url：末段不是 v<数字> 就补 /v1，末尾 # 表示别补。\
              ends_with_version_segment：末段（去掉末尾 /）是否形如 v + 纯数字；v1beta、主机名 v4.example.com 都不算。",
@@ -159,6 +174,8 @@ fn model_filter_json() -> Value {
         "text-embedding-3-large",
         "FunAudioLLM/CosyVoice2-0.5B",
         "Kwai-Kolors/Kolors",
+        // 外部试写时凑出的词表恰好漏了它 —— 特征词见 rules.nonChatMarkers 的 flux
+        "black-forest-labs/FLUX.1-dev",
         "whisper-1",
         "tts-1",
         // 生图 / 视频 / 配音（来自本库非对话预置）
@@ -213,13 +230,21 @@ fn model_filter_json() -> Value {
             "expected": { "models": c.models, "dropped": c.dropped, "droppedModels": c.dropped_models },
         }));
     }
-    with_cases(
-        header(
-            "模型清单清洗",
-            "排除法：按特征词滤掉向量 / 重排 / 语音 / 生图 / 审核等非对话模型；去重去空白；\
-             全被滤光时返回原始清单（dropped 为 0）。",
+    with_rules(
+        with_cases(
+            header(
+                "模型清单清洗",
+                "is_chat_model_id：id 去两端空白、ASCII 小写后，为空 → false；以 rules.nonChatPrefixes 任一开头 → false；\
+                 包含 rules.nonChatMarkers 任一子串 → false；其余一律 true（排除法，未知名称放行）。\
+                 clean_fetched_models：逐个去两端空白、丢空串、按首次出现去重（保持顺序），再按上面的规则分成 models 与 droppedModels；\
+                 models 为空（全被滤光）时改为返回去重后的原始清单，dropped 为 0、droppedModels 为空。",
+            ),
+            cases,
         ),
-        cases,
+        json!({
+            "nonChatMarkers": ai_profile::model_filter::NON_CHAT_MARKERS,
+            "nonChatPrefixes": ai_profile::model_filter::NON_CHAT_PREFIXES,
+        }),
     )
 }
 
@@ -245,6 +270,22 @@ fn models_response_json() -> Value {
             "数字写成字符串",
             r#"{"data":[{"id":"m","context_length":"65536"}]}"#,
         ),
+        (
+            "字符串两端空白去掉；带小数点的字符串不认",
+            r#"{"data":[{"id":"a","context_length":" 65536 "},{"id":"b","context_length":"65536.0"}]}"#,
+        ),
+        (
+            "0 视为没有；负数不认；浮点取整",
+            r#"{"data":[{"id":"a","context_length":0,"max_tokens":4096},{"id":"b","context_length":-1},{"id":"c","context_length":131072.9}]}"#,
+        ),
+        (
+            "top_provider 只报了窗口：输出上限回落到顶层",
+            r#"{"data":[{"id":"m","context_length":1000000,"max_completion_tokens":8192,"top_provider":{"context_length":200000}}]}"#,
+        ),
+        (
+            "同一层多个字段：按表的顺序取第一个有效的",
+            r#"{"data":[{"id":"m","max_input_tokens":100,"context_window":200,"max_tokens":10,"max_output_tokens":20}]}"#,
+        ),
         ("不是 JSON", "<!doctype html><html></html>"),
     ];
     let cases = bodies
@@ -264,20 +305,32 @@ fn models_response_json() -> Value {
             })
         })
         .collect();
-    with_cases(
-        header(
-            "/models 响应解析",
-            "ids：{data:[{id}]} 或裸数组都接受。limits：只收录报了限额的模型，字段名按固定顺序尝试 \
-             （context_length / context_window / max_input_tokens…），OpenRouter 优先取 top_provider。",
+    with_rules(
+        with_cases(
+            header(
+                "/models 响应解析",
+                "parse_models_response 是两个函数的合并：ids = parse_model_ids，limits = parse_model_limits。\
+                 ids：{data:[…]} 或裸数组都接受，元素是对象取 id、是字符串取本身。\
+                 limits：每条模型的上下文窗口按 rules.contextWindowFields、输出上限按 rules.maxOutputFields 取值 —— \
+                 先按表的顺序查 top_provider 对象里的字段，都没有再按同样顺序查顶层；两个值各自独立。\
+                 有效值：正整数；非负浮点取整；字符串去两端空白后按整数解析（带小数点的不认）；0、负数、超出 u32 视为没有。\
+                 两个值都没有的模型不收录。用例里每项写成 {id, limits}；注意 verify 成功结果里的 modelLimits 线格式是 [id, limits] 二元数组。",
+            ),
+            cases,
         ),
-        cases,
+        json!({
+            "contextWindowFields": ai_profile::limits::CONTEXT_WINDOW_FIELDS,
+            "maxOutputFields": ai_profile::limits::MAX_OUTPUT_FIELDS,
+            "nestedFirst": "top_provider",
+        }),
     )
 }
 
 // ── 验证错误判定 ─────────────────────────────────────────────────
 
 fn diagnose_json() -> Value {
-    let inputs: [(u16, &str, &str, &str); 9] = [
+    let long_message = format!(r#"{{"error":{{"message":"{}"}}}}"#, "很长的报错".repeat(80));
+    let inputs: [(u16, &str, &str, &str); 13] = [
         (
             401,
             r#"{"error":{"message":"invalid key"}}"#,
@@ -312,6 +365,19 @@ fn diagnose_json() -> Value {
         (429, "Too Many Requests", "u", "b"),
         (500, "{}", "u", "b"),
         (502, "<html>Bad Gateway</html>", "u", "b"),
+        // error 直接是字符串的写法
+        (400, r#"{"error":"model not supported"}"#, "u", "b"),
+        // error.message 优先于顶层 message；两端空白去掉
+        (
+            400,
+            r#"{"error":{"message":"  from error  "},"message":"from top"}"#,
+            "u",
+            "b",
+        ),
+        // 只有空白的 message 等于没有 → 退回 HTTP 状态码
+        (400, r#"{"message":"   "}"#, "u", "b"),
+        // 超过 300 个字符（按字符数，不按字节）截断
+        (400, &long_message, "u", "b"),
     ];
     let mut cases: Vec<Value> = inputs
         .iter()
@@ -329,6 +395,10 @@ fn diagnose_json() -> Value {
         "https://api.deepseek.com/v1",
         "https://open.bigmodel.cn/api/paas/v4",
         "https://generativelanguage.googleapis.com/v1beta/openai",
+        // 路径里只认字面的 /v1beta/ 与 /v1/；其它非版本路径照样建议补 /v1
+        "https://x.com/api",
+        "https://x.com/v2beta/openai",
+        "https://x.com/v1/extra",
         "",
     ] {
         cases.push(json!({
@@ -339,7 +409,7 @@ fn diagnose_json() -> Value {
     }
     // 发请求前的必填字段检查：结果只取决于预置数据，其他语言用 presets.json 就能复现
     type ExtraCase<'a> = (Option<&'a str>, &'a [(&'a str, &'a str)]);
-    let extras: [ExtraCase; 5] = [
+    let extras: [ExtraCase; 6] = [
         (Some("volc_tts"), &[("appid", "123"), ("cluster", "")]),
         (Some("volc_tts"), &[("cluster", "volcano_tts")]),
         // 只有空白等于没填
@@ -347,6 +417,7 @@ fn diagnose_json() -> Value {
         (Some("deepseek"), &[]),
         // 未知预置 / 自定义服务商：没有可查的必填项，放行
         (None, &[]),
+        (Some("no_such_preset"), &[]),
     ];
     for (preset_key, extra) in extras {
         let expected = match check_required_fields(preset_key, extra) {
@@ -365,10 +436,16 @@ fn diagnose_json() -> Value {
     with_cases(
         header(
             "验证错误判定",
-            "diagnose：HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；404 → not_found，\
-             看不到版本段时带 suggested_url；其余 → malformed。detail 优先取 error.message / message。\
-             check_required_fields：发请求前按预置的 extraFields 查必填项，缺了（或只有空白）→ missing_extra_field。\
-             unreachable 由网络层产生，不在本文件范围。",
+            "diagnose：HTTP 状态 + 响应体 → 结构化错误（code 判别字段）。401/403 → auth_failed；\
+             404 → not_found（requested_url 原样，suggested_url = suggest_url(baseUrl)）；其余 → malformed。\
+             detail：响应体是 JSON 时依次取 error.message、error（本身是字符串时）、顶层 message，去两端空白后非空即用，\
+             超过 300 个字符（按字符数）截断；都取不到时为「HTTP <状态码>」。响应体的其余内容不进 detail。\
+             suggest_url：去两端空白与末尾 / 后，为空、或末段是版本段（见 endpoint.json 的 ends_with_version_segment）、\
+             或包含字面的 /v1beta/ 或 /v1/ → null；否则建议「<去掉末尾 / 的地址>/v1」。\
+             check_required_fields：按 presetKey 在 presets.json 里找预置（找不到、或为 null → 放行，返回 ok）；\
+             对它 extraFields 中 required 为 true 的每一项，extra 里要有同 key 且值去空白后非空的条目，\
+             否则返回第一个缺的 missing_extra_field。defaultExtra 不算已填。extra 在用例里写成 [{key, value}]。\
+             返回值为空的 Result 在用例里写成 {\"ok\": null}。unreachable 由网络层产生，不在本文件范围。",
         ),
         cases,
     )
@@ -377,7 +454,7 @@ fn diagnose_json() -> Value {
 // ── ai.profile 解析 / 生成 ───────────────────────────────────────
 
 fn ai_profile_json() -> Value {
-    let inputs: [(&str, &str); 12] = [
+    let inputs: [(&str, &str); 20] = [
         (
             "规范单条",
             r#"{"kind":"ai.profile","v":1,"data":{"name":"DeepSeek","provider":"openai","baseURL":"https://api.deepseek.com/v1","apiKey":"sk-1","model":"deepseek-flash"}}"#,
@@ -420,6 +497,24 @@ fn ai_profile_json() -> Value {
         ),
         ("不是 ai.profile", r#"{"hello":"world"}"#),
         ("空内容", ""),
+        ("只有空白", "  \n\t "),
+        ("不是 JSON", "kind: ai.profile"),
+        ("JSON 但不是对象", "[1, 2]"),
+        // 检查顺序：空 → JSON → 版本 → kind → data
+        ("版本先于 kind 检查", r#"{"kind":"something.else","v":99}"#),
+        ("data 不是对象", r#"{"kind":"ai.profile","v":1,"data":"x"}"#),
+        (
+            "model 为空串：等同没给",
+            r#"{"kind":"ai.profile","v":1,"data":{"name":"x","baseURL":"https://a/v1","apiKey":"k","model":""}}"#,
+        ),
+        (
+            "字段两端空白",
+            r#"{"kind":"ai.profile","v":1,"data":{"name":"  x  ","baseURL":"  https://a/v1  ","apiKey":"  k  ","model":"  m  "}}"#,
+        ),
+        (
+            "打包缺 profiles 字段",
+            r#"{"kind":"ai.profile.bundle","v":1,"data":{}}"#,
+        ),
     ];
     let mut cases: Vec<Value> = inputs
         .iter()
@@ -428,22 +523,61 @@ fn ai_profile_json() -> Value {
                 Ok(r) => json!({ "ok": r }),
                 Err(e) => json!({ "error": e }),
             };
-            json!({
+            let mut case = json!({
                 "fn": "parse_profiles",
                 "name": name,
                 "input": { "text": text, "defaultModel": "deepseek-flash" },
                 "expected": expected,
-            })
+            });
+            // invalid_json 的 detail 是 Rust JSON 库的报错原文，其他语言不可能逐字复现 —— 标明比较时跳过
+            if case["expected"]["error"]["code"] == "invalid_json" {
+                case["ignore"] = json!(["error.detail"]);
+            }
+            case
         })
         .collect();
-    for (protocol, base) in [
-        (Protocol::OpenAiCompatible, "https://api.deepseek.com/v1"),
-        (Protocol::Anthropic, "https://api.anthropic.com/v1"),
+    // 协议推断看的是来源里**原始的** model，不是兜底后的 —— 兜底值是 claude-* 也不能据此判成 Anthropic
+    for (name, text, default_model) in [
+        (
+            "推断协议只看原始 model，不看兜底值",
+            r#"{"kind":"ai.profile","v":1,"data":{"name":"x","baseURL":"https://a/v1","apiKey":"k"}}"#,
+            "claude-opus-5",
+        ),
+        (
+            "toolId 提示也参与推断",
+            r#"{"kind":"ai.profile","v":1,"data":{"name":"x","baseURL":"https://a","apiKey":"k","model":"m","hints":{"toolId":"claude-code"}}}"#,
+            "deepseek-flash",
+        ),
     ] {
-        let text = to_profile("示例", protocol, base, "sk-示例", "some-model");
+        cases.push(json!({
+            "fn": "parse_profiles",
+            "name": name,
+            "input": { "text": text, "defaultModel": default_model },
+            "expected": { "ok": parse_profiles(text, default_model).expect("合法输入") },
+        }));
+    }
+    for (protocol, base, model) in [
+        (
+            Protocol::OpenAiCompatible,
+            "https://api.deepseek.com/v1",
+            "some-model",
+        ),
+        (
+            Protocol::Anthropic,
+            "https://api.anthropic.com/v1",
+            "some-model",
+        ),
+        // model 为空时照样输出空串字段，不省略
+        (
+            Protocol::OpenAiCompatible,
+            "https://api.deepseek.com/v1",
+            "",
+        ),
+    ] {
+        let text = to_profile("示例", protocol, base, "sk-示例", model);
         cases.push(json!({
             "fn": "to_profile",
-            "input": { "name": "示例", "protocol": protocol, "baseUrl": base, "apiKey": "sk-示例", "model": "some-model" },
+            "input": { "name": "示例", "protocol": protocol, "baseUrl": base, "apiKey": "sk-示例", "model": model },
             // 比对解析后的 JSON 值，不比对字符串（键序、缩进各语言可以不同）
             "expected": serde_json::from_str::<Value>(&text).expect("生成的是合法 JSON"),
         }));
@@ -451,8 +585,17 @@ fn ai_profile_json() -> Value {
     with_cases(
         header(
             "ai.profile 解析与生成",
-            "解析宽进：接受 baseURL / baseUrl / base_url 等多种拼写，单条与打包统一返回列表，OAuth 条目跳过并计数。\
-             生成严出：只产出规范写法。格式规范见 https://ai-profile.ruoyi.plus/api/protocol",
+            "parse_profiles 检查顺序：去两端空白后为空 → empty；不是 JSON 对象 → invalid_json（detail 是自由文本，用例里标了 ignore）；\
+             v 大于 1 → unsupported_version（先于 kind 检查）；kind 既不是 ai.profile 也不是 ai.profile.bundle → not_ai_profile（found 为读到的 kind，缺失为空串）；\
+             data 缺失或不是对象 → missing_data。\
+             单条：data 里 baseURL / baseUrl / base_url、apiKey / api_key、toolId / tool_id 都认；各字段去两端空白；\
+             model 去空白后为空 → 用 defaultModel 并标 modelFallback: true。\
+             协议推断（看原始 model，不看兜底值）：provider 小写后含 anthropic 或 claude → anthropic；否则 model 小写后以 claude- 开头 → anthropic；\
+             否则 toolId（hints.toolId 优先，其次顶层 toolId）小写后含 claude 或 anthropic → anthropic；其余 → openai_compatible。rawProvider 为去空白的原始 provider。\
+             打包：条目在 data.profiles（或 data.api_profiles），authType / auth_type 为 oauth（不区分大小写）的跳过并计入 skipped；\
+             一条都没剩 → empty_bundle（skipped 为跳过数）。\
+             to_profile：只产出规范写法（baseURL / apiKey），provider 为 anthropic 或 openai，model 为空也照样输出空串字段。\
+             格式规范见 https://ai-profile.ruoyi.plus/api/protocol",
         ),
         cases,
     )
@@ -503,7 +646,8 @@ fn limits_json() -> Value {
             "限额逐字段取值",
             "layers 按优先级从高到低（user > endpoint > preset），从左往右两两合并 merge(merge(l0, l1), l2)。\
              merge(hi, lo)：hi 两个字段都为空时整条换成 lo（连 source 一起，空的用户设置不能冒充来源）；\
-             否则逐字段取 hi 的值、为空才用 lo 的，source 保留 hi 的。",
+             否则逐字段取 hi 的值、为空才用 lo 的，source 保留 hi 的。\
+             推论：所有层都为空时，结果是最后一层（两个 null + 最后一层的 source）—— 调用方看两个值都是 null 即视为「未知」，不看 source。",
         ),
         cases,
     )
@@ -512,7 +656,7 @@ fn limits_json() -> Value {
 // ── 从已存配置反推预置 ───────────────────────────────────────────
 
 fn preset_lookup_json() -> Value {
-    let inputs: [(Protocol, Option<&str>); 10] = [
+    let inputs: [(Protocol, Option<&str>); 13] = [
         (Protocol::Anthropic, None),
         (Protocol::Anthropic, Some("https://api.anthropic.com")),
         // 官方地址带不带 /v1 都是官方档
@@ -538,6 +682,17 @@ fn preset_lookup_json() -> Value {
             Protocol::OpenAiCompatible,
             Some("https://unknown.example.com/v1"),
         ),
+        // matchHosts 可以带端口（本地服务），同样是子串匹配
+        (
+            Protocol::OpenAiCompatible,
+            Some("http://localhost:11434/v1"),
+        ),
+        // OpenAI 兼容协议只在「OpenAI 兼容的对话预置」里找：填了 Anthropic 官方地址也认不出
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://api.anthropic.com/v1"),
+        ),
+        (Protocol::OpenAiCompatible, Some("   ")),
     ];
     let mut cases: Vec<Value> = inputs
         .iter()
@@ -549,7 +704,7 @@ fn preset_lookup_json() -> Value {
             })
         })
         .collect();
-    let limits_inputs: [(Protocol, Option<&str>, &str); 5] = [
+    let limits_inputs: [(Protocol, Option<&str>, &str); 6] = [
         (
             Protocol::OpenAiCompatible,
             Some("https://api.deepseek.com/v1"),
@@ -574,6 +729,8 @@ fn preset_lookup_json() -> Value {
             "deepseek-flash",
         ),
         (Protocol::OpenAiCompatible, None, "whatever"),
+        // 找到了模型，但预置没登记限额（两个值都空）→ null，不返回全空的限额对象
+        (Protocol::Anthropic, None, "claude-opus-5-5"),
     ];
     for (protocol, base, model) in limits_inputs {
         cases.push(json!({
@@ -585,10 +742,13 @@ fn preset_lookup_json() -> Value {
     with_cases(
         header(
             "从已存配置反推预置",
-            "infer_preset_key：Anthropic 协议下空地址或 api.anthropic.com → anthropic_official，其余 → claude_code；\
-             OpenAI 兼容只在对话预置里按 matchHosts 做子串匹配（小写后），都不中 → openai_compatible_custom。\
-             按主机名而非全串，老配置不带版本段也能认出来。\
-             model_limits：先反推预置，再按 model（去空白）精确匹配它的 models，取预置登记的限额；查不到返回 null，不猜。",
+            "infer_preset_key：baseUrl（null 当空串）去两端空白、ASCII 小写后记为 url。\
+             Anthropic 协议：url 为空或包含 \"://api.anthropic.com\" → anthropic_official，否则 → claude_code。\
+             其它协议：url 为空 → openai_compatible_custom；否则按 presets.json 的顺序，只看 kind 为 chat 且 protocol 为 \
+             openai_compatible 的预置，url 包含它 matchHosts 里任一项（子串，可带端口）即返回它的 key；都不中 → openai_compatible_custom。\
+             子串匹配让不带版本段的老地址也能认出来。\
+             model_limits：先 infer_preset_key 找到预置，再用 model（去两端空白）与它 models 的 value 精确匹配；\
+             匹配到且 contextWindow、maxOutput 至少一个非空 → 返回这两个值加 source: preset；其余情况一律 null，不猜。",
         ),
         cases,
     )
@@ -597,7 +757,7 @@ fn preset_lookup_json() -> Value {
 // ── 超长报错识别 ─────────────────────────────────────────────────
 
 fn history_json() -> Value {
-    let inputs: [(&str, u16, &str); 11] = [
+    let inputs: [(&str, u16, &str); 16] = [
         (
             "OpenAI / DeepSeek / vLLM",
             400,
@@ -622,6 +782,31 @@ fn history_json() -> Value {
             "通义",
             400,
             r#"{"error":{"message":"Range of input length should be [1, 129024]","type":"invalid_request_error","code":"invalid_parameter_error"}}"#,
+        ),
+        (
+            "OpenRouter",
+            400,
+            r#"{"error":{"message":"This endpoint's maximum context length is 200000 tokens. However, you requested about 230000 tokens","code":400}}"#,
+        ),
+        (
+            "智谱（中文片段原文匹配）",
+            400,
+            r#"{"error":{"code":"1261","message":"Prompt 超长"}}"#,
+        ),
+        (
+            "422 同样检查",
+            422,
+            r#"{"detail":"Input is too long for requested model."}"#,
+        ),
+        (
+            "大小写不敏感",
+            400,
+            r#"{"error":{"message":"CONTEXT WINDOW EXCEEDED"}}"#,
+        ),
+        (
+            "提到 max_tokens 但也提到 context：仍算超长",
+            400,
+            r#"{"error":{"message":"max_tokens + messages exceed the context length"}}"#,
         ),
         ("请求体过大", 413, "Request Entity Too Large"),
         (
@@ -657,14 +842,18 @@ fn history_json() -> Value {
             })
         })
         .collect();
-    with_cases(
-        header(
-            "超长报错识别",
-            "is_context_overflow：宁可漏判不可误判（误判会把用户历史无谓地裁掉一半）。413 一律算；\
-             只看 400 / 422，其余状态码一律不算；只提 max_tokens / max_completion_tokens 而不提 \
-             context / prompt / input 的是输出上限问题，不算。命中的报错片段见用例。",
+    with_rules(
+        with_cases(
+            header(
+                "超长报错识别",
+                "is_context_overflow：宁可漏判不可误判（误判会把用户历史无谓地裁掉一半）。按顺序：\
+                 ① 状态码 413 → true；② 状态码不是 400 或 422 → false；③ 响应体 ASCII 小写后记为 b（非 ASCII 字符不变）；\
+                 ④ b 包含 max_tokens 或 max_completion_tokens，且不含 context、prompt、input 中任何一个 → false（输出上限问题，裁历史没用）；\
+                 ⑤ b 包含 rules.patterns 任一子串 → true，否则 false。",
+            ),
+            cases,
         ),
-        cases,
+        json!({ "patterns": ai_profile::history::CONTEXT_OVERFLOW_PATTERNS }),
     )
 }
 

@@ -110,6 +110,105 @@
     },
     {
       "expected": {
+        "ids": [
+          "a",
+          "b"
+        ],
+        "limits": [
+          {
+            "id": "a",
+            "limits": {
+              "contextWindow": 65536,
+              "maxOutput": null,
+              "source": "endpoint"
+            }
+          }
+        ]
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "{\"data\":[{\"id\":\"a\",\"context_length\":\" 65536 \"},{\"id\":\"b\",\"context_length\":\"65536.0\"}]}"
+      },
+      "name": "字符串两端空白去掉；带小数点的字符串不认"
+    },
+    {
+      "expected": {
+        "ids": [
+          "a",
+          "b",
+          "c"
+        ],
+        "limits": [
+          {
+            "id": "a",
+            "limits": {
+              "contextWindow": null,
+              "maxOutput": 4096,
+              "source": "endpoint"
+            }
+          },
+          {
+            "id": "c",
+            "limits": {
+              "contextWindow": 131072,
+              "maxOutput": null,
+              "source": "endpoint"
+            }
+          }
+        ]
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "{\"data\":[{\"id\":\"a\",\"context_length\":0,\"max_tokens\":4096},{\"id\":\"b\",\"context_length\":-1},{\"id\":\"c\",\"context_length\":131072.9}]}"
+      },
+      "name": "0 视为没有；负数不认；浮点取整"
+    },
+    {
+      "expected": {
+        "ids": [
+          "m"
+        ],
+        "limits": [
+          {
+            "id": "m",
+            "limits": {
+              "contextWindow": 200000,
+              "maxOutput": 8192,
+              "source": "endpoint"
+            }
+          }
+        ]
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "{\"data\":[{\"id\":\"m\",\"context_length\":1000000,\"max_completion_tokens\":8192,\"top_provider\":{\"context_length\":200000}}]}"
+      },
+      "name": "top_provider 只报了窗口：输出上限回落到顶层"
+    },
+    {
+      "expected": {
+        "ids": [
+          "m"
+        ],
+        "limits": [
+          {
+            "id": "m",
+            "limits": {
+              "contextWindow": 200,
+              "maxOutput": 20,
+              "source": "endpoint"
+            }
+          }
+        ]
+      },
+      "fn": "parse_models_response",
+      "input": {
+        "body": "{\"data\":[{\"id\":\"m\",\"max_input_tokens\":100,\"context_window\":200,\"max_tokens\":10,\"max_output_tokens\":20}]}"
+      },
+      "name": "同一层多个字段：按表的顺序取第一个有效的"
+    },
+    {
+      "expected": {
         "ids": [],
         "limits": []
       },
@@ -121,8 +220,22 @@
     }
   ],
   "crateVersion": "0.1.1",
-  "description": "ids：{data:[{id}]} 或裸数组都接受。limits：只收录报了限额的模型，字段名按固定顺序尝试 （context_length / context_window / max_input_tokens…），OpenRouter 优先取 top_provider。",
+  "description": "parse_models_response 是两个函数的合并：ids = parse_model_ids，limits = parse_model_limits。ids：{data:[…]} 或裸数组都接受，元素是对象取 id、是字符串取本身。limits：每条模型的上下文窗口按 rules.contextWindowFields、输出上限按 rules.maxOutputFields 取值 —— 先按表的顺序查 top_provider 对象里的字段，都没有再按同样顺序查顶层；两个值各自独立。有效值：正整数；非负浮点取整；字符串去两端空白后按整数解析（带小数点的不认）；0、负数、超出 u32 视为没有。两个值都没有的模型不收录。用例里每项写成 {id, limits}；注意 verify 成功结果里的 modelLimits 线格式是 [id, limits] 二元数组。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "rules": {
+    "contextWindowFields": [
+      "context_length",
+      "context_window",
+      "max_context_length",
+      "max_input_tokens"
+    ],
+    "maxOutputFields": [
+      "max_completion_tokens",
+      "max_output_tokens",
+      "max_tokens"
+    ],
+    "nestedFirst": "top_provider"
+  },
   "specVersion": 1,
   "title": "/models 响应解析"
 }

@@ -49,6 +49,51 @@
       "expected": true,
       "fn": "is_context_overflow",
       "input": {
+        "body": "{\"error\":{\"message\":\"This endpoint's maximum context length is 200000 tokens. However, you requested about 230000 tokens\",\"code\":400}}",
+        "status": 400
+      },
+      "name": "OpenRouter"
+    },
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"error\":{\"code\":\"1261\",\"message\":\"Prompt 超长\"}}",
+        "status": 400
+      },
+      "name": "智谱（中文片段原文匹配）"
+    },
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"detail\":\"Input is too long for requested model.\"}",
+        "status": 422
+      },
+      "name": "422 同样检查"
+    },
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"error\":{\"message\":\"CONTEXT WINDOW EXCEEDED\"}}",
+        "status": 400
+      },
+      "name": "大小写不敏感"
+    },
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
+        "body": "{\"error\":{\"message\":\"max_tokens + messages exceed the context length\"}}",
+        "status": 400
+      },
+      "name": "提到 max_tokens 但也提到 context：仍算超长"
+    },
+    {
+      "expected": true,
+      "fn": "is_context_overflow",
+      "input": {
         "body": "Request Entity Too Large",
         "status": 413
       },
@@ -101,8 +146,30 @@
     }
   ],
   "crateVersion": "0.1.1",
-  "description": "is_context_overflow：宁可漏判不可误判（误判会把用户历史无谓地裁掉一半）。413 一律算；只看 400 / 422，其余状态码一律不算；只提 max_tokens / max_completion_tokens 而不提 context / prompt / input 的是输出上限问题，不算。命中的报错片段见用例。",
+  "description": "is_context_overflow：宁可漏判不可误判（误判会把用户历史无谓地裁掉一半）。按顺序：① 状态码 413 → true；② 状态码不是 400 或 422 → false；③ 响应体 ASCII 小写后记为 b（非 ASCII 字符不变）；④ b 包含 max_tokens 或 max_completion_tokens，且不含 context、prompt、input 中任何一个 → false（输出上限问题，裁历史没用）；⑤ b 包含 rules.patterns 任一子串 → true，否则 false。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "rules": {
+    "patterns": [
+      "context_length_exceeded",
+      "maximum context length",
+      "context length",
+      "context window",
+      "prompt is too long",
+      "prompt too long",
+      "too many tokens",
+      "exceeds the maximum number of tokens",
+      "exceeded model token limit",
+      "input is too long",
+      "input length",
+      "input tokens exceed",
+      "请求内容过长",
+      "超长",
+      "输入长度",
+      "超过最大长度",
+      "上下文长度",
+      "超出模型"
+    ]
+  },
   "specVersion": 1,
   "title": "超长报错识别"
 }

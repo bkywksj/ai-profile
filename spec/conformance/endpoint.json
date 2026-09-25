@@ -217,6 +217,78 @@
       }
     },
     {
+      "expected": "https://proxy.example.com/v1/completions/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/completions",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/completions/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/completions",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/completions/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/completions",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/responses/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/responses",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/responses/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/responses",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/responses/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/responses",
+        "path": "embeddings"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/models",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/chat/completions/#",
+        "path": "models"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/chat/completions",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/chat/completions/#",
+        "path": "chat/completions"
+      }
+    },
+    {
+      "expected": "https://proxy.example.com/v1/embeddings",
+      "fn": "join_api_path",
+      "input": {
+        "base": "https://proxy.example.com/v1/chat/completions/#",
+        "path": "embeddings"
+      }
+    },
+    {
       "expected": "https://api.deepseek.com/v1/chat/completions",
       "fn": "join_chat_endpoint",
       "input": {
@@ -488,7 +560,7 @@
     }
   ],
   "crateVersion": "0.1.1",
-  "description": "join_api_path：base_url 原样使用，只剥掉误填的对话端点后缀与末尾 #。join_chat_endpoint：对话端点允许整条粘进来；path 为 messages（Anthropic）时按 anthropic_base_url 补 /v1。anthropic_base_url：末段不是 v<数字> 就补 /v1，末尾 # 表示别补。ends_with_version_segment：末段（去掉末尾 /）是否形如 v + 纯数字；v1beta、主机名 v4.example.com 都不算。",
+  "description": "join_api_path：base_url 原样使用。处理顺序：去两端空白 → 去末尾所有 # → 去末尾所有 / → 若以 chat/completions 或 messages 结尾（只认这两种，按此顺序、只剥一次）则剥掉并再去末尾 / → 拼上 /path。join_chat_endpoint：对话端点允许整条粘进来；path 为 messages（Anthropic）时按 anthropic_base_url 补 /v1。anthropic_base_url：末段不是 v<数字> 就补 /v1，末尾 # 表示别补。ends_with_version_segment：末段（去掉末尾 /）是否形如 v + 纯数字；v1beta、主机名 v4.example.com 都不算。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "specVersion": 1,
   "title": "端点拼接"

@@ -116,6 +116,13 @@
       "expected": false,
       "fn": "is_chat_model_id",
       "input": {
+        "id": "black-forest-labs/FLUX.1-dev"
+      }
+    },
+    {
+      "expected": false,
+      "fn": "is_chat_model_id",
+      "input": {
         "id": "whisper-1"
       }
     },
@@ -305,8 +312,45 @@
     }
   ],
   "crateVersion": "0.1.1",
-  "description": "排除法：按特征词滤掉向量 / 重排 / 语音 / 生图 / 审核等非对话模型；去重去空白；全被滤光时返回原始清单（dropped 为 0）。",
+  "description": "is_chat_model_id：id 去两端空白、ASCII 小写后，为空 → false；以 rules.nonChatPrefixes 任一开头 → false；包含 rules.nonChatMarkers 任一子串 → false；其余一律 true（排除法，未知名称放行）。clean_fetched_models：逐个去两端空白、丢空串、按首次出现去重（保持顺序），再按上面的规则分成 models 与 droppedModels；models 为空（全被滤光）时改为返回去重后的原始清单，dropped 为 0、droppedModels 为空。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "rules": {
+    "nonChatMarkers": [
+      "embedding",
+      "embed",
+      "bge-",
+      "gte-",
+      "e5-",
+      "rerank",
+      "whisper",
+      "sensevoice",
+      "cosyvoice",
+      "tts",
+      "asr",
+      "stable-diffusion",
+      "sdxl",
+      "kolors",
+      "flux",
+      "image",
+      "dall-e",
+      "seedream",
+      "seedance",
+      "t2i",
+      "i2v",
+      "t2v",
+      "img2video",
+      "cogvideo",
+      "hailuo",
+      "speech",
+      "captioner",
+      "ocr",
+      "moderation",
+      "guard"
+    ],
+    "nonChatPrefixes": [
+      "lora/"
+    ]
+  },
   "specVersion": 1,
   "title": "模型清单清洗"
 }
