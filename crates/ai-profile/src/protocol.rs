@@ -298,7 +298,15 @@ fn read_envelope(text: &str) -> Result<Envelope, ParseError> {
     if trimmed.is_empty() {
         return Err(ParseError::Empty);
     }
-    let env: Envelope = serde_json::from_str(trimmed).map_err(invalid_json)?;
+    let value: serde_json::Value = serde_json::from_str(trimmed).map_err(invalid_json)?;
+    // 🔴 信封必须是对象。直接反序列化成结构体的话，serde 会「按字段顺序」接受数组，
+    //    `["ai.profile",1,{…}]` 也能解析成功 —— 协议里没有这种写法
+    if !value.is_object() {
+        return Err(ParseError::InvalidJson {
+            detail: "顶层必须是 JSON 对象".to_string(),
+        });
+    }
+    let env: Envelope = serde_json::from_value(value).map_err(invalid_json)?;
     // 🔴 只拒绝**更高**的版本：低版本能被高版本实现读懂（字段只增不改），
     //    拒绝低版本会把老软件分享的配置挡在外面。单条与打包共用同一个版本号。
     if env.v > AI_PROFILE_VERSION {
@@ -390,6 +398,23 @@ pub fn to_profile(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 信封必须是 JSON 对象。serde 默认允许「按字段顺序」从数组反序列化结构体，
+    /// 不拦的话 `["ai.profile",1,{…}]` 会被当成合法配置 —— 协议里没有这种写法，
+    /// 写进多语言规范就等于逼别的语言去模仿一个库的副作用。
+    #[test]
+    fn envelope_must_be_an_object() {
+        let arr =
+            r#"["ai.profile",1,{"name":"x","baseURL":"https://a/v1","apiKey":"k","model":"m"}]"#;
+        assert!(matches!(
+            parse_profiles(arr, "m"),
+            Err(ParseError::InvalidJson { .. })
+        ));
+        assert!(matches!(
+            parse_profile(arr, "m"),
+            Err(ParseError::InvalidJson { .. })
+        ));
+    }
 
     /// 🔴 `ParsedProfile` 的线格式是「粘贴导入」表单的契约。
     #[test]

@@ -49,7 +49,8 @@ pub fn join_api_path(base: &str, path: &str) -> String {
 /// 传 `"messages"` 时按 Anthropic 约定补版本段，见 [`anthropic_base_url`]。
 pub fn join_chat_endpoint(base: &str, path: &str) -> String {
     let probe = base.trim().trim_end_matches('#').trim_end_matches('/');
-    if probe.ends_with(path) {
+    // 同样按路径段认，与 strip_chat_endpoint 一致
+    if probe.ends_with(&format!("/{path}")) {
         return probe.to_string();
     }
     if path == "messages" {
@@ -79,8 +80,11 @@ pub fn anthropic_base_url(base: &str) -> String {
 /// 剥掉 base 末尾误填的对话端点后缀，把完整端点还原成 base。
 fn strip_chat_endpoint(base: &str) -> &str {
     for suffix in ["chat/completions", "messages"] {
+        // 按路径段认：前面必须紧跟 `/`，否则 `…/mymessages` 会被剥成 `…/my`
         if let Some(rest) = base.strip_suffix(suffix) {
-            return rest.trim_end_matches('/');
+            if rest.ends_with('/') {
+                return rest.trim_end_matches('/');
+            }
         }
     }
     base
@@ -105,6 +109,25 @@ pub fn ends_with_version_segment(base: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 端点后缀按**路径段**认，不按字符串：`…/mymessages` 不是误填的 `/messages`。
+    /// 此前按字符串剥，会把它剥成 `…/my` 再拼路径。外部实现者照规范写 Python 版时发现的。
+    #[test]
+    fn chat_suffix_is_matched_by_path_segment() {
+        assert_eq!(
+            join_api_path("https://relay.example.com/v1/mymessages", "models"),
+            "https://relay.example.com/v1/mymessages/models"
+        );
+        assert_eq!(
+            join_chat_endpoint("https://relay.example.com/v1/mymessages", "messages"),
+            "https://relay.example.com/v1/mymessages/v1/messages"
+        );
+        // 真正误填的完整端点照旧剥掉
+        assert_eq!(
+            join_api_path("https://relay.example.com/v1/messages", "models"),
+            "https://relay.example.com/v1/models"
+        );
+    }
 
     /// 🔴 本 crate 最容易被"好心"改回去的地方：看到用户填了
     /// `https://api.deepseek.com` 很容易想顺手补个 /v1。**不要补。**

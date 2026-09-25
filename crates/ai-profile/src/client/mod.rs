@@ -362,11 +362,10 @@ pub fn suggest_url(base_url: &str) -> Option<String> {
     if trimmed.is_empty() {
         return None;
     }
-    // 版本段可能在末尾（/v1、/v4），也可能在中间（Gemini 的 /v1beta/openai）
-    if ends_with_version_segment(trimmed)
-        || trimmed.contains("/v1beta/")
-        || trimmed.contains("/v1/")
-    {
+    // 版本段可能在末尾（/v1、/v4），也可能在中间（Gemini 的 /v1beta/openai）。
+    // 补一个结尾 / 再找：否则 `…/v1beta` 作为最后一段时（前面刚去掉了结尾 /）会找不到
+    let probe = format!("{trimmed}/");
+    if ends_with_version_segment(trimmed) || probe.contains("/v1beta/") || probe.contains("/v1/") {
         return None;
     }
     Some(format!("{trimmed}/v1"))
@@ -550,6 +549,17 @@ mod tests {
             None
         );
         assert_eq!(suggest_url(""), None);
+    }
+
+    /// 🔴 版本段恰好是最后一段、且不是纯数字（`/v1beta`）时也不能建议。
+    ///
+    /// 此前先去掉末尾 `/` 再找 `/v1beta/`，`…/v1beta/` 变成 `…/v1beta` 就找不到了，
+    /// 会建议出 `…/v1beta/v1` 这种错地址。外部实现者照文档写 Python 版时发现的。
+    #[test]
+    fn suggest_url_sees_version_as_last_segment() {
+        assert_eq!(suggest_url("https://x.com/v1beta"), None);
+        assert_eq!(suggest_url("https://x.com/v1beta/"), None);
+        assert_eq!(suggest_url("https://x.com/v1/"), None);
     }
 
     /// 状态码要映射到能驱动 UI 动作的变体。

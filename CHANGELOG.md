@@ -15,6 +15,14 @@
   由 `cargo xtask gen-spec` 从 Rust 参考实现生成，守卫测试 `spec_files_in_sync` 保证与代码同步
 
 ### 修复
+- `suggest_url` 对以 `/v1beta` 结尾的地址（带不带结尾 `/`）会建议出 `…/v1beta/v1` 这种错地址，现返回 `None`
+- 误填端点后缀按**路径段**识别：此前按字符串，`…/v1/mymessages` 会被剥成 `…/v1/my`（`join_api_path` /
+  `join_chat_endpoint` / `anthropic_base_url` 共用这条规则）
+- `ai.profile` 信封必须是 JSON 对象：此前 serde 默认允许按字段顺序从数组反序列化，
+  `["ai.profile",1,{…}]` 也能导入，协议里没有这种写法；现返回 `invalid_json`
+- 模型清洗补 `transcribe`：OpenAI 的 `gpt-4o-transcribe` / `gpt-4o-mini-transcribe` 是语音转写模型
+- **下游影响**（逐个查过调用点）：以上都只影响非常规输入，正常配置结果不变；只升依赖、不用改代码
+- 以上四处都是请外部实现者只凭公开规范写 Python 版时发现的
 - 模型清洗漏掉了本库自己的生图 / 视频 / 配音模型：`dall-e-3`、`doubao-seedream-*`、`doubao-seedance-*`、
   `wan*-t2i-*`、`*-I2V-*`、`vidu/*_img2video`、`cogvideox-*`、`MiniMax-Hailuo-*`、`fish-speech-*`
   会出现在「获取模型」的对话下拉里。补齐特征词，并加守卫测试 `non_chat_presets_are_filtered`：

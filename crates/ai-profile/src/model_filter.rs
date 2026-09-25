@@ -56,6 +56,8 @@ pub const NON_CHAT_MARKERS: &[&str] = &[
     // 语音合成：fishaudio/fish-speech-1.5、MiniMax speech-02-hd。
     // 不会误伤对话模型 —— 语音对话模型叫 audio / realtime，不叫 speech
     "speech",
+    // 语音转写：OpenAI 的 gpt-4o-transcribe、gpt-4o-mini-transcribe（与 whisper 同类，但名字里没有 whisper）
+    "transcribe",
     // 图像描述专用（Qwen3-Omni-30B-A3B-Captioner）：只输出图注，不能对话
     "captioner",
     "ocr",
@@ -234,5 +236,11 @@ mod tests {
         ] {
             assert!(is_chat_model_id(id), "{id} 是对话模型，不能被滤掉");
         }
+        // 转写模型名里没有 whisper，要靠 transcribe 认出来
+        for id in ["gpt-4o-transcribe", "gpt-4o-mini-transcribe"] {
+            assert!(!is_chat_model_id(id), "{id} 是语音转写模型");
+        }
+        // 同一家的对话模型不能被误伤
+        assert!(is_chat_model_id("gpt-4o-search-preview"));
     }
 }
