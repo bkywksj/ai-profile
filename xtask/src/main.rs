@@ -14,6 +14,7 @@
 //! gen-docs 则相反 —— 它是纯本地计算，CI 里由守卫测试 `providers_md_in_sync`
 //! 检查结果是否已提交。
 
+mod facts;
 mod spec;
 
 use std::path::PathBuf;
