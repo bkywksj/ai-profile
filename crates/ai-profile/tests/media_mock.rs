@@ -120,6 +120,32 @@ async fn openai_image_inline_b64() {
     assert_eq!(r.seed, Some(42));
 }
 
+/// 🔴 钉住生图请求体的现状：只发硅基流动的 `image_size`，不发 `size`。
+/// 加 `size` 会让 Seedream 4.5 / 5.0 拒收小尺寸，改之前先看 `ImageRequest` 上的说明。
+#[tokio::test]
+async fn openai_image_body_uses_siliconflow_fields_only() {
+    let s = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/images/generations"))
+        .and(body_partial_json(
+            json!({"image_size": "720x1280", "batch_size": 1}),
+        ))
+        .and(|req: &wiremock::Request| {
+            serde_json::from_slice::<serde_json::Value>(&req.body)
+                .is_ok_and(|v| v.get("size").is_none())
+        })
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({"data": [{"b64_json": b64(&fake_png())}]})),
+        )
+        .expect(1)
+        .mount(&s)
+        .await;
+
+    let p = OpenAiImageProvider::with_http(image_cfg(format!("{}/v1", s.uri())), &http());
+    p.generate(&image_params()).await.expect("出图成功");
+}
+
 /// 硅基流动风格：`images[].url` → 即时下载；下载第一次 5xx 要自动重试一次（图已计费，不能判整单失败）。
 #[tokio::test]
 async fn openai_image_url_is_downloaded_with_one_retry() {

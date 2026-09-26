@@ -32,7 +32,14 @@ pub struct ImageGenParams {
     pub negative_prompt: String,
     /// 随机种子（同角色复用同 seed 求一致性；None 由服务端随机）
     pub seed: Option<i64>,
-    /// 尺寸「宽x高」（漫剧竖屏默认 720x1280 ≈ 9:16）
+    /// 尺寸「宽x高」（漫剧竖屏默认 720x1280 ≈ 9:16）。
+    ///
+    /// 🔴 这是**请求值，不保证是出图的实际尺寸**：
+    /// - [`OpenAiImageProvider`] 只以硅基流动的字段名 `image_size` 发出。火山方舟 Seedream、
+    ///   OpenAI 官方认的是 `size`，这个值对它们不起作用（方舟按模型默认尺寸出图，4.0 默认 2048x2048）
+    /// - [`DashScopeImageProvider`] 会按它出图（转成「宽*高」）
+    ///
+    /// 要记录图片尺寸，请从返回的字节读实际宽高。
     pub size: String,
     /// 参考图（漫剧化 V3·M6 → V5 多图）：base64 data URL 或 URL 列表，作多参考图锁形象/场景。
     /// 空=纯文生图；1 张=单图 img2img（Kolors 等）；≥2 张=多图融合（Seedream 4.0 支持最多 10 张，
@@ -103,7 +110,16 @@ impl OpenAiImageProvider {
     }
 }
 
-/// 请求体（OpenAI images 兼容 + 硅基流动扩展字段；空值不序列化）
+/// 请求体（硅基流动的字段名；空值不序列化）。
+///
+/// 🔴 不要顺手补 OpenAI / 火山方舟的 `size`（2026-09-26 联网核查，见任务文档
+/// `task-20260926-053524-prism接入反馈三条`，完成后在 `docs/tasks/archive/`）：
+/// - Seedream 4.5 / 5.0 要求总像素 ≥ 2560x1440，下游在用的 720x1280 / 1024x1024 发过去会被拒；
+///   现在不带 `size`，方舟按默认尺寸出图是成功的 —— 补上会把「尺寸不对」变成「出不了图」
+/// - 硅基流动直连时收到多余的 `size` 会不会报错，没有证据；报错的话 StoryLoom 在用的 Kolors 直接坏
+///
+/// 要改先用真实密钥逐家验证（按端点分请求体的设想也在那份任务文档里）。
+/// 守卫：`tests/media_mock.rs` 的 `openai_image_body_uses_siliconflow_fields_only`。
 #[derive(Serialize)]
 struct ImageRequest<'a> {
     model: &'a str,
