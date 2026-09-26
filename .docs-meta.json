@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "4fa9d36",
-  "lastSyncTime": "2026-09-25T18:30:00Z",
+  "lastSyncCommit": "2e55a7a",
+  "lastSyncTime": "2026-09-26T05:50:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -243,6 +243,24 @@
         "CHANGELOG.md"
       ],
       "note": "0.1.3：官方档回落端点、2xx 返回网页判 not_found、限额逐字段来源；规范 v0.1.3 存档（259 条用例）"
+    },
+    {
+      "commit": "2e55a7a",
+      "time": "2026-09-26T05:50:00Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "api/preset.md",
+        "api/media.md",
+        "reference/spec.md",
+        "public/ai/ai-profile-integration.md"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/preset/mod.rs",
+        "crates/ai-profile/src/media/image.rs",
+        "spec/**",
+        "CHANGELOG.md"
+      ],
+      "note": "未发布改动（prism 反馈）：infer_preset_key_for、生图 size 是请求值。文档站本地提交 3c6662c 未推送；reference/changelog.md 与 public/spec/ 待发版后补"
     }
   ]
 }
