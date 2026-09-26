@@ -1,7 +1,7 @@
 # 版本化策略
 
-本 crate 遵循 [语义化版本](https://semver.org/lang/zh-CN/)。下游是五个独立发版的桌面
-应用，**改一个 `pub` 字段就可能 break 它们全部** —— 所以每次改动前先对照本表定版本位。
+本 crate 遵循 [语义化版本](https://semver.org/lang/zh-CN/)。下游是多个独立发版的桌面
+应用（清单见 [`downstream.md`](downstream.md)），**改一个 `pub` 字段就可能 break 它们全部** —— 所以每次改动前先对照本表定版本位。
 
 ## 版本位判定
 

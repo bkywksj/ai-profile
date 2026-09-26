@@ -15,8 +15,15 @@
 | onestop | `E:/my/backend_tauri/onestop` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `0.1.3` | 2026-09-25 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现 | `ai-profile-integration` |
 | story_loom | `E:/my/桌面软件tauri/story_loom` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `0.1.3` | 2026-09-25 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
 | reeve | `E:/my/桌面软件tauri/reeve` | crates.io 版本，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `0.1.3` | 2026-09-25 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
+| prism | `E:/my/桌面软件tauri/prism` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image）；`mobile-tauri` 壳不依赖 | `0.1.3` | 2026-09-26 | 对话预置 · 协议（OpenAI 兼容 + Anthropic）· 端点 · 验证 · 模型清洗 · 限额 · 历史裁剪与超长重试 · ai.profile 单条与打包 + 导出 · **生图预置与调用**（`media::image`）；对话实现、配图落盘入库留在应用 | `ai-profile-integration` |
 
-> ⏳ 五家的界面改动都**尚未实机验证**；代码测试全绿。
+> ⏳ sigil / knowledge_base / onestop / story_loom / reeve 的界面改动都**尚未实机验证**；代码测试全绿。
+> prism 已在 tauri dev 里验证「获取」（文本 / 图片），测试连接、导入导出、生图还没实测。
+>
+> prism 升级到下一版（`infer_preset_key_for` 所在版本）时要做两件事，见 CHANGELOG「未发布」：
+> ① 删掉本地的 `infer_image_preset_key`，改调 `preset::infer_preset_key_for(Kind::Image, …)`（按 `crate-boundary` 删副本）；
+> ② 素材库记的图片尺寸改为从出图字节读 —— 请求的 `IMAGE_SIZE` 对火山方舟 / OpenAI 官方不生效（方舟按模型默认尺寸出图）。
+> 它反馈的另两条（生图请求体补 `size`、按能力分类模型）结论与待办见 `docs/tasks/` 里的「prism接入反馈三条」。
 >
 > story_loom 的本机 lib 单测有 WebView2 入口崩溃（环境问题），
 > 应用侧纯函数测试（`legacy_endpoint` / `provider_share`）是在临时 crate 里 `#[path]` 引入实跑的。
@@ -56,12 +63,11 @@
 
 | 顺序 | 项目 | 现状（2026-09-23 盘点） | 接入时必须处理 |
 |---|---|---|---|
-| 1 | prism（`E:/my/桌面软件tauri/prism`，自媒体内容中台） | **2026-09-26 接入中**（由 prism 仓库里的会话实施，任务文档在该仓库 `docs/tasks/active/`）。未发布（0.1.0，无 tag）。原状：服务商全靠手填（名称 / 地址 / 模型 / 密钥），**无预置**；文本对话只说 OpenAI 兼容（SSE 流式）；生图走 `images/generations`，兼容 `data[].url` 与硅基流动 `images[].url`，`b64_json` 未支持 | ① crate 对话预置里有 2 家 Anthropic 协议（`anthropic_official`、`claude_code`），prism 的对话实现不会说 —— 要么按协议筛掉，要么补 Anthropic 对话实现 ② 未发布，不写存量地址迁移 ③ 生图可改用 crate `media`：已支持 `b64_json`，顺带解决 prism `docs/BLOCKERS.md` 里 T40 的待办 |
-| 2 | aibid（`E:/my/backend_tauri/aibid`，AI 标书工作站；桌面端在 `desktop/src-tauri`） | **2026-09-26 接入中**（由 aibid 仓库里的会话实施）。0.1.0、无 tag，但 updater 已指向 R2、有面向用户的发布说明底稿 —— **是否已发给用户待确认**。原状：自带一整套手写实现 `llm_presets.rs`（1232 行，15 档）+ `llm.rs`（3165 行：端点拼接、Anthropic 原生协议、三档协议、系统代理），15 档在 crate 里**全都有** | ① key 改名：`openai` → `openai_official`、`anthropic` → `anthropic_official`（`custom` 留应用）；已发给用户则存量配置要迁移 ② 🔴 crate **没有**的维度：每个模型是否支持**视觉**（`vision` / `vision_model`，识别扫描件要在发请求前拦住）、**向量**（`embed_model` / `embed_base_url` / `has_embeddings`）—— 先留在应用侧、按预置 key 叠加；要不要进 crate 另议（knowledge_base 的 RAG 可能也用得上） ③ 对话请求、Anthropic 线格式、视觉请求、向量调用、代理都留应用；验证走 `Verifier::from_builder` 带上它自己的代理 |
-| 3 | sku_lane（`E:/my/桌面软件tauri/sku_lane`，品道 · 电商铺货） | 2026-09-26 盘点，未开工。未发布（无 tag）。`services/ai.rs`（169 行）**写死 DeepSeek 一家、模型 `deepseek-chat`** —— 该别名 2026-07-24 已下线，**AI 选品评分 / 改写标题现在就是坏的**；无服务商选择、无 `ai.profile` | ① 用户只能填一个 DeepSeek 密钥：接入即新增「模型服务」设置（选服务商 / 获取模型 / 测试连接），属新增界面 ② 未发布，不写迁移 ③ 优先级最高：现在是坏的 |
-| 4 | reka（`E:/my/桌面软件tauri/reka`，HTTP 接口调试工具） | 2026-09-26 盘点，未开工。未发布（无 tag）。后端 `services/ai_llm.rs`（244 行）按 provider 分派 Anthropic / OpenAI 两套对话；前端 `AiSection.tsx` 写死 5 家预置（anthropic / openai / deepseek / groq / moonshot），地址不带 `/v1` —— 另有一套本地拼接规则 | ① 前端预置表删掉，改用 crate 预置 ② 地址规则换成 crate 的（原样使用），未发布，不写迁移 ③ 对话实现（两套协议）留应用 |
-| 5 | shop_sage（`E:/my/桌面软件tauri/shop_sage`，购物参谋） | 2026-09-26 盘点，未开工。未发布（无 tag）。`ModelProfilesSection` / `ImportDialog` / `ShareDialog` 与 **TS 版 `lib/aiProfile.ts` 解析器**（sigil 接入时删掉的那种漂移副本）；`services/ai/client.rs` 手写端点拼接与 Anthropic 分支 | ① 删 TS 解析器，导入导出走 crate 的 `parse_profile` / `to_profile` ② 未发布，不写迁移 |
-| 6 | cross_pilot（`E:/my/桌面软件tauri/cross_pilot`，跨翼 · 亚马逊多店驾驶舱） | 2026-09-26 盘点，未开工。🔴 **已发布**（tag `v0.1.0`，updater 指向 R2，文档站有下载页）。前端 `providerPresets.ts`（285 行，9 家）+ TS 版 `aiProfile.ts`；后端 `services/provider/llm.rs` | ① 🔴 已发布：存量配置的地址写法 / 预置 key 变了要写迁移 + 对照测试（照 reeve / knowledge_base 的范例） ② 该仓库另有会话在改 license / store（9 个未提交文件），开工前先确认已收尾 |
+| 1 | aibid（`E:/my/backend_tauri/aibid`，AI 标书工作站；桌面端在 `desktop/src-tauri`） | **2026-09-26 接入中**（由 aibid 仓库里的会话实施）。0.1.0、无 tag，但 updater 已指向 R2、有面向用户的发布说明底稿 —— **是否已发给用户待确认**。原状：自带一整套手写实现 `llm_presets.rs`（1232 行，15 档）+ `llm.rs`（3165 行：端点拼接、Anthropic 原生协议、三档协议、系统代理），15 档在 crate 里**全都有** | ① key 改名：`openai` → `openai_official`、`anthropic` → `anthropic_official`（`custom` 留应用）；已发给用户则存量配置要迁移 ② 🔴 crate **没有**的维度：每个模型是否支持**视觉**（`vision` / `vision_model`，识别扫描件要在发请求前拦住）、**向量**（`embed_model` / `embed_base_url` / `has_embeddings`）—— 先留在应用侧、按预置 key 叠加；要不要进 crate 另议（knowledge_base 的 RAG 可能也用得上） ③ 对话请求、Anthropic 线格式、视觉请求、向量调用、代理都留应用；验证走 `Verifier::from_builder` 带上它自己的代理 |
+| 2 | sku_lane（`E:/my/桌面软件tauri/sku_lane`，品道 · 电商铺货） | 2026-09-26 盘点，未开工。未发布（无 tag）。`services/ai.rs`（169 行）**写死 DeepSeek 一家、模型 `deepseek-chat`** —— 该别名 2026-07-24 已下线，**AI 选品评分 / 改写标题现在就是坏的**；无服务商选择、无 `ai.profile` | ① 用户只能填一个 DeepSeek 密钥：接入即新增「模型服务」设置（选服务商 / 获取模型 / 测试连接），属新增界面 ② 未发布，不写迁移 ③ 优先级最高：现在是坏的 |
+| 3 | reka（`E:/my/桌面软件tauri/reka`，HTTP 接口调试工具） | 2026-09-26 盘点，未开工。未发布（无 tag）。后端 `services/ai_llm.rs`（244 行）按 provider 分派 Anthropic / OpenAI 两套对话；前端 `AiSection.tsx` 写死 5 家预置（anthropic / openai / deepseek / groq / moonshot），地址不带 `/v1` —— 另有一套本地拼接规则 | ① 前端预置表删掉，改用 crate 预置 ② 地址规则换成 crate 的（原样使用），未发布，不写迁移 ③ 对话实现（两套协议）留应用 |
+| 4 | shop_sage（`E:/my/桌面软件tauri/shop_sage`，购物参谋） | 2026-09-26 盘点，未开工。未发布（无 tag）。`ModelProfilesSection` / `ImportDialog` / `ShareDialog` 与 **TS 版 `lib/aiProfile.ts` 解析器**（sigil 接入时删掉的那种漂移副本）；`services/ai/client.rs` 手写端点拼接与 Anthropic 分支 | ① 删 TS 解析器，导入导出走 crate 的 `parse_profile` / `to_profile` ② 未发布，不写迁移 |
+| 5 | cross_pilot（`E:/my/桌面软件tauri/cross_pilot`，跨翼 · 亚马逊多店驾驶舱） | 2026-09-26 盘点，未开工。🔴 **已发布**（tag `v0.1.0`，updater 指向 R2，文档站有下载页）。前端 `providerPresets.ts`（285 行，9 家）+ TS 版 `aiProfile.ts`；后端 `services/provider/llm.rs` | ① 🔴 已发布：存量配置的地址写法 / 预置 key 变了要写迁移 + 对照测试（照 reeve / knowledge_base 的范例） ② 该仓库另有会话在改 license / store（9 个未提交文件），开工前先确认已收尾 |
 
 ### 🔴 存量地址修正（已发布过的下游都要做；reeve、knowledge_base 已做完，可作范例）
 
@@ -103,7 +109,7 @@ hindsight、cross_pilot、shop_sage、zhongyu_comic。其中 reka、cross_pilot�
 
 ## 发布形态
 
-已发布到 crates.io（`0.1.0` 起，最新以 `docs/versioning.md` 与 crates.io 为准），五个下游都按**版本号**引用。
+已发布到 crates.io（`0.1.0` 起，最新以 `docs/versioning.md` 与 crates.io 为准），「已接入」表里的下游都按**版本号**引用。
 发版流程见技能 `crate-release`；0.x 阶段 minor 视为破坏性版本，判定规则见 `docs/versioning.md`。
 
 发布前（2026-09-22 ~ 24）下游按 git 提交号引用 —— 那段时间改 API 不必背 semver 包袱，
