@@ -7,6 +7,14 @@
 
 **升级只需 `cargo update -p ai-profile`，不用改代码。** 来自 prism 接入时的反馈。
 
+### 新增
+- `preset::infer_preset_key_for(kind, protocol, base_url)`：按能力类别从已存配置反推预置。
+  对话档结果与 `infer_preset_key` 完全相同；生图 / 视频 / 配音只在该能力的预置里按 host 认，
+  认不出落到该能力的自定义端点档（`custom_image` / `custom_video` / `custom_tts`）。
+  此前下游要自己遍历 `match_hosts`，还得靠「没写地址、也没有 host」去猜哪条是自定义档 ——
+  那是预置的内部约定，预置一变就会静默认错。`dashscope` / 硅基流动 / 火山方舟同一个 host 横跨多种能力，必须先按能力过滤
+- 多语言规范：`preset_lookup.json` 增加 `infer_preset_key_for` 用例，`rules.customPresetKeys` 给出各能力的自定义档
+
 ### 说明
 - `ImageGenParams::size` 写明是**请求值、不保证是出图的实际尺寸**：OpenAI images 兼容实现只以硅基流动的
   `image_size` 发出，火山方舟 Seedream / OpenAI 官方认的是 `size`，对它们不起作用（方舟按模型默认尺寸出图）。

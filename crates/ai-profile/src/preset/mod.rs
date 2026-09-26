@@ -444,6 +444,58 @@ pub fn infer_preset_key(protocol: Protocol, base_url: Option<&str>) -> &'static 
     CUSTOM_PRESET_KEY
 }
 
+/// 各能力「自定义端点」档的 key。对话另有 [`CUSTOM_PRESET_KEY`]、反推规则也不同，返回 `None`。
+///
+/// 单独成函数：只开 `chat` 时 match 只剩一个分支，写进 [`infer_preset_key_for`] 会触发 unreachable 警告。
+fn non_chat_custom_key(kind: Kind) -> Option<&'static str> {
+    match kind {
+        Kind::Chat => None,
+        #[cfg(feature = "image")]
+        Kind::Image => Some("custom_image"),
+        #[cfg(feature = "video")]
+        Kind::Video => Some("custom_video"),
+        #[cfg(feature = "tts")]
+        Kind::Tts => Some("custom_tts"),
+    }
+}
+
+/// 按能力类别从已存配置反推模板 key —— [`infer_preset_key`] 的多能力版本。
+///
+/// - [`Kind::Chat`]：结果与 [`infer_preset_key`] 完全相同（`protocol` 只在这里起作用）
+/// - 其余能力：只在该能力的预置里按 `match_hosts` 认；空地址或认不出 → 该能力的自定义端点档
+///   （`custom_image` / `custom_video` / `custom_tts`）
+///
+/// 🔴 必须先按能力过滤再认 host：`dashscope.aliyuncs.com`、`api.siliconflow.cn`、
+/// `ark.cn-beijing.volces.com` 同时是对话、生图、视频（配音）预置的 host。
+/// 下游自己遍历 `match_hosts` 时还得认出哪条是自定义档 —— 那是预置的内部约定，
+/// 预置一变就会静默认错，所以由本函数统一回答。
+///
+/// ```
+/// # use ai_profile::{preset::infer_preset_key_for, Kind, Protocol};
+/// let key = infer_preset_key_for(
+///     Kind::Chat,
+///     Protocol::OpenAiCompatible,
+///     Some("https://api.deepseek.com"),
+/// );
+/// assert_eq!(key, "deepseek");
+/// ```
+pub fn infer_preset_key_for(
+    kind: Kind,
+    protocol: Protocol,
+    base_url: Option<&str>,
+) -> &'static str {
+    let Some(custom) = non_chat_custom_key(kind) else {
+        return infer_preset_key(protocol, base_url);
+    };
+    let url = base_url.unwrap_or("").trim().to_ascii_lowercase();
+    if url.is_empty() {
+        return custom;
+    }
+    presets_for(kind)
+        .find(|p| p.match_hosts.iter().any(|h| url.contains(h)))
+        .map_or(custom, |p| p.key)
+}
+
 /// 一条已存配置的模型在预置里登记的静态限额（`source: Preset`）。
 ///
 /// 先按 [`infer_preset_key`] 找到预置，再按 model id 精确匹配。
@@ -573,6 +625,130 @@ mod tests {
                 preset_by_key(key).map(|p| p.kind),
                 Some(Kind::Chat),
                 "{url} → {key}"
+            );
+        }
+    }
+
+    /// 对话档必须与 `infer_preset_key` 逐字一致：新函数只是多能力入口，不能改对话的反推结果。
+    #[test]
+    fn infer_preset_key_for_chat_equals_legacy() {
+        for (protocol, url) in [
+            (Protocol::OpenAiCompatible, Some("https://api.deepseek.com")),
+            (
+                Protocol::OpenAiCompatible,
+                Some("https://dashscope.aliyuncs.com/compatible-mode/v1"),
+            ),
+            (
+                Protocol::OpenAiCompatible,
+                Some("https://api.siliconflow.cn/v1"),
+            ),
+            (
+                Protocol::OpenAiCompatible,
+                Some("https://unknown.example/v1"),
+            ),
+            (Protocol::OpenAiCompatible, None),
+            (Protocol::Anthropic, None),
+            (Protocol::Anthropic, Some("https://cc.example.cn/v1")),
+        ] {
+            assert_eq!(
+                infer_preset_key_for(Kind::Chat, protocol, url),
+                infer_preset_key(protocol, url),
+                "{protocol:?} {url:?}"
+            );
+        }
+    }
+
+    /// 🔴 同一个 host 在不同能力下要认到各自的档；认不出时落到该能力自己的自定义档，
+    /// 不能落到对话的兜底档。
+    #[cfg(all(feature = "image", feature = "video", feature = "tts"))]
+    #[test]
+    fn infer_preset_key_for_separates_kinds_on_shared_hosts() {
+        let oa = Protocol::OpenAiCompatible;
+        for (kind, url, want) in [
+            (
+                Kind::Chat,
+                "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                "qwen",
+            ),
+            (
+                Kind::Image,
+                "https://dashscope.aliyuncs.com/api/v1",
+                "wan_image",
+            ),
+            (
+                Kind::Video,
+                "https://dashscope.aliyuncs.com/api/v1",
+                "vidu_video",
+            ),
+            (
+                Kind::Image,
+                "https://api.siliconflow.cn/v1",
+                "siliconflow_image",
+            ),
+            (
+                Kind::Video,
+                "https://api.siliconflow.cn/v1",
+                "siliconflow_video",
+            ),
+            (
+                Kind::Tts,
+                "https://api.siliconflow.cn/v1",
+                "siliconflow_tts",
+            ),
+            (
+                Kind::Image,
+                "https://ark.cn-beijing.volces.com/api/v3",
+                "seedream_image",
+            ),
+            (
+                Kind::Video,
+                "https://ark.cn-beijing.volces.com/api/v3",
+                "seedance",
+            ),
+            (Kind::Image, "https://unknown.example/v1", "custom_image"),
+            (Kind::Video, "", "custom_video"),
+            (Kind::Tts, "   ", "custom_tts"),
+        ] {
+            assert_eq!(
+                infer_preset_key_for(kind, oa, Some(url)),
+                want,
+                "{kind:?} {url}"
+            );
+        }
+        assert_eq!(infer_preset_key_for(Kind::Image, oa, None), "custom_image");
+    }
+
+    /// 🔴 守卫：每条非对话预置用自己的地址反推必须认回自己 ——
+    /// 同一能力里两家 host 冲突、或 `match_hosts` 写错，这里会红。
+    #[test]
+    fn non_chat_presets_infer_back_to_themselves() {
+        for p in presets().iter().filter(|p| p.kind != Kind::Chat) {
+            let Some(url) = p.base_url else { continue };
+            assert_eq!(
+                infer_preset_key_for(p.kind, p.protocol, Some(url)),
+                p.key,
+                "{url}"
+            );
+        }
+    }
+
+    /// 各能力的自定义档必须存在且属于该能力，否则反推会返回一个查不到的 key。
+    #[test]
+    fn non_chat_custom_presets_exist() {
+        let mut kinds: Vec<Kind> = Vec::new();
+        for p in presets() {
+            if !kinds.contains(&p.kind) {
+                kinds.push(p.kind);
+            }
+        }
+        for kind in kinds {
+            let Some(key) = non_chat_custom_key(kind) else {
+                continue;
+            };
+            assert_eq!(
+                preset_by_key(key).map(|p| p.kind),
+                Some(kind),
+                "{kind:?} 的自定义档 {key} 不在预置表里或 kind 不对"
             );
         }
     }

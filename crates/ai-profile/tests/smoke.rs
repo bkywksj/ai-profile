@@ -37,6 +37,24 @@ fn public_api_is_usable_from_outside() {
         preset::infer_preset_key(Protocol::OpenAiCompatible, Some("https://api.deepseek.com")),
         "deepseek"
     );
+    // 按能力反推：同一个 host 在对话 / 生图下认到各自的档
+    assert_eq!(
+        preset::infer_preset_key_for(
+            Kind::Chat,
+            Protocol::OpenAiCompatible,
+            Some("https://api.siliconflow.cn/v1")
+        ),
+        "siliconflow"
+    );
+    #[cfg(feature = "image")]
+    assert_eq!(
+        preset::infer_preset_key_for(
+            Kind::Image,
+            Protocol::OpenAiCompatible,
+            Some("https://api.siliconflow.cn/v1")
+        ),
+        "siliconflow_image"
+    );
 
     // 5. 厂商聚合
     let vs = preset::vendors(&[Kind::Chat]);

@@ -25,8 +25,10 @@ use ai_profile::endpoint::{
 };
 use ai_profile::history::is_context_overflow;
 use ai_profile::model_filter::{clean_fetched_models, is_chat_model_id};
-use ai_profile::preset::{infer_preset_key, model_limits, preset_by_key, presets, vendors_all};
-use ai_profile::{parse_profiles, to_profile, Protocol, TokenLimits};
+use ai_profile::preset::{
+    infer_preset_key, infer_preset_key_for, model_limits, preset_by_key, presets, vendors_all,
+};
+use ai_profile::{parse_profiles, to_profile, Kind, Protocol, TokenLimits};
 use serde_json::{json, Value};
 
 /// 用例格式版本。**只在格式本身变了**（字段改名 / 结构调整）时加 1；加用例、改期望值都不算。
@@ -817,6 +819,58 @@ fn preset_lookup_json() -> Value {
             })
         })
         .collect();
+    // 按能力反推。这三个 host 同时是对话、生图、视频（配音）预置的 host：先按能力过滤再认，不能串档
+    let oa = Protocol::OpenAiCompatible;
+    let kind_inputs: [(Kind, Protocol, Option<&str>); 13] = [
+        // 对话：与 infer_preset_key 完全相同
+        (Kind::Chat, Protocol::Anthropic, None),
+        (
+            Kind::Chat,
+            oa,
+            Some("https://dashscope.aliyuncs.com/compatible-mode/v1"),
+        ),
+        (
+            Kind::Image,
+            oa,
+            Some("https://dashscope.aliyuncs.com/api/v1"),
+        ),
+        (
+            Kind::Video,
+            oa,
+            Some("https://dashscope.aliyuncs.com/api/v1"),
+        ),
+        (Kind::Image, oa, Some("https://api.siliconflow.cn/v1")),
+        (Kind::Video, oa, Some("https://api.siliconflow.cn/v1")),
+        (Kind::Tts, oa, Some("https://api.siliconflow.cn/v1")),
+        // 大小写不敏感
+        (
+            Kind::Image,
+            oa,
+            Some("HTTPS://ARK.CN-BEIJING.VOLCES.COM/api/v3"),
+        ),
+        (
+            Kind::Video,
+            oa,
+            Some("https://ark.cn-beijing.volces.com/api/v3"),
+        ),
+        // 非对话能力不看协议：传 anthropic 也照样按 host 认
+        (
+            Kind::Image,
+            Protocol::Anthropic,
+            Some("https://api.openai.com/v1"),
+        ),
+        // 认不出 / 空地址 → 该能力自己的自定义档，不是对话的兜底档
+        (Kind::Image, oa, Some("https://unknown.example.com/v1")),
+        (Kind::Video, oa, None),
+        (Kind::Tts, oa, Some("   ")),
+    ];
+    for (kind, protocol, base) in kind_inputs {
+        cases.push(json!({
+            "fn": "infer_preset_key_for",
+            "input": { "kind": kind, "protocol": protocol, "baseUrl": base },
+            "expected": infer_preset_key_for(kind, protocol, base),
+        }));
+    }
     let limits_inputs: [(Protocol, Option<&str>, &str); 6] = [
         (
             Protocol::OpenAiCompatible,
@@ -868,6 +922,15 @@ fn preset_lookup_json() -> Value {
             "expected": preset_by_key(key).expect("预置存在").endpoint(),
         }));
     }
+    // 各非对话能力的自定义端点档：用公开 API 现场算，不在这里另写一份。
+    // 键用 Kind 的线格式拼写（与用例 input.kind 一致）
+    let custom_keys: serde_json::Map<String, Value> = [Kind::Image, Kind::Video, Kind::Tts]
+        .into_iter()
+        .map(|k| {
+            let name = json!(k).as_str().expect("Kind 序列化为字符串").to_string();
+            (name, Value::from(infer_preset_key_for(k, oa, None)))
+        })
+        .collect();
     with_rules(with_cases(
         header(
             "从已存配置反推预置",
@@ -876,6 +939,10 @@ fn preset_lookup_json() -> Value {
              其它协议：url 为空 → openai_compatible_custom；否则按 presets.json 的顺序，只看 kind 为 chat 且 protocol 为 \
              openai_compatible 的预置，url 包含它 matchHosts 里任一项（子串，可带端口）即返回它的 key；都不中 → openai_compatible_custom。\
              子串匹配让不带版本段的老地址也能认出来。\
+             infer_preset_key_for：按能力类别反推。kind 为 chat → 与 infer_preset_key 完全相同；\
+             其余 kind 不看 protocol：url 为空 → rules.customPresetKeys[kind]；否则按 presets.json 的顺序，\
+             只看该 kind 的预置，url 包含它 matchHosts 里任一项即返回它的 key；都不中 → rules.customPresetKeys[kind]。\
+             必须先按 kind 过滤：同一个 host 可能同时是对话、生图、视频、配音预置的 host。\
              model_limits：先 infer_preset_key 找到预置，再用 model（去两端空白）与它 models 的 value 精确匹配；\
              匹配到且 contextWindow、maxOutput 至少一个非空 → 返回预置限额（字段同 limits.json：source 与逐字段来源都是 preset）；\
              其余情况一律 null，不猜。\
@@ -890,6 +957,7 @@ fn preset_lookup_json() -> Value {
             "anthropic": Protocol::Anthropic.default_base_url(),
             "openai_compatible": Protocol::OpenAiCompatible.default_base_url(),
         },
+        "customPresetKeys": custom_keys,
     }))
 }
 

@@ -11,7 +11,7 @@
 | `conformance/diagnose.json` | 验证失败的错误判定：`diagnose` / `suggest_url` / `check_required_fields` |
 | `conformance/ai_profile.json` | `ai.profile` 解析（宽进）与生成（严出） |
 | `conformance/limits.json` | token 限额三层合并 |
-| `conformance/preset_lookup.json` | 从已存配置反推预置：`infer_preset_key` / `model_limits`（预置登记的静态限额） |
+| `conformance/preset_lookup.json` | 从已存配置反推预置：`infer_preset_key` / `infer_preset_key_for`（按能力类别） / `model_limits`（预置登记的静态限额） / `preset_endpoint` |
 | `conformance/history.json` | 超长报错识别：`is_context_overflow`（历史裁剪本身暂无用例） |
 
 🔴 **全部由 `cargo xtask gen-spec` 生成，请勿手改。** 期望值是 Rust 参考实现现场算出来的，
