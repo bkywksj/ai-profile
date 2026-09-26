@@ -56,7 +56,7 @@
 
 | 顺序 | 项目 | 现状（2026-09-23 盘点） | 接入时必须处理 |
 |---|---|---|---|
-| — | （暂无） | 已登记的下游全部接入 | — |
+| 1 | prism（`E:/my/桌面软件tauri/prism`，自媒体内容中台） | **2026-09-26 接入中**（由 prism 仓库里的会话实施，任务文档在该仓库 `docs/tasks/active/`）。未发布（0.1.0，无 tag）。原状：服务商全靠手填（名称 / 地址 / 模型 / 密钥），**无预置**；文本对话只说 OpenAI 兼容（SSE 流式）；生图走 `images/generations`，兼容 `data[].url` 与硅基流动 `images[].url`，`b64_json` 未支持 | ① crate 对话预置里有 2 家 Anthropic 协议（`anthropic_official`、`claude_code`），prism 的对话实现不会说 —— 要么按协议筛掉，要么补 Anthropic 对话实现 ② 未发布，不写存量地址迁移 ③ 生图可改用 crate `media`：已支持 `b64_json`，顺带解决 prism `docs/BLOCKERS.md` 里 T40 的待办 |
 
 ### 🔴 存量地址修正（已发布过的下游都要做；reeve、knowledge_base 已做完，可作范例）
 
