@@ -57,6 +57,7 @@
 | 顺序 | 项目 | 现状（2026-09-23 盘点） | 接入时必须处理 |
 |---|---|---|---|
 | 1 | prism（`E:/my/桌面软件tauri/prism`，自媒体内容中台） | **2026-09-26 接入中**（由 prism 仓库里的会话实施，任务文档在该仓库 `docs/tasks/active/`）。未发布（0.1.0，无 tag）。原状：服务商全靠手填（名称 / 地址 / 模型 / 密钥），**无预置**；文本对话只说 OpenAI 兼容（SSE 流式）；生图走 `images/generations`，兼容 `data[].url` 与硅基流动 `images[].url`，`b64_json` 未支持 | ① crate 对话预置里有 2 家 Anthropic 协议（`anthropic_official`、`claude_code`），prism 的对话实现不会说 —— 要么按协议筛掉，要么补 Anthropic 对话实现 ② 未发布，不写存量地址迁移 ③ 生图可改用 crate `media`：已支持 `b64_json`，顺带解决 prism `docs/BLOCKERS.md` 里 T40 的待办 |
+| 2 | aibid（`E:/my/backend_tauri/aibid`，AI 标书工作站；桌面端在 `desktop/src-tauri`） | **2026-09-26 接入中**（由 aibid 仓库里的会话实施）。0.1.0、无 tag，但 updater 已指向 R2、有面向用户的发布说明底稿 —— **是否已发给用户待确认**。原状：自带一整套手写实现 `llm_presets.rs`（1232 行，15 档）+ `llm.rs`（3165 行：端点拼接、Anthropic 原生协议、三档协议、系统代理），15 档在 crate 里**全都有** | ① key 改名：`openai` → `openai_official`、`anthropic` → `anthropic_official`（`custom` 留应用）；已发给用户则存量配置要迁移 ② 🔴 crate **没有**的维度：每个模型是否支持**视觉**（`vision` / `vision_model`，识别扫描件要在发请求前拦住）、**向量**（`embed_model` / `embed_base_url` / `has_embeddings`）—— 先留在应用侧、按预置 key 叠加；要不要进 crate 另议（knowledge_base 的 RAG 可能也用得上） ③ 对话请求、Anthropic 线格式、视觉请求、向量调用、代理都留应用；验证走 `Verifier::from_builder` 带上它自己的代理 |
 
 ### 🔴 存量地址修正（已发布过的下游都要做；reeve、knowledge_base 已做完，可作范例）
 
