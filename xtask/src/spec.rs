@@ -28,6 +28,9 @@ use ai_profile::model_filter::{clean_fetched_models, is_chat_model_id};
 use ai_profile::preset::{
     infer_preset_key, infer_preset_key_for, model_limits, preset_by_key, presets, vendors_all,
 };
+use ai_profile::stream::{
+    is_stream_options_rejected, looks_like_html, StopReason, StreamDecoder, StreamEvent,
+};
 use ai_profile::{parse_profiles, to_profile, Kind, Protocol, TokenLimits};
 use serde_json::{json, Value};
 
@@ -1064,6 +1067,480 @@ fn history_json() -> Value {
     )
 }
 
+// ── 流式解码 ─────────────────────────────────────────────────────
+
+/// 跑一遍解码器，得到 `{ events, outcome }`。`abort` 为真时不读到 EOF，而是取消。
+fn decode_case(protocol: Protocol, chunks: &[&str], abort: bool) -> Value {
+    let mut dec = StreamDecoder::new(protocol).with_stream_id("spec");
+    let mut events: Vec<StreamEvent> = Vec::new();
+    for c in chunks {
+        events.extend(dec.push(c.as_bytes()));
+    }
+    let outcome = if abort {
+        dec.abort()
+    } else {
+        let (tail, outcome) = dec.finish();
+        events.extend(tail);
+        outcome
+    };
+    json!({
+        "events": serde_json::to_value(&events).expect("事件可序列化"),
+        "outcome": serde_json::to_value(&outcome).expect("结果可序列化"),
+    })
+}
+
+fn stream_json() -> Value {
+    const OA: &str = "openai_compatible";
+    const AN: &str = "anthropic";
+    let oa_full = concat!(
+        ": keep-alive\r\n\r\n",
+        "data: {\"model\":\"m1\",\"choices\":[{\"delta\":{\"role\":\"assistant\",\"content\":\"你好\"}}]}\r\n\r\n",
+        "data: {\"choices\":[{\"delta\":{\"content\":\"，世界\"}}]}\r\n\r\n",
+        "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_a\",\"function\":{\"name\":\"read\",\"arguments\":\"{\\\"p\\\":\"}}]}}]}\r\n\r\n",
+        "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"\\\"x\\\"}\"}}]}}]}\r\n\r\n",
+        ": keep-alive\r\n\r\n",
+        "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\r\n\r\n",
+        "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":11,\"completion_tokens\":7}}\r\n\r\n",
+        "data: [DONE]\r\n\r\n",
+    );
+    let an_full = concat!(
+        "event: message_start\n",
+        "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1}}}\n\n",
+        "event: ping\ndata: {\"type\":\"ping\"}\n\n",
+        "event: content_block_start\n",
+        "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n",
+        "event: content_block_delta\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"你好\"}}\n\n",
+        "event: content_block_start\n",
+        "data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\n\n",
+        "event: content_block_delta\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":\"}}\n\n",
+        "event: content_block_delta\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\\\"x\\\"}\"}}\n\n",
+        "event: message_delta\n",
+        "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42}}\n\n",
+        "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
+    );
+    let (oa_a, oa_b) = oa_full.split_at(
+        oa_full
+            .find("data: {\"choices\":[{\"delta\":{\"tool_calls\"")
+            .unwrap()
+            + 20,
+    );
+    let an_no_event: String = an_full
+        .lines()
+        .filter(|l| !l.starts_with("event:"))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    // (名称, 协议, 分包, 是否取消)
+    let decode: Vec<(&str, &str, Vec<&str>, bool)> = vec![
+        (
+            "OpenAI：文字 + 工具调用 + 末帧 usage，含 \\r\\n 与 keep-alive 注释行",
+            OA,
+            vec![oa_full],
+            false,
+        ),
+        (
+            "同一段流切成两包（切在帧中间）：结果与整包完全一致",
+            OA,
+            vec![oa_a, oa_b],
+            false,
+        ),
+        (
+            "只以 [DONE] 收尾、没有 finish_reason：有工具调用推 tool_use；[DONE] 之后的内容不处理",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"c1\",\"function\":{\"name\":\"f\",\"arguments\":\"{}\"}}]}}]}\n\n",
+                "data: [DONE]\n\n",
+                "data: {\"choices\":[{\"delta\":{\"content\":\"忽略\"}}]}\n\n",
+            )],
+            false,
+        ),
+        (
+            "只以 [DONE] 收尾、没有工具调用：推 end_turn",
+            OA,
+            vec!["data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\ndata: [DONE]\n\n"],
+            false,
+        ),
+        (
+            "流内 error：终态 failed，只留已收文字，之后的输入忽略",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"content\":\"半\"}}]}\n\n",
+                "data: {\"error\":{\"message\":\"rate limited\",\"type\":\"x\"}}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"content\":\"忽略\"}}]}\n\n",
+            )],
+            false,
+        ),
+        (
+            "error 为 null 不算错误",
+            OA,
+            vec!["data: {\"error\":null,\"choices\":[{\"delta\":{\"content\":\"a\"},\"finish_reason\":\"stop\"}]}\n\n"],
+            false,
+        ),
+        (
+            "id / 名字晚到：名字已知才发 tool_use_start，且只发一次",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"\"}}]}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_late\"}]}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"name\":\"late_tool\",\"arguments\":\"{}\"}}]}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n",
+            )],
+            false,
+        ),
+        (
+            "断流（无结束原因也无 [DONE]）：truncated，丢全部工具调用，只留文字",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"content\":\"先说点\"}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"c\",\"function\":{\"name\":\"f\",\"arguments\":\"{\\\"a\"}}]}}]}\n\n",
+            )],
+            false,
+        ),
+        (
+            "工具调用缺 index 也缺 id：按本帧位置分块，补 call_<流id>_<块号>",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[",
+                "{\"function\":{\"name\":\"a\",\"arguments\":\"{}\"}},",
+                "{\"function\":{\"name\":\"b\",\"arguments\":\"{}\"}}]}}]}\n\n",
+                "data: [DONE]\n\n",
+            )],
+            false,
+        ),
+        (
+            "index 全是 0 但 id 不同：另起一块",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"a\",\"function\":{\"name\":\"f\",\"arguments\":\"{}\"}}]}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"b\",\"function\":{\"name\":\"g\",\"arguments\":\"{}\"}}]}}]}\n\n",
+                "data: [DONE]\n\n",
+            )],
+            false,
+        ),
+        (
+            "缺 index 但有 id：按 id 认回已有的调用",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"id\":\"a\",\"function\":{\"name\":\"f\",\"arguments\":\"{\\\"k\\\":\"}}]}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"id\":\"a\",\"function\":{\"arguments\":\"1}\"}}]}}]}\n\n",
+                "data: [DONE]\n\n",
+            )],
+            false,
+        ),
+        (
+            "arguments 是对象而不是字符串：整段当参数",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"a\",\"function\":{\"name\":\"f\",\"arguments\":{\"x\":1}}}]}}]}\n\n",
+                "data: [DONE]\n\n",
+            )],
+            false,
+        ),
+        (
+            "参数不是合法 JSON：input 回落为 {}",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"a\",\"function\":{\"name\":\"f\",\"arguments\":\"{\\\"x\"}}]}}]}\n\n",
+                "data: [DONE]\n\n",
+            )],
+            false,
+        ),
+        (
+            "reasoning_content / reasoning：只发 reasoning_delta，不进 content",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"想一想\"}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"reasoning\":\"再想\"}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"content\":\"答案\"},\"finish_reason\":\"stop\"}]}\n\n",
+            )],
+            false,
+        ),
+        (
+            "finish_reason 为空串 / null 不覆盖已有值；末尾只带 usage 的帧不冲掉它",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"content\":\"a\"},\"finish_reason\":\"length\"}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"\"}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":3,\"completion_tokens\":4}}\n\n",
+            )],
+            false,
+        ),
+        (
+            "usage 覆盖不累加；值为 0 不覆盖已有的非零值",
+            OA,
+            vec![concat!(
+                "data: {\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":1},\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\n",
+                "data: {\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5},\"choices\":[{\"delta\":{\"content\":\"b\"}}]}\n\n",
+                "data: {\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":9},\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n",
+            )],
+            false,
+        ),
+        (
+            "流里回完整 message 而不是 delta",
+            OA,
+            vec!["data: {\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"整段\"},\"finish_reason\":\"stop\"}]}\n\n"],
+            false,
+        ),
+        (
+            "多 choices 只读第一个",
+            OA,
+            vec!["data: {\"choices\":[{\"delta\":{\"content\":\"A\"}},{\"delta\":{\"content\":\"B\"}}]}\n\ndata: [DONE]\n\n"],
+            false,
+        ),
+        (
+            "data: 后无空格、单独的 \\r 当行尾、开头的 BOM",
+            OA,
+            vec!["\u{feff}data:{\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\r\rdata:[DONE]\r\r"],
+            false,
+        ),
+        (
+            "多行 data 用 \\n 拼成一帧",
+            OA,
+            vec!["data: {\"choices\":[{\"delta\":\ndata: {\"content\":\"x\"}}]}\n\ndata: [DONE]\n\n"],
+            false,
+        ),
+        (
+            "事件之间漏了空行：拼起来不是 JSON、每行单独是，逐行各当一帧",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n",
+                "data: {\"choices\":[{\"delta\":{\"content\":\"b\"}}]}\n\n",
+                "data: [DONE]\n\n",
+            )],
+            false,
+        ),
+        (
+            "解析失败的帧跳过并计数，不作废整次生成",
+            OA,
+            vec![concat!(
+                "data: {not json\n\n",
+                "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\n",
+            )],
+            false,
+        ),
+        (
+            "最后一个事件没有结尾空行：EOF 时照样处理",
+            OA,
+            vec!["data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\ndata: [DONE]"],
+            false,
+        ),
+        (
+            "2xx 回网页：not_event_stream，带原始响应体",
+            OA,
+            vec!["<!DOCTYPE html>\n<html><head><title>x</title></head><body>hi</body></html>"],
+            false,
+        ),
+        (
+            "网关忽略 stream:true 回整段 JSON：not_event_stream",
+            OA,
+            vec!["{\"choices\":[{\"message\":{\"content\":\"整段\"}}]}"],
+            false,
+        ),
+        ("空响应：truncated", OA, vec![""], false),
+        (
+            "取消：已收文字保留，工具调用丢弃，半行丢弃",
+            OA,
+            vec![
+                "data: {\"choices\":[{\"delta\":{\"content\":\"已收到\"}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"c\",\"function\":{\"name\":\"f\",\"arguments\":\"{\"}}]}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"content\":\"半",
+            ],
+            true,
+        ),
+        (
+            "Anthropic：文字 + tool_use（input_json_delta）+ usage，块号用协议自带 index",
+            AN,
+            vec![an_full],
+            false,
+        ),
+        (
+            "Anthropic：\\r\\n 分隔",
+            AN,
+            vec![Box::leak(an_full.replace('\n', "\r\n").into_boxed_str())],
+            false,
+        ),
+        (
+            "Anthropic：网关没有 event: 行，按 data.type 分派",
+            AN,
+            vec![an_no_event.as_str()],
+            false,
+        ),
+        (
+            "Anthropic：thinking_delta → reasoning_delta，signature_delta 丢弃，思考块不进 content",
+            AN,
+            vec![concat!(
+                "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"嗯\"}}\n\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"sig\"}}\n\n",
+                "data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"答\"}}\n\n",
+                "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n",
+                "data: {\"type\":\"message_stop\"}\n\n",
+            )],
+            false,
+        ),
+        (
+            "Anthropic：error 事件是终态 failed，之后的输入忽略",
+            AN,
+            vec![concat!(
+                "event: content_block_delta\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"半\"}}\n\n",
+                "event: error\n",
+                "data: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\n",
+                "event: content_block_delta\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"忽略\"}}\n\n",
+            )],
+            false,
+        ),
+        (
+            "Anthropic：tool_use 没有 id，补 call_<流id>_<块号>",
+            AN,
+            vec![concat!(
+                "data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"name\":\"f\"}}\n\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{}\"}}\n\n",
+                "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"}}\n\n",
+            )],
+            false,
+        ),
+        (
+            "Anthropic：没有 message_stop 也没有 stop_reason：truncated",
+            AN,
+            vec!["data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"断\"}}\n\n"],
+            false,
+        ),
+        (
+            "Anthropic：stop_reason 原样透传，未知取值保留",
+            AN,
+            vec!["data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\"}}\n\n"],
+            false,
+        ),
+    ];
+
+    let mut cases: Vec<Value> = decode
+        .iter()
+        .map(|(name, protocol, chunks, abort)| {
+            let p = Protocol::parse(protocol).expect("协议拼写");
+            let r = decode_case(p, chunks, *abort);
+            json!({
+                "fn": "decode",
+                "name": name,
+                "input": {
+                    "protocol": protocol,
+                    "streamId": "spec",
+                    "chunks": chunks,
+                    "end": if *abort { "abort" } else { "eof" },
+                },
+                "expected": r,
+            })
+        })
+        .collect();
+
+    let rejected: [(&str, u16, &str); 6] = [
+        (
+            "400 且提到 stream_options",
+            400,
+            r#"{"error":{"message":"Unknown parameter: 'stream_options'."}}"#,
+        ),
+        (
+            "422、大小写不敏感",
+            422,
+            r#"{"detail":"extra fields not permitted: STREAM_OPTIONS"}"#,
+        ),
+        (
+            "只提到 include_usage 也算",
+            400,
+            "invalid field include_usage",
+        ),
+        (
+            "其它 400 不算",
+            400,
+            r#"{"error":{"message":"max_tokens is too large"}}"#,
+        ),
+        ("401 不算", 401, r#"{"error":"stream_options"}"#),
+        ("500 不算", 500, "stream_options"),
+    ];
+    cases.extend(rejected.iter().map(|(name, status, body)| {
+        json!({
+            "fn": "is_stream_options_rejected",
+            "name": name,
+            "input": { "status": status, "body": body },
+            "expected": is_stream_options_rejected(*status, body),
+        })
+    }));
+
+    let html: [(&str, &str); 6] = [
+        ("doctype", "<!DOCTYPE html><html></html>"),
+        ("前导空白 + 大写标签", "  \n<HTML lang=en>"),
+        (
+            "BOM + xml 声明后出现 <html",
+            "\u{feff}<?xml version=\"1.0\"?><html>",
+        ),
+        ("JSON 不是网页", "{\"error\":\"x\"}"),
+        ("<html 不在开头且不以 < 开头", "data: <html>"),
+        ("空串", ""),
+    ];
+    cases.extend(html.iter().map(|(name, body)| {
+        json!({
+            "fn": "looks_like_html",
+            "name": name,
+            "input": { "body": body },
+            "expected": looks_like_html(body),
+        })
+    }));
+
+    let reasons = [
+        "stop",
+        "tool_calls",
+        "function_call",
+        "length",
+        "content_filter",
+        "end_turn",
+    ];
+    cases.extend(reasons.iter().map(|r| {
+        json!({
+            "fn": "stop_reason_from_openai",
+            "name": format!("finish_reason = {r}"),
+            "input": { "finishReason": r },
+            "expected": StopReason::from_openai(r).as_str(),
+        })
+    }));
+
+    with_rules(
+        with_cases(
+            header(
+            "流式解码",
+            "OpenAI 兼容 / Anthropic 的 SSE 字节流 → 统一事件与收尾结果。decode 用例：把 input.chunks 依次喂给解码器\
+             （end=eof 读到 EOF 后收尾；end=abort 取消），期望值 = 全部事件（喂入时产生的 + 收尾时补的）与 outcome。\
+             事件形状 tag=kind、字段 camelCase；结果形状见 expected.outcome。分包不影响结果：把同一段流切到任意位置\
+             （包括把多字节 UTF-8 字符或 \\r\\n 切开），事件序列与结果必须完全一致 —— 字符串用例只体现「帧中间切开」，\
+             UTF-8 字节切分请自行补测。其余函数：is_stream_options_rejected、looks_like_html、stop_reason_from_openai。",
+        ),
+            cases,
+        ),
+        json!({
+                "blockIndex": "OpenAI 兼容：文字固定块 0，第 k 个工具调用是块 k+1；Anthropic：用协议自带的 index。思考不占块号",
+                "lines": "行尾 \\n / \\r\\n / 单独的 \\r；空行分帧；以 : 开头是注释；data: 后的一个空格可省；多行 data 用 \\n 拼接；\
+                          拼接后不是合法 JSON、但每行单独是 → 逐行各当一帧；开头的 BOM 丢弃；解析失败的帧跳过并计入 skippedFrames",
+                "terminal": "[DONE]、message_stop、流内 error 之后的输入一律忽略；error 非 null（或 event: error）→ failed",
+                "toolUseStart": "名字已知，且（id 已到 或 参数已开始）才发 tool_use_start；没有 id 的补 call_<streamId>_<块号>，发出后不变；\
+                                 收尾（complete）时把还没发的补发；参数先于 start 到达的，start 之后紧跟一个 tool_use_delta 带上已攒的全部",
+                "toolCallRouting": "OpenAI：有 index → 块 index+1（但该块已有不同 id 时另起一块）；无 index 有 id → 按 id 认回已有块，认不出另起一块；\
+                                    无 index 无 id → 本帧内位置+1。arguments 是对象时序列化后整段当参数",
+                "usage": "取最后一次出现的值（覆盖不累加）；prompt_tokens / input_tokens、completion_tokens / output_tokens 两套名字都认；值为 0 不覆盖已有非零值；有变化才发 usage 事件",
+                "finish": "OpenAI：choices[0] 只读第一个；finish_reason 空串 / null 不覆盖已有值；choices 为空的帧只读 usage；delta 缺失时读 message",
+                "end": "complete（有结束原因 / [DONE] / message_stop）、truncated（都没有）、cancelled（abort）、failed、not_event_stream（整段没有一行 SSE，body 为原始响应体）。\
+                        只有 complete 才有 stopReason 与 finish 事件，content 才带 tool_use 块；其余只留文字",
+                "stopReason": "complete 时：有 finish_reason / stop_reason 取之（OpenAI 经 stop_reason_from_openai 归一化，Anthropic 原样）；否则有 tool_use 块 → tool_use，无 → end_turn",
+                "stopReasonFromOpenai": { "stop": "end_turn", "tool_calls": "tool_use", "function_call": "tool_use", "length": "max_tokens", "other": "原样透传" },
+                "reasoning": "reasoning_content / reasoning / thinking_delta → reasoning_delta 事件；累积进 outcome.reasoning，不进 content；signature_delta 丢弃",
+                "content": "Anthropic 风格 block 数组：{type:text,text} / {type:tool_use,id,name,input}；空文字块省略；参数解析失败或为空 → {}",
+            }),
+    )
+}
+
 /// 全部生成物：`spec/` 下的相对路径 → 文件内容（带末尾换行的格式化 JSON）。
 pub fn render_all() -> BTreeMap<&'static str, String> {
     let files = [
@@ -1076,6 +1553,7 @@ pub fn render_all() -> BTreeMap<&'static str, String> {
         ("conformance/limits.json", limits_json()),
         ("conformance/preset_lookup.json", preset_lookup_json()),
         ("conformance/history.json", history_json()),
+        ("conformance/stream.json", stream_json()),
     ];
     files
         .into_iter()

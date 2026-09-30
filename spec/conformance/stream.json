@@ -1,0 +1,2000 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "你好"
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "，世界"
+          },
+          {
+            "blockIndex": 1,
+            "id": "call_a",
+            "kind": "tool_use_start",
+            "name": "read"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"p\":"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "\"x\"}"
+          },
+          {
+            "inputTokens": 11,
+            "kind": "usage",
+            "outputTokens": 7
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "你好，世界",
+              "type": "text"
+            },
+            {
+              "id": "call_a",
+              "input": {
+                "p": "x"
+              },
+              "name": "read",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": "m1",
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 11,
+            "outputTokens": 7
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          ": keep-alive\r\n\r\ndata: {\"model\":\"m1\",\"choices\":[{\"delta\":{\"role\":\"assistant\",\"content\":\"你好\"}}]}\r\n\r\ndata: {\"choices\":[{\"delta\":{\"content\":\"，世界\"}}]}\r\n\r\ndata: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_a\",\"function\":{\"name\":\"read\",\"arguments\":\"{\\\"p\\\":\"}}]}}]}\r\n\r\ndata: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"\\\"x\\\"}\"}}]}}]}\r\n\r\n: keep-alive\r\n\r\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\r\n\r\ndata: {\"choices\":[],\"usage\":{\"prompt_tokens\":11,\"completion_tokens\":7}}\r\n\r\ndata: [DONE]\r\n\r\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "OpenAI：文字 + 工具调用 + 末帧 usage，含 \\r\\n 与 keep-alive 注释行"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "你好"
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "，世界"
+          },
+          {
+            "blockIndex": 1,
+            "id": "call_a",
+            "kind": "tool_use_start",
+            "name": "read"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"p\":"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "\"x\"}"
+          },
+          {
+            "inputTokens": 11,
+            "kind": "usage",
+            "outputTokens": 7
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "你好，世界",
+              "type": "text"
+            },
+            {
+              "id": "call_a",
+              "input": {
+                "p": "x"
+              },
+              "name": "read",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": "m1",
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 11,
+            "outputTokens": 7
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          ": keep-alive\r\n\r\ndata: {\"model\":\"m1\",\"choices\":[{\"delta\":{\"role\":\"assistant\",\"content\":\"你好\"}}]}\r\n\r\ndata: {\"choices\":[{\"delta\":{\"content\":\"，世界\"}}]}\r\n\r\ndata: {\"choices\":[{\"",
+          "delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_a\",\"function\":{\"name\":\"read\",\"arguments\":\"{\\\"p\\\":\"}}]}}]}\r\n\r\ndata: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"\\\"x\\\"}\"}}]}}]}\r\n\r\n: keep-alive\r\n\r\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\r\n\r\ndata: {\"choices\":[],\"usage\":{\"prompt_tokens\":11,\"completion_tokens\":7}}\r\n\r\ndata: [DONE]\r\n\r\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "同一段流切成两包（切在帧中间）：结果与整包完全一致"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 1,
+            "id": "c1",
+            "kind": "tool_use_start",
+            "name": "f"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{}"
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "id": "c1",
+              "input": {},
+              "name": "f",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"c1\",\"function\":{\"name\":\"f\",\"arguments\":\"{}\"}}]}}]}\n\ndata: [DONE]\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"忽略\"}}]}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "只以 [DONE] 收尾、没有 finish_reason：有工具调用推 tool_use；[DONE] 之后的内容不处理"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "hi"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\ndata: [DONE]\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "只以 [DONE] 收尾、没有工具调用：推 end_turn"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "半"
+          },
+          {
+            "kind": "error",
+            "message": "rate limited"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "半",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "failed",
+            "message": "rate limited"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"半\"}}]}\n\ndata: {\"error\":{\"message\":\"rate limited\",\"type\":\"x\"}}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"忽略\"}}]}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "流内 error：终态 failed，只留已收文字，之后的输入忽略"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "a"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "a",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"error\":null,\"choices\":[{\"delta\":{\"content\":\"a\"},\"finish_reason\":\"stop\"}]}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "error 为 null 不算错误"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 1,
+            "id": "call_late",
+            "kind": "tool_use_start",
+            "name": "late_tool"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{}"
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "id": "call_late",
+              "input": {},
+              "name": "late_tool",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"\"}}]}}]}\n\ndata: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_late\"}]}}]}\n\ndata: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"name\":\"late_tool\",\"arguments\":\"{}\"}}]}}]}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "id / 名字晚到：名字已知才发 tool_use_start，且只发一次"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "先说点"
+          },
+          {
+            "blockIndex": 1,
+            "id": "c",
+            "kind": "tool_use_start",
+            "name": "f"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"a"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "先说点",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "truncated"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"先说点\"}}]}\n\ndata: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"c\",\"function\":{\"name\":\"f\",\"arguments\":\"{\\\"a\"}}]}}]}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "断流（无结束原因也无 [DONE]）：truncated，丢全部工具调用，只留文字"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 1,
+            "id": "call_spec_1",
+            "kind": "tool_use_start",
+            "name": "a"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{}"
+          },
+          {
+            "blockIndex": 2,
+            "id": "call_spec_2",
+            "kind": "tool_use_start",
+            "name": "b"
+          },
+          {
+            "blockIndex": 2,
+            "kind": "tool_use_delta",
+            "partialJson": "{}"
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "id": "call_spec_1",
+              "input": {},
+              "name": "a",
+              "type": "tool_use"
+            },
+            {
+              "id": "call_spec_2",
+              "input": {},
+              "name": "b",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"function\":{\"name\":\"a\",\"arguments\":\"{}\"}},{\"function\":{\"name\":\"b\",\"arguments\":\"{}\"}}]}}]}\n\ndata: [DONE]\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "工具调用缺 index 也缺 id：按本帧位置分块，补 call_<流id>_<块号>"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 1,
+            "id": "a",
+            "kind": "tool_use_start",
+            "name": "f"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{}"
+          },
+          {
+            "blockIndex": 2,
+            "id": "b",
+            "kind": "tool_use_start",
+            "name": "g"
+          },
+          {
+            "blockIndex": 2,
+            "kind": "tool_use_delta",
+            "partialJson": "{}"
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "id": "a",
+              "input": {},
+              "name": "f",
+              "type": "tool_use"
+            },
+            {
+              "id": "b",
+              "input": {},
+              "name": "g",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"a\",\"function\":{\"name\":\"f\",\"arguments\":\"{}\"}}]}}]}\n\ndata: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"b\",\"function\":{\"name\":\"g\",\"arguments\":\"{}\"}}]}}]}\n\ndata: [DONE]\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "index 全是 0 但 id 不同：另起一块"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 1,
+            "id": "a",
+            "kind": "tool_use_start",
+            "name": "f"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"k\":"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "1}"
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "id": "a",
+              "input": {
+                "k": 1
+              },
+              "name": "f",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"id\":\"a\",\"function\":{\"name\":\"f\",\"arguments\":\"{\\\"k\\\":\"}}]}}]}\n\ndata: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"id\":\"a\",\"function\":{\"arguments\":\"1}\"}}]}}]}\n\ndata: [DONE]\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "缺 index 但有 id：按 id 认回已有的调用"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 1,
+            "id": "a",
+            "kind": "tool_use_start",
+            "name": "f"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"x\":1}"
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "id": "a",
+              "input": {
+                "x": 1
+              },
+              "name": "f",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"a\",\"function\":{\"name\":\"f\",\"arguments\":{\"x\":1}}}]}}]}\n\ndata: [DONE]\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "arguments 是对象而不是字符串：整段当参数"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 1,
+            "id": "a",
+            "kind": "tool_use_start",
+            "name": "f"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"x"
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "id": "a",
+              "input": {},
+              "name": "f",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"a\",\"function\":{\"name\":\"f\",\"arguments\":\"{\\\"x\"}}]}}]}\n\ndata: [DONE]\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "参数不是合法 JSON：input 回落为 {}"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "kind": "reasoning_delta",
+            "text": "想一想"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "再想"
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "答案"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "答案",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "想一想再想",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"想一想\"}}]}\n\ndata: {\"choices\":[{\"delta\":{\"reasoning\":\"再想\"}}]}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"答案\"},\"finish_reason\":\"stop\"}]}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "reasoning_content / reasoning：只发 reasoning_delta，不进 content"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "a"
+          },
+          {
+            "inputTokens": 3,
+            "kind": "usage",
+            "outputTokens": 4
+          },
+          {
+            "kind": "finish",
+            "reason": "max_tokens"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "a",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "max_tokens",
+          "usage": {
+            "inputTokens": 3,
+            "outputTokens": 4
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"a\"},\"finish_reason\":\"length\"}]}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"\"}]}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":3,\"completion_tokens\":4}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "finish_reason 为空串 / null 不覆盖已有值；末尾只带 usage 的帧不冲掉它"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 10,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "a"
+          },
+          {
+            "inputTokens": 10,
+            "kind": "usage",
+            "outputTokens": 5
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "b"
+          },
+          {
+            "inputTokens": 10,
+            "kind": "usage",
+            "outputTokens": 9
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "ab",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 10,
+            "outputTokens": 9
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":1},\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\ndata: {\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5},\"choices\":[{\"delta\":{\"content\":\"b\"}}]}\n\ndata: {\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":9},\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "usage 覆盖不累加；值为 0 不覆盖已有的非零值"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "整段"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "整段",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"整段\"},\"finish_reason\":\"stop\"}]}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "流里回完整 message 而不是 delta"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "A"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "A",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"A\"}},{\"delta\":{\"content\":\"B\"}}]}\n\ndata: [DONE]\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "多 choices 只读第一个"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "a"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "a",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "﻿data:{\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\r\rdata:[DONE]\r\r"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "data: 后无空格、单独的 \\r 当行尾、开头的 BOM"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "x"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "x",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":\ndata: {\"content\":\"x\"}}]}\n\ndata: [DONE]\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "多行 data 用 \\n 拼成一帧"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "a"
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "b"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "ab",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\ndata: {\"choices\":[{\"delta\":{\"content\":\"b\"}}]}\n\ndata: [DONE]\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "事件之间漏了空行：拼起来不是 JSON、每行单独是，逐行各当一帧"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "ok"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "ok",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 1,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {not json\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "解析失败的帧跳过并计数，不作废整次生成"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "a"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "a",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\ndata: [DONE]"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "最后一个事件没有结尾空行：EOF 时照样处理"
+    },
+    {
+      "expected": {
+        "events": [],
+        "outcome": {
+          "content": [],
+          "end": {
+            "body": "<!DOCTYPE html>\n<html><head><title>x</title></head><body>hi</body></html>",
+            "kind": "not_event_stream"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "<!DOCTYPE html>\n<html><head><title>x</title></head><body>hi</body></html>"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "2xx 回网页：not_event_stream，带原始响应体"
+    },
+    {
+      "expected": {
+        "events": [],
+        "outcome": {
+          "content": [],
+          "end": {
+            "body": "{\"choices\":[{\"message\":{\"content\":\"整段\"}}]}",
+            "kind": "not_event_stream"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "{\"choices\":[{\"message\":{\"content\":\"整段\"}}]}"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "网关忽略 stream:true 回整段 JSON：not_event_stream"
+    },
+    {
+      "expected": {
+        "events": [],
+        "outcome": {
+          "content": [],
+          "end": {
+            "kind": "truncated"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          ""
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "空响应：truncated"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "已收到"
+          },
+          {
+            "blockIndex": 1,
+            "id": "c",
+            "kind": "tool_use_start",
+            "name": "f"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "已收到",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "cancelled"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"已收到\"}}]}\n\n",
+          "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"c\",\"function\":{\"name\":\"f\",\"arguments\":\"{\"}}]}}]}\n\n",
+          "data: {\"choices\":[{\"delta\":{\"content\":\"半"
+        ],
+        "end": "abort",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "取消：已收文字保留，工具调用丢弃，半行丢弃"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "你好"
+          },
+          {
+            "blockIndex": 1,
+            "id": "toolu_1",
+            "kind": "tool_use_start",
+            "name": "read"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"p\":"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "\"x\"}"
+          },
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 42
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "你好",
+              "type": "text"
+            },
+            {
+              "id": "toolu_1",
+              "input": {
+                "p": "x"
+              },
+              "name": "read",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": "claude-x",
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 25,
+            "outputTokens": 42
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1}}}\n\nevent: ping\ndata: {\"type\":\"ping\"}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"你好\"}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\\\"x\\\"}\"}}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec"
+      },
+      "name": "Anthropic：文字 + tool_use（input_json_delta）+ usage，块号用协议自带 index"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "你好"
+          },
+          {
+            "blockIndex": 1,
+            "id": "toolu_1",
+            "kind": "tool_use_start",
+            "name": "read"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"p\":"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "\"x\"}"
+          },
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 42
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "你好",
+              "type": "text"
+            },
+            {
+              "id": "toolu_1",
+              "input": {
+                "p": "x"
+              },
+              "name": "read",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": "claude-x",
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 25,
+            "outputTokens": 42
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1}}}\r\n\r\nevent: ping\r\ndata: {\"type\":\"ping\"}\r\n\r\nevent: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\nevent: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"你好\"}}\r\n\r\nevent: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\r\n\r\nevent: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":\"}}\r\n\r\nevent: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\\\"x\\\"}\"}}\r\n\r\nevent: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42}}\r\n\r\nevent: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec"
+      },
+      "name": "Anthropic：\\r\\n 分隔"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "你好"
+          },
+          {
+            "blockIndex": 1,
+            "id": "toolu_1",
+            "kind": "tool_use_start",
+            "name": "read"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"p\":"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "\"x\"}"
+          },
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 42
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "你好",
+              "type": "text"
+            },
+            {
+              "id": "toolu_1",
+              "input": {
+                "p": "x"
+              },
+              "name": "read",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": "claude-x",
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 25,
+            "outputTokens": 42
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1}}}\n\ndata: {\"type\":\"ping\"}\n\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"你好\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\\\"x\\\"}\"}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42}}\n\ndata: {\"type\":\"message_stop\"}\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec"
+      },
+      "name": "Anthropic：网关没有 event: 行，按 data.type 分派"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "kind": "reasoning_delta",
+            "text": "嗯"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "text_delta",
+            "text": "答"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "答",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "嗯",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"嗯\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"sig\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"答\"}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\ndata: {\"type\":\"message_stop\"}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec"
+      },
+      "name": "Anthropic：thinking_delta → reasoning_delta，signature_delta 丢弃，思考块不进 content"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "半"
+          },
+          {
+            "kind": "error",
+            "message": "Overloaded"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "半",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "failed",
+            "message": "Overloaded"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"半\"}}\n\nevent: error\ndata: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"忽略\"}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec"
+      },
+      "name": "Anthropic：error 事件是终态 failed，之后的输入忽略"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 1,
+            "id": "call_spec_1",
+            "kind": "tool_use_start",
+            "name": "f"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "tool_use_delta",
+            "partialJson": "{}"
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "id": "call_spec_1",
+              "input": {},
+              "name": "f",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"name\":\"f\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{}\"}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec"
+      },
+      "name": "Anthropic：tool_use 没有 id，补 call_<流id>_<块号>"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "断"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "断",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "truncated"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"断\"}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec"
+      },
+      "name": "Anthropic：没有 message_stop 也没有 stop_reason：truncated"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "kind": "finish",
+            "reason": "refusal"
+          }
+        ],
+        "outcome": {
+          "content": [],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "refusal",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\"}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec"
+      },
+      "name": "Anthropic：stop_reason 原样透传，未知取值保留"
+    },
+    {
+      "expected": true,
+      "fn": "is_stream_options_rejected",
+      "input": {
+        "body": "{\"error\":{\"message\":\"Unknown parameter: 'stream_options'.\"}}",
+        "status": 400
+      },
+      "name": "400 且提到 stream_options"
+    },
+    {
+      "expected": true,
+      "fn": "is_stream_options_rejected",
+      "input": {
+        "body": "{\"detail\":\"extra fields not permitted: STREAM_OPTIONS\"}",
+        "status": 422
+      },
+      "name": "422、大小写不敏感"
+    },
+    {
+      "expected": true,
+      "fn": "is_stream_options_rejected",
+      "input": {
+        "body": "invalid field include_usage",
+        "status": 400
+      },
+      "name": "只提到 include_usage 也算"
+    },
+    {
+      "expected": false,
+      "fn": "is_stream_options_rejected",
+      "input": {
+        "body": "{\"error\":{\"message\":\"max_tokens is too large\"}}",
+        "status": 400
+      },
+      "name": "其它 400 不算"
+    },
+    {
+      "expected": false,
+      "fn": "is_stream_options_rejected",
+      "input": {
+        "body": "{\"error\":\"stream_options\"}",
+        "status": 401
+      },
+      "name": "401 不算"
+    },
+    {
+      "expected": false,
+      "fn": "is_stream_options_rejected",
+      "input": {
+        "body": "stream_options",
+        "status": 500
+      },
+      "name": "500 不算"
+    },
+    {
+      "expected": true,
+      "fn": "looks_like_html",
+      "input": {
+        "body": "<!DOCTYPE html><html></html>"
+      },
+      "name": "doctype"
+    },
+    {
+      "expected": true,
+      "fn": "looks_like_html",
+      "input": {
+        "body": "  \n<HTML lang=en>"
+      },
+      "name": "前导空白 + 大写标签"
+    },
+    {
+      "expected": true,
+      "fn": "looks_like_html",
+      "input": {
+        "body": "﻿<?xml version=\"1.0\"?><html>"
+      },
+      "name": "BOM + xml 声明后出现 <html"
+    },
+    {
+      "expected": false,
+      "fn": "looks_like_html",
+      "input": {
+        "body": "{\"error\":\"x\"}"
+      },
+      "name": "JSON 不是网页"
+    },
+    {
+      "expected": false,
+      "fn": "looks_like_html",
+      "input": {
+        "body": "data: <html>"
+      },
+      "name": "<html 不在开头且不以 < 开头"
+    },
+    {
+      "expected": false,
+      "fn": "looks_like_html",
+      "input": {
+        "body": ""
+      },
+      "name": "空串"
+    },
+    {
+      "expected": "end_turn",
+      "fn": "stop_reason_from_openai",
+      "input": {
+        "finishReason": "stop"
+      },
+      "name": "finish_reason = stop"
+    },
+    {
+      "expected": "tool_use",
+      "fn": "stop_reason_from_openai",
+      "input": {
+        "finishReason": "tool_calls"
+      },
+      "name": "finish_reason = tool_calls"
+    },
+    {
+      "expected": "tool_use",
+      "fn": "stop_reason_from_openai",
+      "input": {
+        "finishReason": "function_call"
+      },
+      "name": "finish_reason = function_call"
+    },
+    {
+      "expected": "max_tokens",
+      "fn": "stop_reason_from_openai",
+      "input": {
+        "finishReason": "length"
+      },
+      "name": "finish_reason = length"
+    },
+    {
+      "expected": "content_filter",
+      "fn": "stop_reason_from_openai",
+      "input": {
+        "finishReason": "content_filter"
+      },
+      "name": "finish_reason = content_filter"
+    },
+    {
+      "expected": "end_turn",
+      "fn": "stop_reason_from_openai",
+      "input": {
+        "finishReason": "end_turn"
+      },
+      "name": "finish_reason = end_turn"
+    }
+  ],
+  "crateVersion": "0.1.3",
+  "description": "OpenAI 兼容 / Anthropic 的 SSE 字节流 → 统一事件与收尾结果。decode 用例：把 input.chunks 依次喂给解码器（end=eof 读到 EOF 后收尾；end=abort 取消），期望值 = 全部事件（喂入时产生的 + 收尾时补的）与 outcome。事件形状 tag=kind、字段 camelCase；结果形状见 expected.outcome。分包不影响结果：把同一段流切到任意位置（包括把多字节 UTF-8 字符或 \\r\\n 切开），事件序列与结果必须完全一致 —— 字符串用例只体现「帧中间切开」，UTF-8 字节切分请自行补测。其余函数：is_stream_options_rejected、looks_like_html、stop_reason_from_openai。",
+  "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
+  "rules": {
+    "blockIndex": "OpenAI 兼容：文字固定块 0，第 k 个工具调用是块 k+1；Anthropic：用协议自带的 index。思考不占块号",
+    "content": "Anthropic 风格 block 数组：{type:text,text} / {type:tool_use,id,name,input}；空文字块省略；参数解析失败或为空 → {}",
+    "end": "complete（有结束原因 / [DONE] / message_stop）、truncated（都没有）、cancelled（abort）、failed、not_event_stream（整段没有一行 SSE，body 为原始响应体）。只有 complete 才有 stopReason 与 finish 事件，content 才带 tool_use 块；其余只留文字",
+    "finish": "OpenAI：choices[0] 只读第一个；finish_reason 空串 / null 不覆盖已有值；choices 为空的帧只读 usage；delta 缺失时读 message",
+    "lines": "行尾 \\n / \\r\\n / 单独的 \\r；空行分帧；以 : 开头是注释；data: 后的一个空格可省；多行 data 用 \\n 拼接；拼接后不是合法 JSON、但每行单独是 → 逐行各当一帧；开头的 BOM 丢弃；解析失败的帧跳过并计入 skippedFrames",
+    "reasoning": "reasoning_content / reasoning / thinking_delta → reasoning_delta 事件；累积进 outcome.reasoning，不进 content；signature_delta 丢弃",
+    "stopReason": "complete 时：有 finish_reason / stop_reason 取之（OpenAI 经 stop_reason_from_openai 归一化，Anthropic 原样）；否则有 tool_use 块 → tool_use，无 → end_turn",
+    "stopReasonFromOpenai": {
+      "function_call": "tool_use",
+      "length": "max_tokens",
+      "other": "原样透传",
+      "stop": "end_turn",
+      "tool_calls": "tool_use"
+    },
+    "terminal": "[DONE]、message_stop、流内 error 之后的输入一律忽略；error 非 null（或 event: error）→ failed",
+    "toolCallRouting": "OpenAI：有 index → 块 index+1（但该块已有不同 id 时另起一块）；无 index 有 id → 按 id 认回已有块，认不出另起一块；无 index 无 id → 本帧内位置+1。arguments 是对象时序列化后整段当参数",
+    "toolUseStart": "名字已知，且（id 已到 或 参数已开始）才发 tool_use_start；没有 id 的补 call_<streamId>_<块号>，发出后不变；收尾（complete）时把还没发的补发；参数先于 start 到达的，start 之后紧跟一个 tool_use_delta 带上已攒的全部",
+    "usage": "取最后一次出现的值（覆盖不累加）；prompt_tokens / input_tokens、completion_tokens / output_tokens 两套名字都认；值为 0 不覆盖已有非零值；有变化才发 usage 事件"
+  },
+  "specVersion": 1,
+  "title": "流式解码"
+}
