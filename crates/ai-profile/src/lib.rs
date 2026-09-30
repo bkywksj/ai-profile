@@ -7,9 +7,10 @@
 //!
 //! | | 内容 | 归属 |
 //! |---|---|---|
-//! | ✅ | 预置清单、协议、端点拼接、模型清洗、验证与结构化错误、token 限额、历史裁剪 | 本 crate |
+//! | ✅ | 预置清单、协议、端点拼接、模型清洗、验证与结构化错误、token 限额、历史裁剪、[流式解码](stream)（SSE 字节 → 统一事件，sans-IO） | 本 crate |
 //! | ❌ | **密钥存储与加密** | 留给应用（各家差异极大） |
 //! | ❌ | 数据库 / CRUD / 激活态管理 | 同上 |
+//! | ❌ | 对话请求体构造、HTTP 客户端与取消接线、工具调用循环 | 同上 |
 //!
 //! **本 crate 不持久化任何密钥明文**。验证/调用时接收调用方传入的 key，用完即弃。
 //!
@@ -43,6 +44,7 @@ pub mod limits;
 pub mod model_filter;
 pub mod preset;
 pub mod protocol;
+pub mod stream;
 
 #[cfg(feature = "client")]
 pub mod client;

@@ -25,6 +25,15 @@
 > ② 素材库记的图片尺寸改为从出图字节读 —— 请求的 `IMAGE_SIZE` 对火山方舟 / OpenAI 官方不生效（方舟按模型默认尺寸出图）。
 > 它反馈的另两条（生图请求体补 `size`、按能力分类模型）结论与待办见 `docs/tasks/` 里的「prism接入反馈三条」。
 >
+> 🔴 **流式解码（`stream`，随 0.1.4 发出）的迁移计划**（任务见 `docs/tasks/` 里的「流式解码」）：
+> - **sigil 先改**：删本地 `OaStream`、`parse_sse_event`、`handle_anthropic_sse_event`、`openai_stop_reason`、`looks_like_html` 及其测试，
+>   用 `StreamDecoder::push` 的事件映射到现有前端事件，`Done.response` 用 `StreamOutcome::content`；
+>   取消接线、`stream_options` 重试与「按地址记住」留在应用。注意三处行为变化：`ToolUseStart` 延迟到工具名已知才发；
+>   Anthropic 流内 `error` 变成终态；多字节字符跨包不再丢字。
+> - **prism 优先**：它已有字节缓冲、`[DONE]`、流内 error、role-only 首块，缺 usage、finish_reason、断流检测（流断了当成功）、2xx 回网页、`stream_options` 重试。
+> - **其余（aibid / onestop / story_loom / knowledge_base）不强制**，下次动对话功能时迁；aibid、onestop 逐块 `from_utf8_lossy` 的乱码会随迁移自然修好。
+>   knowledge_base 的 Ollama 原生 NDJSON 不在 `stream` 范围内，留在应用。
+>
 > story_loom 的本机 lib 单测有 WebView2 入口崩溃（环境问题），
 > 应用侧纯函数测试（`legacy_endpoint` / `provider_share`）是在临时 crate 里 `#[path]` 引入实跑的。
 >

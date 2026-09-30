@@ -15,6 +15,24 @@
   那是预置的内部约定，预置一变就会静默认错。`dashscope` / 硅基流动 / 火山方舟同一个 host 横跨多种能力，必须先按能力过滤
 - 多语言规范：`preset_lookup.json` 增加 `infer_preset_key_for` 用例，`rules.customPresetKeys` 给出各能力的自定义档
 
+- **流式解码 `stream`**（默认 `chat` feature，无新依赖，能编到移动端）：把 OpenAI 兼容 / Anthropic 的 SSE 字节流解成统一事件。
+  各下游都在各写一套，网关怪癖（`\r\n`、keep-alive、`tool_calls` 缺 `index`、只以 `[DONE]` 收尾、断流、流内 error……）覆盖参差不齐，
+  且随服务商变化。**sans-IO：只吃字节、吐事件，不发 HTTP、不绑异步运行时**；请求体、HTTP 客户端、取消接线、工具循环仍留在应用。
+  - `StreamDecoder::new(Protocol)` → `push(&[u8]) -> Vec<StreamEvent>`，读到 EOF 用 `finish()`，应用取消用 `abort()` 拿部分结果
+  - `StreamEvent`：`TextDelta` / `ReasoningDelta` / `ToolUseStart` / `ToolUseDelta` / `Usage` / `Finish` / `Error`；
+    块号约定：OpenAI 兼容文字 0、第 k 个工具调用 k+1，Anthropic 用协议自带 `index`
+  - `StreamOutcome`：`end`（`Complete` / `Truncated` / `Cancelled` / `Failed` / `NotEventStream`）、归一化 `stop_reason`、用量、
+    `content`（Anthropic 风格 block 数组，与 `history::HistoryMessage` 同形状）、思考文字。断流 / 取消 / 出错时只留文字、丢全部工具调用
+  - 纯函数：`is_stream_options_rejected(status, body)`（400/422 且提到 `stream_options` / `include_usage`）、`looks_like_html`、`StopReason::from_openai`
+  - 吸收的怪癖：`\r\n` / 单独 `\r` / BOM、`data:` 后无空格、多行 `data`、事件间漏空行、tool_calls 缺 index（按 id 或位置分块）、
+    index 全是 0 但 id 不同、id / 名字晚到、缺 id 补 `call_<流id>_<块号>`、arguments 是对象、`finish_reason` 为空串、末尾只带 usage 的帧、
+    usage 覆盖不累加、多 choices 只读第一个、`reasoning_content` / `thinking_delta`、Anthropic 缺 `event:` 行按 `data.type` 分派、流内 error 统一为终态
+  - 🔴 **多字节字符跨包不会丢字**：按完整一行再解码，任意分包结果一致（有守卫测试）
+  - **`ToolUseStart` 延迟到工具名已知**（且 id 已到或参数已开始）才发；始终没等到的在 `finish()` 时补发。与 sigil 现有「块一创建就发」不同，前端一收到就能显示工具名
+  - 不做：Ollama 原生 NDJSON、`<think>` 标签剥离、「正文空则提升思考」、cache 用量字段、thinking 块 `signature` 的保留
+- 多语言规范：新增 `conformance/stream.json`（`decode` 用例含分包、断流、取消、流内错误，加 `is_stream_options_rejected` / `looks_like_html` / `stop_reason_from_openai`）
+- 下游迁移：sigil 先改（删本地副本），prism 优先，其余下次动对话功能时迁；见 `docs/downstream.md`
+
 ### 说明
 - `ImageGenParams::size` 写明是**请求值、不保证是出图的实际尺寸**：OpenAI images 兼容实现只以硅基流动的
   `image_size` 发出，火山方舟 Seedream / OpenAI 官方认的是 `size`，对它们不起作用（方舟按模型默认尺寸出图）。

@@ -306,3 +306,49 @@ fn input_budget_is_usable_for_truncation() {
         None
     );
 }
+
+/// 🔴 流式解码从外部可用：`non_exhaustive` 的事件 / 结果必须能被外部 crate 用 `_` 分支 match，
+/// 解码器必须 `Send + 'static`（放进后台任务 / 全局状态）。
+#[test]
+fn stream_decoder_is_usable_from_outside() {
+    use ai_profile::stream::{
+        is_stream_options_rejected, looks_like_html, StopReason, StreamDecoder, StreamEnd,
+        StreamEvent,
+    };
+
+    fn assert_send_static<T: Send + 'static>() {}
+    assert_send_static::<StreamDecoder>();
+
+    let mut dec = StreamDecoder::new(Protocol::OpenAiCompatible).with_stream_id("smoke");
+    let mut events = dec.push(b"data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\r\n\r\n");
+    events.extend(dec.push(b"data: [DONE]\r\n\r\n"));
+    let (tail, outcome) = dec.finish();
+    events.extend(tail);
+
+    let mut text = String::new();
+    for e in &events {
+        match e {
+            StreamEvent::TextDelta { text: t, .. } => text.push_str(t),
+            StreamEvent::Finish { reason } => assert_eq!(*reason, StopReason::EndTurn),
+            _ => {}
+        }
+    }
+    assert_eq!(text, "hi");
+    assert_eq!(outcome.end, StreamEnd::Complete);
+    assert_eq!(outcome.text(), "hi");
+
+    // 取消：拿部分结果
+    let mut dec = StreamDecoder::new(Protocol::Anthropic);
+    dec.push(
+        b"data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"a\"}}\n\n",
+    );
+    let partial = dec.abort();
+    assert_eq!(partial.end, StreamEnd::Cancelled);
+    assert_eq!(partial.text(), "a");
+
+    assert!(is_stream_options_rejected(
+        400,
+        "unknown field stream_options"
+    ));
+    assert!(looks_like_html("<!doctype html><html></html>"));
+}

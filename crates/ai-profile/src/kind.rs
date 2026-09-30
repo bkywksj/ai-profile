@@ -9,7 +9,7 @@
 //!
 //! | kind  | 执行模型                    | 每家的差异           |
 //! |-------|-----------------------------|----------------------|
-//! | chat  | 同步 / 流式                 | 协议二分（openai / anthropic） |
+//! | chat  | 同步 / 流式（[`stream`](crate::stream) 解码 SSE） | 协议二分（openai / anthropic） |
 //! | image | 同步 **或** submit+poll     | 因家而异             |
 //! | video | **必然 submit+poll**        | 轮询协议各家都不同   |
 //! | tts   | 同步，返回字节流            | 有的专有协议         |
