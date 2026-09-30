@@ -3,9 +3,9 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，版本位的判定规则见
 [`docs/versioning.md`](docs/versioning.md)。
 
-## [未发布]
+## [0.1.4] - 2026-09-30
 
-**升级只需 `cargo update -p ai-profile`，不用改代码。** 来自 prism 接入时的反馈。
+**升级只需 `cargo update -p ai-profile`，不用改代码。** 新增流式解码 `stream`（各下游可逐步把自写的 SSE 解析换掉）与按能力反推预置的 `infer_preset_key_for`（来自 prism 接入反馈）。
 
 ### 新增
 - `preset::infer_preset_key_for(kind, protocol, base_url)`：按能力类别从已存配置反推预置。
