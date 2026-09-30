@@ -40,9 +40,10 @@
 |---|---|
 | provider 预置、模型候选、静态限额 | 配置的增删改与持久化 |
 | 协议拼写（`Protocol::as_str/parse`）、默认端点 | 密钥加密与解密 |
-| 端点拼接（不推断版本段） | 对话协议适配、SSE 解析、工具调用 |
+| 端点拼接（不推断版本段） | 对话请求体构造、消息格式互转、工具调用与 Agent 循环 |
 | 模型清单清洗 | 被动重试的循环（重新发请求） |
 | 零成本验证 + 结构化错误 | 真实对话测试（花 token） |
+| 流式解码（`stream`：SSE 字节 → 统一事件，sans-IO） | HTTP 客户端 / 代理 / 超时、取消接线、推给前端、`stream_options` 「按地址记住」的状态 |
 | 历史裁剪、上下文超长识别（`history`） | 各自的消息类型（实现 `HistoryMessage` 两行） |
 | 限额分层合并（`TokenLimits::or`） | 表单界面、应用自己的默认值 |
 | `ai.profile` 解析与生成 | 存量数据迁移（各家历史包袱） |
@@ -122,6 +123,7 @@ crates/ai-profile/src/
 ├── error.rs          VerifyError（结构化，serde tag = code）
 ├── limits.rs         TokenLimits / LimitSource：User > Endpoint > Preset > 未知，逐字段 or
 ├── history.rs        历史裁剪（不拆 tool 配对）+ 上下文超长识别 + 被动重试预算
+├── stream.rs         流式解码：OpenAI 兼容 / Anthropic SSE 字节 → 统一事件（sans-IO，无新依赖，chat feature）
 ├── endpoint.rs       join_api_path / join_chat_endpoint（不推断版本段）
 ├── model_filter.rs   拉回清单的清洗（排除法）
 ├── protocol.rs       ai.profile 解析 / 生成（宽进严出）
@@ -187,6 +189,11 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 | `never_starts_with_orphan_tool_result` / `extreme_budget_still_respects_tool_pairing` | 裁剪绝不留下残缺的 tool 配对（发出去必被拒） |
 | `oversized_first_user_is_not_forced_back` | 首条消息超大时不强行补回，否则会话永远降不下来 |
 | `detects_real_overflow_errors` / `does_not_misfire` | 超长识别：真实报错必须命中；限流、输出上限太大绝不能误判 |
+| `any_chunking_yields_identical_events_and_outcome` | 🔴 流式解码：同一段流任意分包（含逐字节、多字节字符与 `\r\n` 被切开）事件与结果必须完全一致 |
+| `openai_truncated_drops_partial_tool_calls_keeps_text` / `abort_keeps_text_and_drops_tools` | 断流 / 取消绝不留下半截工具调用（执行必出错） |
+| `openai_late_id_and_name_start_once_after_name_known` / `openai_clean_end_without_index_or_id_fills_distinct_ids` | 工具调用 id / 名字晚到只发一次 start；缺 index 缺 id 也不串块、id 互不相同 |
+| `stream_options_rejection_is_recognised` / `openai_error_null_is_not_an_error` | 只在真被拒时才去掉 `stream_options` 重试；`error: null` 不能误判成失败 |
+| `stream_decoder_is_usable_from_outside` | 🔴 集成测试：`non_exhaustive` 的事件 / 结果从外部能 match，`StreamDecoder` 是 `Send + 'static` |
 | `providers_md_in_sync` | 防止文档变成又一份会漂移的副本 |
 | `spec_files_in_sync`（xtask） | 其他语言照着 `spec/` 实现；用例与代码不同步，别的语言就会悄悄分叉 |
 | `service_config_builder_is_usable_from_outside` | 🔴 集成测试：`non_exhaustive` 入参缺 builder 时下游报 E0639 |

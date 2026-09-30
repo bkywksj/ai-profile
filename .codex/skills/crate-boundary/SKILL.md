@@ -35,9 +35,12 @@ sigil 两个月后才发现「点开即报错」）。
 | 限额分层合并与输入预算 | crate | `TokenLimits::or / input_budget` |
 | 历史裁剪、上下文超长识别、重试预算 | crate | `history::trim_history / is_context_overflow / retry_budget` |
 | ai.profile 解析与生成 | crate | `parse_profile` / `to_profile` |
+| 流式解码（SSE 字节 → 统一事件，OpenAI 兼容 + Anthropic） | crate | `stream::StreamDecoder` / `is_stream_options_rejected` |
 | 配置增删改、激活态、持久化 | 应用 | 各家存储差异极大（sigil 是 SQLCipher 金库） |
 | 密钥加密与解密 | 应用 | 同上；crate 只接收用完即弃的明文 |
-| 对话协议适配、SSE 解析、工具调用 | 应用 | 与各自的消息结构、Agent 循环深度耦合 |
+| 对话请求体构造、消息格式互转、工具调用与 Agent 循环 | 应用 | 与各自的消息结构、Agent 循环深度耦合 |
+| HTTP 客户端、取消信号接线、推给前端 | 应用 | crate 的流式解码是 sans-IO，只吃字节、吐事件 |
+| 「某地址不带 `stream_options`」这类记忆状态 | 应用 | crate 只给判定函数，状态归应用存 |
 | 被动重试的循环 | 应用 | 要重新发请求；crate 只判断「是不是超长」和「裁到多少」 |
 | 真实对话测试（花 token） | 应用 | 要用应用存的密钥与对话实现 |
 | 表单界面、文案 | 应用 | npm UI 包是后续阶段 |
@@ -52,15 +55,24 @@ sigil 的「导入配置没给 model 时兜底用 deepseek-flash」是 sigil 的
 crate 只提供可以客观回答的部分（`infer_preset_key` 按 host 找预置的默认 model），
 主观兜底留在应用。
 
-### 2. 协议适配看起来通用，但先别搬
+### 2. 协议适配：只收纯解码，请求侧与循环留在应用
 
-Anthropic ↔ OpenAI 消息格式互转、SSE 解析确实每家都要写，但它们和各自的工具调用、
-流式事件结构绑死。搬进来 crate 就成了 LLM SDK，和 async-openai / genai 重叠、定位变糊。
-**判据：等第二个下游也要对话能力、且消息结构能对齐时再评估**，不要为一个使用方抽象。
+Anthropic ↔ OpenAI 消息格式互转、请求体构造、工具调用循环，和各自的消息结构、Agent 循环绑死。
+搬进来 crate 就成了 LLM SDK，和 async-openai / genai 重叠、定位变糊，**仍然不搬**。
 
-对照：**历史裁剪就是按这条判据收进来的** —— reeve 接入时出现第二个使用方，且两边消息结构
+但「SSE 字节 → 统一事件」这一段已经按下面的判据收进来了（`stream`）：
+**判据：出现第二个使用方、且事件 / 消息结构能对齐；并且这段逻辑是 sans-IO 的纯函数**
+（不发 HTTP、不持有连接、不绑异步运行时），不要为一个使用方抽象。
+网关怪癖（`\r\n`、keep-alive、tool_calls 缺 index、只以 `[DONE]` 收尾……）随服务商变化，
+复制 N 份必然漏改，这正是第二个检验（会不会随服务商变）的典型。
+
+对照：**历史裁剪也是按这条判据收进来的** —— reeve 接入时出现第二个使用方，且两边消息结构
 完全一致（`{ role, content }` Anthropic 风格），才从 sigil 搬入 `history`。
 各应用只实现 `HistoryMessage` 两行，数据结构不用改。
+
+流式解码的边界线：crate 给「字节 → 事件 → 收尾结果」，应用负责发请求、取消、重试循环、
+推给前端、执行工具、存历史。要不要把 `<think>` 标签剥离、「正文空则把思考提升为正文」这类
+产品取舍，也留在应用。
 
 ### 3. 迁移代码永远不进 crate
 
