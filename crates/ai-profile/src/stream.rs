@@ -38,11 +38,36 @@
 //! # 事件与块号
 //!
 //! OpenAI 兼容：文字固定块 0，第 k 个工具调用是块 k+1。Anthropic：直接用协议自带的 `index`。
-//! 思考（`reasoning_content` / `thinking_delta`）只发 [`StreamEvent::ReasoningDelta`]，不占块号、不进
-//! [`StreamOutcome::content`]。
+//! 思考（`reasoning_content` / `thinking_delta`）只发 [`StreamEvent::ReasoningDelta`]，事件不带块号，
+//! 默认也不进 [`StreamOutcome::content`]。
 //!
-//! 🔴 **不保留 thinking 块及其 `signature`**：开启 Anthropic 扩展思考并配合工具调用时，
-//! 要把 thinking 块原样回传的应用需要自己处理。
+//! 🔴 **默认不保留 thinking 块及其 `signature`**；需要回传的应用用
+//! [`StreamDecoder::with_thinking_blocks`] 显式开启，见下一节。
+//!
+//! # 思考块（opt-in，仅 Anthropic）
+//!
+//! 开启扩展思考并配合工具调用时，Anthropic 要求把上一轮 assistant 消息里的 thinking 块**连同 `signature` 原样回传**，
+//! 否则下一轮请求被服务端拒绝。`with_thinking_blocks(true)` 之后：
+//!
+//! - [`StreamOutcome::content`] 里按流中出现的顺序带上 `{"type":"thinking","thinking":"<累积文字>","signature":"<签名>"}`
+//!   与 `{"type":"redacted_thinking","data":"…"}`；签名来自 `signature_delta`，可能分多片，按到达顺序拼接；
+//! - **块号 / 位置**：thinking 块沿用 Anthropic 的 `index`，与文字、工具调用同一套编号；`content` 按 `index` 升序，
+//!   所以位置就是流里的位置。`content` 是稠密数组（空文字块照旧省略，不留空位），因此 `content[i]` 不等于 `index == i`，
+//!   但回传给服务端不需要 `index`；
+//! - **事件序列不变**：[`StreamEvent::ReasoningDelta`] 照发、仍不带块号，`TextDelta` 等的 `block_index` 与关闭时一样。
+//!   开启与否只有 `content` 不同；
+//! - 🔴 **只有 `Complete` 才带思考块**：断流 / 取消 / 流内错误时与工具调用同一条判据，`content` 只留文字，
+//!   thinking 块签名不全、发回去服务端必拒；
+//! - 没有签名的 thinking 块（个别 Anthropic 兼容网关不转 `signature_delta`）也不进 `content`：同样发不回官方端点。
+//!   其思考文字仍在 [`StreamOutcome::reasoning`] 里；`redacted_thinking` 本身就是不透明负载，不要求签名；
+//! - OpenAI 兼容协议：no-op（`reasoning_content` 没有签名，也没有回传要求）。
+//!
+//! # 用量里的 cache
+//!
+//! Anthropic 的 `cache_creation_input_tokens` / `cache_read_input_tokens`（`message_start` 与 `message_delta` 的 `usage`，
+//! 累计值、覆盖不累加、0 不覆盖非零）默认就读进 [`StreamUsage`]，不影响 `content`。**只进 [`StreamOutcome::usage`]，
+//! 不进 [`StreamEvent::Usage`]**，也不会因为只有 cache 变化而多发 `Usage` 事件。
+//! OpenAI 兼容的对应字段（`prompt_tokens_details.cached_tokens`、DeepSeek 的 `prompt_cache_hit_tokens` 等）**尚未覆盖**。
 //!
 //! [`StreamEvent::ToolUseStart`] **延迟到工具名已知**（且 id 已到或参数已开始）才发，前端一收到就能显示
 //! 「正在调用 xxx」；始终没等到的，在 [`StreamDecoder::finish`] 时补发。工具没给 id 的，补
@@ -164,6 +189,19 @@ pub struct StreamUsage {
     pub input_tokens: u32,
     /// 输出 token
     pub output_tokens: u32,
+    /// 写入提示缓存的输入 token（Anthropic `cache_creation_input_tokens`）。
+    ///
+    /// 只读 Anthropic 协议；OpenAI 兼容的 `prompt_tokens_details.cached_tokens` 等**尚未覆盖**，恒为 0。
+    /// 为 0 时序列化省略（缺省 = 0），没有缓存的流与 0.1.4 的 JSON 完全一致。
+    #[serde(skip_serializing_if = "is_zero")]
+    pub cache_creation_input_tokens: u32,
+    /// 命中提示缓存而读出的输入 token（Anthropic `cache_read_input_tokens`）。口径同上。
+    #[serde(skip_serializing_if = "is_zero")]
+    pub cache_read_input_tokens: u32,
+}
+
+fn is_zero(n: &u32) -> bool {
+    *n == 0
 }
 
 /// 解出的统一事件。
@@ -261,8 +299,11 @@ pub struct StreamOutcome {
     /// Anthropic 风格 content block 数组：`{"type":"text","text":…}` / `{"type":"tool_use","id","name","input"}`。
     /// 与 [`history::HistoryMessage`](crate::history::HistoryMessage) 同一套形状。
     /// 非 `Complete` 时只有文字块。工具参数解析失败按 `{}`。
+    ///
+    /// 默认不含思考块；[`StreamDecoder::with_thinking_blocks`] 开启后（仅 Anthropic）还会按流里的顺序带上
+    /// `{"type":"thinking","thinking","signature"}` 与 `{"type":"redacted_thinking","data"}`，规则见模块文档。
     pub content: Value,
-    /// 累积的思考文字（不进 `content`）
+    /// 累积的思考文字（不进 `content`，与是否开启 `with_thinking_blocks` 无关）
     pub reasoning: String,
     /// 解析失败被跳过的 `data:` 帧数，排查网关问题用
     pub skipped_frames: usize,
@@ -293,6 +334,13 @@ struct ToolBlock {
 enum Block {
     Text(String),
     Tool(ToolBlock),
+    /// 只在 `with_thinking_blocks(true)` 且协议为 Anthropic 时才会创建
+    Thinking {
+        thinking: String,
+        signature: String,
+    },
+    /// 同上；`data` 是服务端给的不透明负载，原样保存
+    Redacted(String),
 }
 
 /// 一帧 `data:` 的内容。
@@ -335,6 +383,7 @@ pub struct StreamDecoder {
     usage: StreamUsage,
     finish: Option<StopReason>,
     reasoning: String,
+    keep_thinking: bool,
     done: bool,
     failed: Option<String>,
     skipped: usize,
@@ -357,6 +406,7 @@ impl StreamDecoder {
             usage: StreamUsage::default(),
             finish: None,
             reasoning: String::new(),
+            keep_thinking: false,
             done: false,
             failed: None,
             skipped: 0,
@@ -368,6 +418,18 @@ impl StreamDecoder {
     /// 不设置时用进程内递增序号。想让补出来的 id 在应用重启后仍不重复，传应用自己的流 id。
     pub fn with_stream_id(mut self, id: impl Into<String>) -> Self {
         self.stream_id = id.into();
+        self
+    }
+
+    /// 是否把 Anthropic 的 thinking / redacted_thinking 块（含 `signature`）保留进 [`StreamOutcome::content`]。
+    ///
+    /// **默认 `false`**，此时输出与 0.1.4 完全一致（思考只走 [`StreamEvent::ReasoningDelta`]）。
+    /// 开启扩展思考并配合工具调用时，Anthropic 要求把上一轮的 thinking 块连同 `signature` 原样回传，
+    /// 需要这样做的应用开启它。事件序列不受影响，只有 `content` 不同。规则见模块文档「思考块」一节。
+    ///
+    /// 对 OpenAI 兼容协议是 no-op：`reasoning_content` 没有签名，也没有回传要求。
+    pub fn with_thinking_blocks(mut self, keep: bool) -> Self {
+        self.keep_thinking = keep;
         self
     }
 
@@ -421,26 +483,40 @@ impl StreamDecoder {
     }
 
     fn outcome(&self, end: StreamEnd, stop_reason: Option<StopReason>) -> StreamOutcome {
-        let with_tools = matches!(end, StreamEnd::Complete);
+        let complete = matches!(end, StreamEnd::Complete);
         StreamOutcome {
             model: self.model.clone(),
             stop_reason,
             usage: self.usage,
             end,
-            content: self.build_content(with_tools),
+            content: self.build_content(complete),
             reasoning: self.reasoning.clone(),
             skipped_frames: self.skipped,
         }
     }
 
-    fn build_content(&self, with_tools: bool) -> Value {
+    /// `complete` 为假（断流 / 取消 / 出错）时只留文字：工具调用参数不全、thinking 块签名不全，
+    /// 发回去服务端必拒，所以与工具调用同一条判据一并丢掉。
+    fn build_content(&self, complete: bool) -> Value {
         let mut blocks = Vec::new();
         for block in self.blocks.values() {
             match block {
                 Block::Text(s) if !s.is_empty() => {
                     blocks.push(json!({ "type": "text", "text": s }));
                 }
-                Block::Tool(t) if with_tools => {
+                // 没有签名的 thinking 块 Anthropic 必拒（个别兼容网关不转 signature_delta），不回传
+                Block::Thinking {
+                    thinking,
+                    signature,
+                } if complete && !signature.is_empty() => {
+                    blocks.push(json!({
+                        "type": "thinking", "thinking": thinking, "signature": signature
+                    }));
+                }
+                Block::Redacted(data) if complete => {
+                    blocks.push(json!({ "type": "redacted_thinking", "data": data }));
+                }
+                Block::Tool(t) if complete => {
                     let input = if t.input.trim().is_empty() {
                         json!({})
                     } else {
@@ -631,20 +707,33 @@ impl StreamDecoder {
 
     /// 用量取最后一次出现的值（覆盖）；为 0 的不覆盖已有的非零值 —— 有的网关末帧把 input 报成 0。
     fn read_usage(&mut self, u: &Value, out: &mut Vec<StreamEvent>) {
-        let pick = |keys: [&str; 2]| {
+        let pick = |keys: &[&str]| {
             keys.iter()
                 .find_map(|k| u.get(*k).and_then(Value::as_u64).filter(|n| *n > 0))
                 .map(clamp_u32)
         };
         let mut next = self.usage;
-        if let Some(n) = pick(["prompt_tokens", "input_tokens"]) {
+        if let Some(n) = pick(&["prompt_tokens", "input_tokens"]) {
             next.input_tokens = n;
         }
-        if let Some(n) = pick(["completion_tokens", "output_tokens"]) {
+        if let Some(n) = pick(&["completion_tokens", "output_tokens"]) {
             next.output_tokens = n;
         }
-        if next != self.usage {
-            self.usage = next;
+        // cache 只读 Anthropic；它不进 `Usage` 事件（给带命名字段的变体加字段会破坏下游的模式匹配），
+        // 所以也不触发事件：是否发事件只看 input / output 有没有变，与 0.1.4 一致
+        if self.protocol == Protocol::Anthropic {
+            if let Some(n) = pick(&["cache_creation_input_tokens"]) {
+                next.cache_creation_input_tokens = n;
+            }
+            if let Some(n) = pick(&["cache_read_input_tokens"]) {
+                next.cache_read_input_tokens = n;
+            }
+        }
+
+        let event_changed = next.input_tokens != self.usage.input_tokens
+            || next.output_tokens != self.usage.output_tokens;
+        self.usage = next;
+        if event_changed {
             out.push(StreamEvent::Usage {
                 input_tokens: next.input_tokens,
                 output_tokens: next.output_tokens,
@@ -662,7 +751,7 @@ impl StreamDecoder {
             .or_insert_with(|| Block::Text(String::new()))
         {
             Block::Text(s) => s.push_str(text),
-            Block::Tool(_) => return,
+            _ => return,
         }
         out.push(StreamEvent::TextDelta {
             block_index: key,
@@ -678,6 +767,24 @@ impl StreamDecoder {
         out.push(StreamEvent::ReasoningDelta {
             text: text.to_string(),
         });
+    }
+
+    /// 累积 thinking 块（仅 `with_thinking_blocks(true)`）。块号沿用 Anthropic 的 `index`；
+    /// 没有 `content_block_start` 直接来 delta 的网关也现建块。该块号已被别的类型占用则忽略。
+    fn thinking_append(&mut self, key: usize, thinking: &str, signature: &str) {
+        if !self.keep_thinking {
+            return;
+        }
+        if let Block::Thinking {
+            thinking: t,
+            signature: s,
+        } = self.blocks.entry(key).or_insert_with(|| Block::Thinking {
+            thinking: String::new(),
+            signature: String::new(),
+        }) {
+            t.push_str(thinking);
+            s.push_str(signature);
+        }
     }
 
     fn synth_id(&self, key: usize) -> String {
@@ -910,8 +1017,20 @@ impl StreamDecoder {
                         self.tool_update(key, id, name, &args, out);
                     }
                     Some("thinking") => {
-                        if let Some(s) = b.get("thinking").and_then(Value::as_str) {
+                        let s = b.get("thinking").and_then(Value::as_str);
+                        if let Some(s) = s {
                             self.reasoning_delta(s, out);
+                        }
+                        let sig = b.get("signature").and_then(Value::as_str);
+                        self.thinking_append(key, s.unwrap_or(""), sig.unwrap_or(""));
+                    }
+                    Some("redacted_thinking") => {
+                        if let Some(data) = b.get("data").and_then(Value::as_str) {
+                            if self.keep_thinking {
+                                self.blocks
+                                    .entry(key)
+                                    .or_insert_with(|| Block::Redacted(data.to_string()));
+                            }
                         }
                     }
                     _ => {}
@@ -934,9 +1053,16 @@ impl StreamDecoder {
                     Some("thinking_delta") => {
                         if let Some(s) = d.get("thinking").and_then(Value::as_str) {
                             self.reasoning_delta(s, out);
+                            self.thinking_append(key, s, "");
                         }
                     }
-                    // signature_delta / citations_delta 等：不保留
+                    // 签名可能分多片，按到达顺序拼接；没开 with_thinking_blocks 时丢弃
+                    Some("signature_delta") => {
+                        if let Some(s) = d.get("signature").and_then(Value::as_str) {
+                            self.thinking_append(key, "", s);
+                        }
+                    }
+                    // citations_delta 等：不保留
                     _ => {}
                 }
             }
@@ -1516,6 +1642,263 @@ mod tests {
         assert!(ev
             .iter()
             .any(|e| matches!(e, StreamEvent::TextDelta { block_index: 1, .. })));
+    }
+
+    // ── 思考块（opt-in）与 cache 用量 ───────────────────────────
+
+    /// 思考(0，签名分两片) → 文字(1) → 思考(2) → redacted(3) → 工具(4)。
+    const AN_THINK: &str = concat!(
+        "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1,\"cache_creation_input_tokens\":100,\"cache_read_input_tokens\":2000}}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"先\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"想\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"AbC\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"dEf==\"}}\n\n",
+        "data: {\"type\":\"content_block_stop\",\"index\":0}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"我来查\"}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"再想\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"s2\"}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":3,\"content_block\":{\"type\":\"redacted_thinking\",\"data\":\"EncRyPt\"}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":4,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":4,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":1}\"}}\n\n",
+        "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42,\"cache_read_input_tokens\":2500}}\n\n",
+        "data: {\"type\":\"message_stop\"}\n\n",
+    );
+
+    fn run_thinking(p: Protocol, s: &str) -> (Vec<StreamEvent>, StreamOutcome) {
+        let mut d = StreamDecoder::new(p)
+            .with_stream_id("t")
+            .with_thinking_blocks(true);
+        let mut ev = d.push(s.as_bytes());
+        let (tail, out) = d.finish();
+        ev.extend(tail);
+        (ev, out)
+    }
+
+    fn types(o: &StreamOutcome) -> Vec<String> {
+        o.content
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|b| b["type"].as_str().unwrap().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn thinking_blocks_are_off_by_default_and_explicit_false_is_the_same() {
+        let (ev, o) = one(AN, AN_THINK);
+        assert_eq!(types(&o), ["text", "tool_use"]);
+        assert_eq!(o.reasoning, "先想再想");
+        let mut d = StreamDecoder::new(AN)
+            .with_stream_id("t")
+            .with_thinking_blocks(false);
+        let mut ev2 = d.push(AN_THINK.as_bytes());
+        let (tail, o2) = d.finish();
+        ev2.extend(tail);
+        assert_eq!((ev, o), (ev2, o2));
+    }
+
+    #[test]
+    fn thinking_blocks_keep_stream_order_signature_and_redacted() {
+        let (_, o) = run_thinking(AN, AN_THINK);
+        assert_eq!(o.end, StreamEnd::Complete);
+        assert_eq!(
+            o.content,
+            json!([
+                {"type":"thinking","thinking":"先想","signature":"AbCdEf=="},
+                {"type":"text","text":"我来查"},
+                {"type":"thinking","thinking":"再想","signature":"s2"},
+                {"type":"redacted_thinking","data":"EncRyPt"},
+                {"type":"tool_use","id":"toolu_1","name":"read","input":{"p":1}},
+            ])
+        );
+        // 思考文字照旧累积进 reasoning
+        assert_eq!(o.reasoning, "先想再想");
+    }
+
+    #[test]
+    fn thinking_option_changes_only_content_not_events() {
+        let (ev_off, o_off) = one(AN, AN_THINK);
+        let (ev_on, o_on) = run_thinking(AN, AN_THINK);
+        assert_eq!(ev_off, ev_on);
+        assert_ne!(o_off.content, o_on.content);
+        let mut o_on = o_on;
+        o_on.content = o_off.content.clone();
+        assert_eq!(o_off, o_on);
+        // 块号沿用协议自带的 index：文字 1、工具 4，不因思考块而移位
+        assert!(ev_on
+            .iter()
+            .any(|e| matches!(e, StreamEvent::TextDelta { block_index: 1, .. })));
+        assert_eq!(starts(&ev_on), [(4, "toolu_1".into(), "read".into())]);
+    }
+
+    #[test]
+    fn thinking_without_start_event_builds_the_block_from_deltas() {
+        let (_, o) = run_thinking(
+            AN,
+            concat!(
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"嗯\"}}\n\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"sg\"}}\n\n",
+                "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n",
+            ),
+        );
+        assert_eq!(
+            o.content,
+            json!([{"type":"thinking","thinking":"嗯","signature":"sg"}])
+        );
+    }
+
+    #[test]
+    fn thinking_block_without_signature_is_dropped_but_reasoning_stays() {
+        let (_, o) = run_thinking(
+            AN,
+            concat!(
+                "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"无签名\"}}\n\n",
+                "data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"答\"}}\n\n",
+                "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n",
+            ),
+        );
+        assert_eq!(o.end, StreamEnd::Complete);
+        assert_eq!(types(&o), ["text"]);
+        assert_eq!(o.reasoning, "无签名");
+    }
+
+    /// 🔴 守卫：断流 / 取消 / 流内错误时 thinking 与 redacted_thinking 一并丢弃（签名不全服务端必拒），只留文字
+    #[test]
+    fn incomplete_streams_drop_thinking_blocks_and_keep_only_text() {
+        // 截掉 message_delta / message_stop → 断流
+        let cut = AN_THINK
+            .split("data: {\"type\":\"message_delta\"")
+            .next()
+            .unwrap();
+        let (_, o) = run_thinking(AN, cut);
+        assert_eq!(o.end, StreamEnd::Truncated);
+        assert_eq!(o.content, json!([{"type":"text","text":"我来查"}]));
+
+        // 取消：停在第二个 thinking 的签名到达之前
+        let upto = AN_THINK
+            .split("data: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"signature_delta\"")
+            .next()
+            .unwrap();
+        let mut d = StreamDecoder::new(AN).with_thinking_blocks(true);
+        d.push(upto.as_bytes());
+        let o = d.abort();
+        assert_eq!(o.end, StreamEnd::Cancelled);
+        assert_eq!(o.content, json!([{"type":"text","text":"我来查"}]));
+
+        // 流内错误
+        let failed = format!(
+            "{cut}event: error\ndata: {{\"type\":\"error\",\"error\":{{\"message\":\"Overloaded\"}}}}\n\n"
+        );
+        let (_, o) = run_thinking(AN, &failed);
+        assert!(matches!(o.end, StreamEnd::Failed { .. }));
+        assert_eq!(o.content, json!([{"type":"text","text":"我来查"}]));
+    }
+
+    #[test]
+    fn thinking_option_is_a_noop_for_openai_compatible() {
+        let s = concat!(
+            "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"想\"}}]}\n\n",
+            "data: {\"choices\":[{\"delta\":{\"content\":\"答\"},\"finish_reason\":\"stop\"}]}\n\n",
+        );
+        assert_eq!(one(OA, s), run_thinking(OA, s));
+    }
+
+    #[test]
+    fn thinking_option_keeps_chunking_invariance() {
+        let bytes = AN_THINK.as_bytes();
+        let chunked = |parts: &[&[u8]]| {
+            let mut d = StreamDecoder::new(AN)
+                .with_stream_id("t")
+                .with_thinking_blocks(true);
+            let mut ev = Vec::new();
+            for p in parts {
+                ev.extend(d.push(p));
+            }
+            let (tail, o) = d.finish();
+            ev.extend(tail);
+            (ev, o)
+        };
+        let whole = chunked(&[bytes]);
+        for cut in 0..=bytes.len() {
+            assert_eq!(whole, chunked(&[&bytes[..cut], &bytes[cut..]]), "{cut}");
+        }
+    }
+
+    #[test]
+    fn anthropic_cache_usage_is_overwritten_and_zero_does_not_wipe() {
+        let (ev, o) = one(AN, AN_THINK);
+        assert_eq!(o.usage.input_tokens, 25);
+        assert_eq!(o.usage.output_tokens, 42);
+        assert_eq!(o.usage.cache_creation_input_tokens, 100);
+        // message_delta 的累计值覆盖 message_start 的
+        assert_eq!(o.usage.cache_read_input_tokens, 2500);
+        // 只有 input / output 变化才发 Usage 事件：message_start 一次、message_delta（output 1→42）一次，
+        // message_delta 里单独变化的 cache_read 不额外发
+        let usage_events = ev
+            .iter()
+            .filter(|e| matches!(e, StreamEvent::Usage { .. }))
+            .count();
+        assert_eq!(usage_events, 2);
+
+        let (_, o) = one(
+            AN,
+            concat!(
+                "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":5,\"cache_read_input_tokens\":300}}}\n\n",
+                "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":9,\"cache_read_input_tokens\":0}}\n\n",
+            ),
+        );
+        assert_eq!(o.usage.cache_read_input_tokens, 300);
+    }
+
+    #[test]
+    fn cache_only_change_emits_no_usage_event() {
+        let (ev, _) = one(
+            AN,
+            concat!(
+                "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":5,\"output_tokens\":1}}}\n\n",
+                "data: {\"type\":\"message_delta\",\"delta\":{},\"usage\":{\"cache_read_input_tokens\":77}}\n\n",
+            ),
+        );
+        let n = ev
+            .iter()
+            .filter(|e| matches!(e, StreamEvent::Usage { .. }))
+            .count();
+        assert_eq!(n, 1);
+    }
+
+    #[test]
+    fn openai_does_not_read_cache_fields() {
+        let (_, o) = one(
+            OA,
+            "data: {\"choices\":[{\"delta\":{\"content\":\"a\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":3,\"completion_tokens\":4,\"cache_read_input_tokens\":9,\"prompt_tokens_details\":{\"cached_tokens\":8}}}\n\n",
+        );
+        assert_eq!((o.usage.input_tokens, o.usage.output_tokens), (3, 4));
+        assert_eq!(
+            (
+                o.usage.cache_creation_input_tokens,
+                o.usage.cache_read_input_tokens
+            ),
+            (0, 0)
+        );
+    }
+
+    #[test]
+    fn zero_cache_fields_are_omitted_from_the_wire_shape() {
+        let (_, o) = one(OA, "data: {\"choices\":[{\"delta\":{\"content\":\"a\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":3,\"completion_tokens\":4}}\n\n");
+        assert_eq!(
+            serde_json::to_value(o.usage).unwrap(),
+            json!({"inputTokens":3,"outputTokens":4})
+        );
+        let (_, o) = one(AN, AN_THINK);
+        assert_eq!(
+            serde_json::to_value(o.usage).unwrap(),
+            json!({"inputTokens":25,"outputTokens":42,
+                   "cacheCreationInputTokens":100,"cacheReadInputTokens":2500})
+        );
     }
 
     #[test]

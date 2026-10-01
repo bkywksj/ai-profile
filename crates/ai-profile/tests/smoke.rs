@@ -352,3 +352,41 @@ fn stream_decoder_is_usable_from_outside() {
     ));
     assert!(looks_like_html("<!doctype html><html></html>"));
 }
+
+/// 🔴 thinking 块 opt-in 与 cache 用量从外部可用：选项是链式 builder；`StreamUsage` 是 `non_exhaustive`，
+/// 外部只能读字段；默认（不开选项）`content` 里没有思考块。
+#[test]
+fn stream_thinking_option_and_cache_usage_are_usable_from_outside() {
+    use ai_profile::stream::{StreamDecoder, StreamEnd};
+
+    let sse: &[u8] = concat!(
+        "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":7,\"cache_read_input_tokens\":50,\"cache_creation_input_tokens\":3}}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"嗯\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"sig\"}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"答\"}}\n\n",
+        "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n",
+    )
+    .as_bytes();
+
+    let decode = |keep: bool| {
+        let mut dec = StreamDecoder::new(Protocol::Anthropic)
+            .with_stream_id("smoke")
+            .with_thinking_blocks(keep);
+        dec.push(sse);
+        dec.finish().1
+    };
+
+    let off = decode(false);
+    assert_eq!(off.end, StreamEnd::Complete);
+    assert_eq!(off.content.as_array().unwrap().len(), 1);
+    assert_eq!(off.usage.cache_read_input_tokens, 50);
+    assert_eq!(off.usage.cache_creation_input_tokens, 3);
+
+    let on = decode(true);
+    let blocks = on.content.as_array().unwrap();
+    assert_eq!(blocks.len(), 2);
+    assert_eq!(blocks[0]["type"], "thinking");
+    assert_eq!(blocks[0]["signature"], "sig");
+    assert_eq!(on.text(), "答");
+}
