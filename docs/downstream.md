@@ -22,9 +22,9 @@
 > prism 已在 tauri dev 里验证「获取」（文本 / 图片），测试连接、导入导出、生图还没实测。
 >
 > 2026-10-01：**`0.1.4` 已发布到 crates.io**（tag `v0.1.4` 指向 `171e70b`，docs.rs 的 `stream` 与 `infer_preset_key_for` 已核对，文档站已同步）。
-> **sigil 已升到 `0.1.4` 并迁移流式**（提交 `841b309`，2026-10-01，本地未推送）：删掉 `OaStream` / `parse_sse_event` /
+> **sigil 已升到 `0.1.4` 并迁移流式**（提交 `841b309`，2026-10-01，已推 GitHub / Gitee）：删掉 `OaStream` / `parse_sse_event` /
 > `handle_anthropic_sse_event` / `openai_stop_reason` / `looks_like_html`，两个协议共用一个 `pump_stream`；
-> 全量测试 lib 1551 条通过。**界面行为待实机验证**：中文跨包不乱码、Anthropic 流内错误、整段 JSON 响应报错、停止按钮。
+> 全量测试 lib 1551 条通过，**用户已实机验证通过**（2026-10-01）。
 > 其余五家（knowledge_base / onestop / story_loom / reeve / prism）**仍引用 `0.1.3`**；`0.1.4` 是兼容补丁，只升版本号零代码改动，
 > 但要用 `stream` / `infer_preset_key_for` 的下游必须先升。
 >
