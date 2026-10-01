@@ -20,12 +20,15 @@
 > ⏳ sigil / knowledge_base / onestop / story_loom / reeve 的界面改动都**尚未实机验证**；代码测试全绿。
 > prism 已在 tauri dev 里验证「获取」（文本 / 图片），测试连接、导入导出、生图还没实测。
 >
-> prism 升级到下一版（`infer_preset_key_for` 所在版本）时要做两件事，见 CHANGELOG「未发布」：
+> 2026-10-01：**`0.1.4` 已发布到 crates.io**（tag `v0.1.4` 指向 `171e70b`，docs.rs 的 `stream` 与 `infer_preset_key_for` 已核对，文档站已同步）。
+> 上表六家**仍引用 `0.1.3`**，都还没升；`0.1.4` 是兼容补丁，只升版本号零代码改动，但要用 `stream` / `infer_preset_key_for` 的下游必须先升。
+>
+> prism 升级到 `0.1.4`（`infer_preset_key_for` 所在版本）时要做两件事，见 CHANGELOG `0.1.4`：
 > ① 删掉本地的 `infer_image_preset_key`，改调 `preset::infer_preset_key_for(Kind::Image, …)`（按 `crate-boundary` 删副本）；
 > ② 素材库记的图片尺寸改为从出图字节读 —— 请求的 `IMAGE_SIZE` 对火山方舟 / OpenAI 官方不生效（方舟按模型默认尺寸出图）。
 > 它反馈的另两条（生图请求体补 `size`、按能力分类模型）结论与待办见 `docs/tasks/` 里的「prism接入反馈三条」。
 >
-> 🔴 **流式解码（`stream`，随 0.1.4 发出）的迁移计划**（任务见 `docs/tasks/` 里的「流式解码」）：
+> 🔴 **流式解码（`stream`，0.1.4 起可用）的迁移计划**（任务见 `docs/tasks/` 里的「流式解码」；迁移顺序 sigil → prism → aibid → onestop，一次一家）：
 > - **sigil 先改**：删本地 `OaStream`、`parse_sse_event`、`handle_anthropic_sse_event`、`openai_stop_reason`、`looks_like_html` 及其测试，
 >   用 `StreamDecoder::push` 的事件映射到现有前端事件，`Done.response` 用 `StreamOutcome::content`；
 >   取消接线、`stream_options` 重试与「按地址记住」留在应用。注意三处行为变化：`ToolUseStart` 延迟到工具名已知才发；

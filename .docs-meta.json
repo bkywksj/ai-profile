@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "2e55a7a",
-  "lastSyncTime": "2026-09-26T05:50:00Z",
+  "lastSyncCommit": "171e70b",
+  "lastSyncTime": "2026-10-01T04:30:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -261,6 +261,27 @@
         "CHANGELOG.md"
       ],
       "note": "未发布改动（prism 反馈）：infer_preset_key_for、生图 size 是请求值。文档站本地提交 3c6662c 未推送；reference/changelog.md 与 public/spec/ 待发版后补"
+    },
+    {
+      "commit": "171e70b",
+      "time": "2026-10-01T04:30:00Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "api/stream.md",
+        "reference/changelog.md",
+        "reference/spec.md",
+        "reference/versioning.md",
+        "guide/cookbook.md",
+        ".vitepress/config.ts",
+        "public/spec/**"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/stream.rs",
+        "crates/ai-profile/src/preset/mod.rs",
+        "spec/**",
+        "CHANGELOG.md"
+      ],
+      "note": "0.1.4：流式解码 stream、infer_preset_key_for；规范 v0.1.4 存档（325 条用例，含 stream.json）。文档站提交 fb55b0f 已推三远程，同时带上 3c6662c"
     }
   ]
 }
