@@ -3,6 +3,15 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，版本位的判定规则见
 [`docs/versioning.md`](docs/versioning.md)。
 
+## [未发布]
+
+### 新增
+- **Sonnet 5.5 进候选清单**（2026-09-28 发布，接替 Sonnet 5，单价不变）：Anthropic 官方档与 Claude Code 档共用清单加 `claude-sonnet-5-5`，
+  OpenRouter 档加 `anthropic/claude-sonnet-5.5`（点号写法）。**只加候选，不改任何预置的默认 model**；不填静态限额
+  （同一个 id 官方 1M、经中转按 200k，共用清单填哪个都会对其中一档说错，交给端点上报或用户手填）。
+  id 来源：Claude Code CLI 2.1.284 机型目录（经 tauri-cc 核对）；OpenRouter 的 id 已在其公开模型表里核对（上下文 1M、输出上限 128K）。
+  `[1m]` 后缀只在中转站有区别，不进清单。预置数据更新，下游 `cargo update -p ai-profile` 即可，零代码改动
+
 ## [0.1.5] - 2026-10-01
 
 **升级只需 `cargo update -p ai-profile`，不用改代码；默认行为与 0.1.4 完全一致。** `stream` 新增两项能力，来自 reeve 接入流式的前置要求：保留 Anthropic 的 thinking 块（含 `signature`）供回传，以及上报 cache 用量。

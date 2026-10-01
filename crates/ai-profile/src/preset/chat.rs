@@ -34,9 +34,13 @@ const NO_EXTRA: &[ExtraField] = &[];
 /// Opus 5.5（2026-09-22 发布）不带静态限额：官方端点是 1M，但经中转时 Claude Code
 /// 按 200k 算、要显式 `[1m]` 且网关支持才有 1M —— 同一个 id 两种窗口，
 /// 这份清单又被官方档和中转档共用，填哪个都会对其中一档说错。交给端点上报或用户手填。
+///
+/// Sonnet 5.5（2026-09-28 发布）接替 Sonnet 5，单价不变，同样不带静态限额（理由同上）。
+/// id 取自 Claude Code CLI 2.1.284 的机型目录（经 tauri-cc 核对）；`[1m]` 后缀只在中转站有区别，不进清单。
 const CLAUDE_MODELS: &[ModelOption] = &[
     ModelOption::plain("claude-opus-5-5"),
     ModelOption::plain("claude-opus-5"),
+    ModelOption::plain("claude-sonnet-5-5"),
     ModelOption::plain("claude-sonnet-5"),
     ModelOption::plain("claude-fable-5-1"),
     ModelOption::plain("claude-fable-5"),
@@ -500,6 +504,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         models: &[
             ModelOption::plain("anthropic/claude-sonnet-5"),
             // OpenRouter 的 Anthropic id 用点号：是 claude-opus-5.5 不是 claude-opus-5-5
+            // sonnet-5.5 已在 OpenRouter 公开模型表里核对（2026-10-01）
+            ModelOption::plain("anthropic/claude-sonnet-5.5"),
             ModelOption::plain("anthropic/claude-opus-5.5"),
             ModelOption::plain("openai/gpt-6-astra"),
             ModelOption::plain("openai/gpt-6-sol"),

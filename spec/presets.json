@@ -36,6 +36,12 @@
         },
         {
           "contextWindow": null,
+          "label": "claude-sonnet-5-5",
+          "maxOutput": null,
+          "value": "claude-sonnet-5-5"
+        },
+        {
+          "contextWindow": null,
           "label": "claude-sonnet-5",
           "maxOutput": null,
           "value": "claude-sonnet-5"
@@ -97,6 +103,12 @@
           "label": "claude-opus-5",
           "maxOutput": null,
           "value": "claude-opus-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "claude-sonnet-5-5",
+          "maxOutput": null,
+          "value": "claude-sonnet-5-5"
         },
         {
           "contextWindow": null,
@@ -756,6 +768,12 @@
           "label": "anthropic/claude-sonnet-5",
           "maxOutput": null,
           "value": "anthropic/claude-sonnet-5"
+        },
+        {
+          "contextWindow": null,
+          "label": "anthropic/claude-sonnet-5.5",
+          "maxOutput": null,
+          "value": "anthropic/claude-sonnet-5.5"
         },
         {
           "contextWindow": null,
