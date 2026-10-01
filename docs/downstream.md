@@ -10,7 +10,7 @@
 
 | 项目 | 仓库路径 | 引用方式 | 当前引用 | 最后同步 | 接入范围 | 本项目侧技能 |
 |---|---|---|---|---|---|---|
-| sigil | `E:/my/桌面软件tauri/sigil` | crates.io 版本（`src-tauri/Cargo.toml`） | `0.1.3` | 2026-09-25 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 | `ai-profile-integration` |
+| sigil | `E:/my/桌面软件tauri/sigil` | crates.io 版本（`src-tauri/Cargo.toml`） | `0.1.4` | 2026-10-01 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 · **流式解码**（`stream`，本地 SSE 解析器已删） | `ai-profile-integration` |
 | knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `0.1.3` | 2026-09-25 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用） | `ai-profile-integration` |
 | onestop | `E:/my/backend_tauri/onestop` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `0.1.3` | 2026-09-25 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现 | `ai-profile-integration` |
 | story_loom | `E:/my/桌面软件tauri/story_loom` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `0.1.3` | 2026-09-25 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
@@ -21,7 +21,16 @@
 > prism 已在 tauri dev 里验证「获取」（文本 / 图片），测试连接、导入导出、生图还没实测。
 >
 > 2026-10-01：**`0.1.4` 已发布到 crates.io**（tag `v0.1.4` 指向 `171e70b`，docs.rs 的 `stream` 与 `infer_preset_key_for` 已核对，文档站已同步）。
-> 上表六家**仍引用 `0.1.3`**，都还没升；`0.1.4` 是兼容补丁，只升版本号零代码改动，但要用 `stream` / `infer_preset_key_for` 的下游必须先升。
+> **sigil 已升到 `0.1.4` 并迁移流式**（提交 `841b309`，2026-10-01，本地未推送）：删掉 `OaStream` / `parse_sse_event` /
+> `handle_anthropic_sse_event` / `openai_stop_reason` / `looks_like_html`，两个协议共用一个 `pump_stream`；
+> 全量测试 lib 1551 条通过。**界面行为待实机验证**：中文跨包不乱码、Anthropic 流内错误、整段 JSON 响应报错、停止按钮。
+> 其余五家（knowledge_base / onestop / story_loom / reeve / prism）**仍引用 `0.1.3`**；`0.1.4` 是兼容补丁，只升版本号零代码改动，
+> 但要用 `stream` / `infer_preset_key_for` 的下游必须先升。
+>
+> 迁移时的两个提醒（sigil 踩到的）：
+> ① 构建脚本会撞 `tauri dev` 开发版占用的 `dokan2.dll`（os error 32），验证用独立的 `CARGO_TARGET_DIR` 完整重编，别去关别人的开发版；
+> ② `cargo update -p ai-profile` 可能把别的包（errno / rustix / tempfile 等）的 `windows-sys` 引用顺手改旧，
+> 提交前看锁文件 diff，只应动 ai-profile 一个包，否则从 HEAD 取回原文件、手改版本和校验和两行。
 >
 > prism 升级到 `0.1.4`（`infer_preset_key_for` 所在版本）时要做两件事，见 CHANGELOG `0.1.4`：
 > ① 删掉本地的 `infer_image_preset_key`，改调 `preset::infer_preset_key_for(Kind::Image, …)`（按 `crate-boundary` 删副本）；
