@@ -13,7 +13,7 @@
 | sigil | `E:/my/桌面软件tauri/sigil` | crates.io 版本（`src-tauri/Cargo.toml`） | `0.1.4` | 2026-10-01 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 · **流式解码**（`stream`，本地 SSE 解析器已删） | `ai-profile-integration` |
 | knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `0.1.4` | 2026-10-01 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用） | `ai-profile-integration` |
 | onestop | `E:/my/backend_tauri/onestop` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `0.1.4` | 2026-10-01 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现；**流式解码**三处全迁（主对话 `chat/mod.rs`、agent 的 OpenAI 与 Anthropic 两路工具循环，提交 `45b79fa` / `e088b91` / `39dfa61`，本地未推送）：断流时主对话保留「[未完成]」提示（产品取舍），工具循环断流不执行工具 | `ai-profile-integration` |
-| story_loom | `E:/my/桌面软件tauri/story_loom` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `0.1.4` | 2026-10-01 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
+| story_loom | `E:/my/桌面软件tauri/story_loom` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `0.1.4` | 2026-10-01 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用；**流式解码**（`provider.rs` 两个协议共用 `pump_stream`，提交 `847ba6c`，本地未推送）：断流 / 流内错误 / 非事件流都改为报错，断流归 `ProviderErrKind::Network`（全本生成会重试整章，最多 3 次） | `ai-profile-integration` |
 | reeve | `E:/my/桌面软件tauri/reeve` | crates.io 版本，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `0.1.4` | 2026-10-01 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
 | prism | `E:/my/桌面软件tauri/prism` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image）；`mobile-tauri` 壳不依赖 | `0.1.4` | 2026-10-01 | 对话预置 · 协议（OpenAI 兼容 + Anthropic）· 端点 · 验证 · 模型清洗 · 限额 · 历史裁剪与超长重试 · ai.profile 单条与打包 + 导出 · **生图预置与调用**（`media::image`）；**流式解码**与**生图预置反推**（`infer_preset_key_for`）、素材库图片尺寸读真实宽高（提交 `e233275` / `82d65ff` / `e919ae3`，本地未推送，会话收尾以 prism 仓库为准）；对话实现、配图落盘入库留在应用 | `ai-profile-integration` |
 | aibid | `E:/my/backend_tauri/aibid` | crates.io 版本（`desktop/src-tauri/Cargo.toml`，`client` + 默认 `chat`）；桌面端 | `0.1.4` | 2026-10-01 | 对话预置 24 家 · 协议（OpenAI 兼容 + Anthropic）· 端点 · 验证 · 模型清洗 · 限额 · 超长识别 · ai.profile 单条与打包 + 导出（不带密钥）；对话 / 流式 / Anthropic 线格式 / 重试 / 代理 / 密钥存储留在应用；**视觉 / 向量维度**（crate 没有）做成 `model_caps.rs` 叠加表。**流式解码**（`stream`，本地 SSE 解析器已删，提交 `57ca6cc` / `63cbf42`，本地未推送）。未发布过，按用户决定不写存量迁移（接入提交 `bc15d13` / `bb76bfa` / `51aa48e`） | `ai-profile-integration` |
@@ -28,8 +28,8 @@
 > **prism、aibid、onestop 也已升到 `0.1.4` 并迁移流式**（2026-10-01，均本地提交未推送，待用户实机验证）：aibid 615 条测试通过，`finish_reason` 词表换算守住 AI-04 截断闸门，断流改为报错而不再静默成功；onestop 有三处解析（主对话 + agent 两路工具循环），Anthropic 那路原先会在工具参数中途断流时拿空参数 `{}` 去执行工具，已修。
 > knowledge_base / story_loom / reeve 也已升到 `0.1.4`（2026-10-01，本地提交未推送，零代码改动）：提交 `aeb5f2b` / `25f5e95` / `729d558`；
 > knowledge_base lib 889、reeve 1110 全过，story_loom 测试代码编译通过（lib 单测受 WebView2 所限不运行）。
-> **全部下游现已引用 `0.1.4`。** 其中流式解码：story_loom（`provider.rs`）与 knowledge_base（`ai.rs` / `anthropic.rs`）仍是自写解析，
-> 断流会静默当成功，已派 story_loom 迁移；**reeve 的 AI 助手完全没有流式**（`llm_chat` 整段返回、「停止」只是前端软标志），属新增功能而非迁移，先出方案再定。
+> **全部下游现已引用 `0.1.4`。** 其中流式解码：story_loom 已迁（见上表），knowledge_base（`ai.rs` / `anthropic.rs`，Ollama 原生 NDJSON 除外）迁移中，
+> 断流原先会静默当成功；**reeve 的 AI 助手完全没有流式**（`llm_chat` 整段返回、「停止」只是前端软标志），属新增功能而非迁移，先出方案再定。
 >
 > 迁移时的两个提醒（sigil 踩到的）：
 > ① 构建脚本会撞 `tauri dev` 开发版占用的 `dokan2.dll`（os error 32），验证用独立的 `CARGO_TARGET_DIR` 完整重编，别去关别人的开发版；
