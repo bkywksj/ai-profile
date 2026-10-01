@@ -15,8 +15,8 @@
 | onestop | `E:/my/backend_tauri/onestop` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `0.1.3` | 2026-09-25 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现 | `ai-profile-integration` |
 | story_loom | `E:/my/桌面软件tauri/story_loom` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `0.1.3` | 2026-09-25 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
 | reeve | `E:/my/桌面软件tauri/reeve` | crates.io 版本，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `0.1.3` | 2026-09-25 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
-| prism | `E:/my/桌面软件tauri/prism` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image）；`mobile-tauri` 壳不依赖 | `0.1.3` | 2026-09-26 | 对话预置 · 协议（OpenAI 兼容 + Anthropic）· 端点 · 验证 · 模型清洗 · 限额 · 历史裁剪与超长重试 · ai.profile 单条与打包 + 导出 · **生图预置与调用**（`media::image`）；对话实现、配图落盘入库留在应用 | `ai-profile-integration` |
-| aibid | `E:/my/backend_tauri/aibid` | crates.io 版本（`desktop/src-tauri/Cargo.toml`，`client` + 默认 `chat`）；桌面端 | `0.1.3` | 2026-09-26 | 对话预置 24 家 · 协议（OpenAI 兼容 + Anthropic）· 端点 · 验证 · 模型清洗 · 限额 · 超长识别 · ai.profile 单条与打包 + 导出（不带密钥）；对话 / 流式 / Anthropic 线格式 / 重试 / 代理 / 密钥存储留在应用；**视觉 / 向量维度**（crate 没有）做成 `model_caps.rs` 叠加表。未发布过，按用户决定不写存量迁移（提交 `bc15d13` / `bb76bfa` / `51aa48e`） | `ai-profile-integration` |
+| prism | `E:/my/桌面软件tauri/prism` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image）；`mobile-tauri` 壳不依赖 | `0.1.4` | 2026-10-01 | 对话预置 · 协议（OpenAI 兼容 + Anthropic）· 端点 · 验证 · 模型清洗 · 限额 · 历史裁剪与超长重试 · ai.profile 单条与打包 + 导出 · **生图预置与调用**（`media::image`）；**流式解码**与**生图预置反推**（`infer_preset_key_for`）、素材库图片尺寸读真实宽高（提交 `e233275` / `82d65ff` / `e919ae3`，本地未推送，会话收尾以 prism 仓库为准）；对话实现、配图落盘入库留在应用 | `ai-profile-integration` |
+| aibid | `E:/my/backend_tauri/aibid` | crates.io 版本（`desktop/src-tauri/Cargo.toml`，`client` + 默认 `chat`）；桌面端 | `0.1.4` | 2026-10-01 | 对话预置 24 家 · 协议（OpenAI 兼容 + Anthropic）· 端点 · 验证 · 模型清洗 · 限额 · 超长识别 · ai.profile 单条与打包 + 导出（不带密钥）；对话 / 流式 / Anthropic 线格式 / 重试 / 代理 / 密钥存储留在应用；**视觉 / 向量维度**（crate 没有）做成 `model_caps.rs` 叠加表。**流式解码**（`stream`，本地 SSE 解析器已删，提交 `57ca6cc` / `63cbf42`，本地未推送）。未发布过，按用户决定不写存量迁移（接入提交 `bc15d13` / `bb76bfa` / `51aa48e`） | `ai-profile-integration` |
 
 > ⏳ sigil / knowledge_base / onestop / story_loom / reeve 的界面改动都**尚未实机验证**；代码测试全绿。
 > prism 已在 tauri dev 里验证「获取」（文本 / 图片），测试连接、导入导出、生图还没实测。
@@ -25,7 +25,8 @@
 > **sigil 已升到 `0.1.4` 并迁移流式**（提交 `841b309`，2026-10-01，已推 GitHub / Gitee）：删掉 `OaStream` / `parse_sse_event` /
 > `handle_anthropic_sse_event` / `openai_stop_reason` / `looks_like_html`，两个协议共用一个 `pump_stream`；
 > 全量测试 lib 1551 条通过，**用户已实机验证通过**（2026-10-01）。
-> 其余五家（knowledge_base / onestop / story_loom / reeve / prism）**仍引用 `0.1.3`**；`0.1.4` 是兼容补丁，只升版本号零代码改动，
+> **prism、aibid 也已升到 `0.1.4` 并迁移流式**（2026-10-01，均本地提交未推送，待用户实机验证）：aibid 615 条测试通过，`finish_reason` 词表换算守住 AI-04 截断闸门，断流改为报错而不再静默成功。
+> 其余四家（knowledge_base / onestop / story_loom / reeve）**仍引用 `0.1.3`**；`0.1.4` 是兼容补丁，只升版本号零代码改动，
 > 但要用 `stream` / `infer_preset_key_for` 的下游必须先升。
 >
 > 迁移时的两个提醒（sigil 踩到的）：
