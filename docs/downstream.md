@@ -31,6 +31,10 @@
 > **全部下游现已引用 `0.1.4`。** 其中流式解码：story_loom 已迁（见上表），knowledge_base 也已迁（Ollama 原生 NDJSON 除外，lib 904 条全过），
 > 断流原先会静默当成功；**reeve 的 AI 助手完全没有流式**（`llm_chat` 整段返回、「停止」只是前端软标志），属新增功能而非迁移，先出方案再定。
 >
+> 2026-10-01：**`0.1.5`（本地提交，尚未发布）给 `stream` 加了 opt-in 的 `StreamDecoder::with_thinking_blocks(true)`（保留 Anthropic thinking 块含 `signature`，供带工具调用的多轮回传）与 `outcome.usage` 的 cache 读写 token**，
+> 是 reeve AI 助手接流式的前置条件。默认关闭，**现有下游不用改，`Cargo.toml` 的引用也不用动**：六个下游没人调用该选项，`outcome.content` 不变。
+> 需要回传 thinking 块的应用（目前只有 reeve 的方案会用）等 `0.1.5` 发布后再升。
+>
 > 迁移时的两个提醒（sigil 踩到的）：
 > ① 构建脚本会撞 `tauri dev` 开发版占用的 `dokan2.dll`（os error 32），验证用独立的 `CARGO_TARGET_DIR` 完整重编，别去关别人的开发版；
 > ② `cargo update -p ai-profile` 可能把别的包（errno / rustix / tempfile 等）的 `windows-sys` 引用顺手改旧，

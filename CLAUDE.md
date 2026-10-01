@@ -193,6 +193,8 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 | `openai_truncated_drops_partial_tool_calls_keeps_text` / `abort_keeps_text_and_drops_tools` | 断流 / 取消绝不留下半截工具调用（执行必出错） |
 | `openai_late_id_and_name_start_once_after_name_known` / `openai_clean_end_without_index_or_id_fills_distinct_ids` | 工具调用 id / 名字晚到只发一次 start；缺 index 缺 id 也不串块、id 互不相同 |
 | `stream_options_rejection_is_recognised` / `openai_error_null_is_not_an_error` | 只在真被拒时才去掉 `stream_options` 重试；`error: null` 不能误判成失败 |
+| `thinking_blocks_are_off_by_default_and_explicit_false_is_the_same` / `incomplete_streams_drop_thinking_blocks_and_keep_only_text` | 🔴 `with_thinking_blocks` 必须默认关（已发布下游把 `content` 直接存回历史）；断流 / 取消 / 流内错误绝不留下签名不全的 thinking 块 |
+| `cache_only_change_emits_no_usage_event` / `zero_cache_fields_are_omitted_from_the_wire_shape` | cache 用量不进 `Usage` 事件（加字段会破坏下游模式匹配），为 0 时序列化省略（旧 JSON 逐字节不变） |
 | `stream_decoder_is_usable_from_outside` | 🔴 集成测试：`non_exhaustive` 的事件 / 结果从外部能 match，`StreamDecoder` 是 `Send + 'static` |
 | `providers_md_in_sync` | 防止文档变成又一份会漂移的副本 |
 | `spec_files_in_sync`（xtask） | 其他语言照着 `spec/` 实现；用例与代码不同步，别的语言就会悄悄分叉 |
