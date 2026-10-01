@@ -3,7 +3,9 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，版本位的判定规则见
 [`docs/versioning.md`](docs/versioning.md)。
 
-## [未发布]
+## [0.1.6] - 2026-10-01
+
+**升级只需 `cargo update -p ai-profile`，不用改代码；没有任何预置的默认 model 变化。**
 
 ### 新增
 - **Sonnet 5.5 进候选清单**（2026-09-28 发布，接替 Sonnet 5，单价不变）：Anthropic 官方档与 Claude Code 档共用清单加 `claude-sonnet-5-5`，

@@ -2713,7 +2713,7 @@
       "name": "finish_reason = end_turn"
     }
   ],
-  "crateVersion": "0.1.5",
+  "crateVersion": "0.1.6",
   "description": "OpenAI 兼容 / Anthropic 的 SSE 字节流 → 统一事件与收尾结果。decode 用例：把 input.chunks 依次喂给解码器（end=eof 读到 EOF 后收尾；end=abort 取消），期望值 = 全部事件（喂入时产生的 + 收尾时补的）与 outcome。事件形状 tag=kind、字段 camelCase；结果形状见 expected.outcome。分包不影响结果：把同一段流切到任意位置（包括把多字节 UTF-8 字符或 \\r\\n 切开），事件序列与结果必须完全一致 —— 字符串用例只体现「帧中间切开」，UTF-8 字节切分请自行补测。input.thinkingBlocks 可选，缺省 = false：为 true 时保留 Anthropic 的 thinking / redacted_thinking 块（含 signature）进 outcome.content，规则见 rules.thinkingBlocks；不开时行为与 0.1.4 逐字节一致。outcome.usage 里 cacheCreationInputTokens / cacheReadInputTokens 为 0 时不出现（缺省按 0 读），规则见 rules.cacheUsage。其余函数：is_stream_options_rejected、looks_like_html、stop_reason_from_openai。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "rules": {
