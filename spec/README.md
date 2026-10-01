@@ -13,7 +13,7 @@
 | `conformance/limits.json` | token 限额三层合并 |
 | `conformance/preset_lookup.json` | 从已存配置反推预置：`infer_preset_key` / `infer_preset_key_for`（按能力类别） / `model_limits`（预置登记的静态限额） / `preset_endpoint` |
 | `conformance/history.json` | 超长报错识别：`is_context_overflow`（历史裁剪本身暂无用例） |
-| `conformance/stream.json` | 流式解码：OpenAI 兼容 / Anthropic 的 SSE 字节 → 统一事件与收尾结果（`decode`，含分包、断流、取消、流内错误）、`is_stream_options_rejected`、`looks_like_html`、`stop_reason_from_openai`；`rules` 给出块号、分帧、收尾等规则摘要 |
+| `conformance/stream.json` | 流式解码：OpenAI 兼容 / Anthropic 的 SSE 字节 → 统一事件与收尾结果（`decode`，含分包、断流、取消、流内错误；`input.thinkingBlocks`（可选，缺省 false）开启时保留 Anthropic 的 thinking / redacted_thinking 块，`outcome.usage` 带 cache 读写 token）、`is_stream_options_rejected`、`looks_like_html`、`stop_reason_from_openai`；`rules` 给出块号、分帧、收尾等规则摘要 |
 
 🔴 **全部由 `cargo xtask gen-spec` 生成，请勿手改。** 期望值是 Rust 参考实现现场算出来的，
 守卫测试 `spec_files_in_sync` 保证它们与代码同步 —— 改了规则忘了重新生成，CI 会红。

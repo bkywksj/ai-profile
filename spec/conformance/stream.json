@@ -1822,6 +1822,747 @@
       "name": "Anthropic：stop_reason 原样透传，未知取值保留"
     },
     {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "先"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "想"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "text_delta",
+            "text": "我来查"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "再想"
+          },
+          {
+            "blockIndex": 4,
+            "id": "toolu_1",
+            "kind": "tool_use_start",
+            "name": "read"
+          },
+          {
+            "blockIndex": 4,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"p\":1}"
+          },
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 42
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "我来查",
+              "type": "text"
+            },
+            {
+              "id": "toolu_1",
+              "input": {
+                "p": 1
+              },
+              "name": "read",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": "claude-x",
+          "reasoning": "先想再想",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "cacheCreationInputTokens": 100,
+            "cacheReadInputTokens": 2500,
+            "inputTokens": 25,
+            "outputTokens": 42
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1,\"cache_creation_input_tokens\":100,\"cache_read_input_tokens\":2000}}}\n\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"先\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"AbC\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"dEf==\"}}\n\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"我来查\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"再想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"s2\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":3,\"content_block\":{\"type\":\"redacted_thinking\",\"data\":\"EncRyPt\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":4,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":4,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":1}\"}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42,\"cache_read_input_tokens\":2500}}\n\ndata: {\"type\":\"message_stop\"}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec"
+      },
+      "name": "Anthropic：默认（没有 thinkingBlocks）时同一段含 thinking / redacted_thinking 的流，content 只有 text 与 tool_use；cache_creation / cache_read 读进 usage，message_delta 的累计值覆盖 message_start 的"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 5,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "inputTokens": 5,
+            "kind": "usage",
+            "outputTokens": 9
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "cacheCreationInputTokens": 40,
+            "cacheReadInputTokens": 300,
+            "inputTokens": 5,
+            "outputTokens": 9
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":5,\"output_tokens\":1,\"cache_read_input_tokens\":300}}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{},\"usage\":{\"cache_creation_input_tokens\":40}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":9,\"cache_read_input_tokens\":0}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec"
+      },
+      "name": "Anthropic：cache 用量 0 不覆盖已有非零值；只有 cache 变化的帧不发 usage 事件；usage 序列化里为 0 的 cache 字段省略"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 3,
+            "kind": "usage",
+            "outputTokens": 4
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "a"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "a",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 3,
+            "outputTokens": 4
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"a\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":3,\"completion_tokens\":4,\"cache_read_input_tokens\":9,\"prompt_tokens_details\":{\"cached_tokens\":8}}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec"
+      },
+      "name": "OpenAI 兼容：不读 cache 字段（cache_read_input_tokens / prompt_tokens_details.cached_tokens 都忽略），usage 里没有 cache 键"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "先"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "想"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "text_delta",
+            "text": "我来查"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "再想"
+          },
+          {
+            "blockIndex": 4,
+            "id": "toolu_1",
+            "kind": "tool_use_start",
+            "name": "read"
+          },
+          {
+            "blockIndex": 4,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"p\":1}"
+          },
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 42
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "signature": "AbCdEf==",
+              "thinking": "先想",
+              "type": "thinking"
+            },
+            {
+              "text": "我来查",
+              "type": "text"
+            },
+            {
+              "signature": "s2",
+              "thinking": "再想",
+              "type": "thinking"
+            },
+            {
+              "data": "EncRyPt",
+              "type": "redacted_thinking"
+            },
+            {
+              "id": "toolu_1",
+              "input": {
+                "p": 1
+              },
+              "name": "read",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": "claude-x",
+          "reasoning": "先想再想",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "cacheCreationInputTokens": 100,
+            "cacheReadInputTokens": 2500,
+            "inputTokens": 25,
+            "outputTokens": 42
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1,\"cache_creation_input_tokens\":100,\"cache_read_input_tokens\":2000}}}\n\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"先\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"AbC\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"dEf==\"}}\n\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"我来查\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"再想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"s2\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":3,\"content_block\":{\"type\":\"redacted_thinking\",\"data\":\"EncRyPt\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":4,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":4,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":1}\"}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42,\"cache_read_input_tokens\":2500}}\n\ndata: {\"type\":\"message_stop\"}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec",
+        "thinkingBlocks": true
+      },
+      "name": "thinkingBlocks：thinking（签名分两片拼接）→ 文字 → thinking → redacted_thinking → tool_use，content 按流里的顺序（即 index 升序）保留；事件序列与不开选项时完全相同，块号沿用协议的 index"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "先"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "想"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "text_delta",
+            "text": "我来查"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "再想"
+          },
+          {
+            "blockIndex": 4,
+            "id": "toolu_1",
+            "kind": "tool_use_start",
+            "name": "read"
+          },
+          {
+            "blockIndex": 4,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"p\":1}"
+          },
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 42
+          },
+          {
+            "kind": "finish",
+            "reason": "tool_use"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "signature": "AbCdEf==",
+              "thinking": "先想",
+              "type": "thinking"
+            },
+            {
+              "text": "我来查",
+              "type": "text"
+            },
+            {
+              "signature": "s2",
+              "thinking": "再想",
+              "type": "thinking"
+            },
+            {
+              "data": "EncRyPt",
+              "type": "redacted_thinking"
+            },
+            {
+              "id": "toolu_1",
+              "input": {
+                "p": 1
+              },
+              "name": "read",
+              "type": "tool_use"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": "claude-x",
+          "reasoning": "先想再想",
+          "skippedFrames": 0,
+          "stopReason": "tool_use",
+          "usage": {
+            "cacheCreationInputTokens": 100,
+            "cacheReadInputTokens": 2500,
+            "inputTokens": 25,
+            "outputTokens": 42
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1,\"cache_creation_input_tokens\":100,\"cache_read_input_tokens\":2000}}}\n\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"先\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"sig",
+          "nature_delta\",\"signature\":\"AbC\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"dEf==\"}}\n\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"我来查\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"再想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"s2\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":3,\"content_block\":{\"type\":\"redacted_thinking\",\"data\":\"EncRyPt\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":4,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":4,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":1}\"}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42,\"cache_read_input_tokens\":2500}}\n\ndata: {\"type\":\"message_stop\"}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec",
+        "thinkingBlocks": true
+      },
+      "name": "thinkingBlocks：分包（切在 signature_delta 帧中间）结果与整包一致"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "kind": "reasoning_delta",
+            "text": "嗯"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "signature": "sg",
+              "thinking": "嗯",
+              "type": "thinking"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "嗯",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"嗯\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"sg\"}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec",
+        "thinkingBlocks": true
+      },
+      "name": "thinkingBlocks：没有 content_block_start、直接来 thinking_delta / signature_delta 的网关，按 index 现建块"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "kind": "reasoning_delta",
+            "text": "无签名"
+          },
+          {
+            "blockIndex": 2,
+            "kind": "text_delta",
+            "text": "答"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "data": "R",
+              "type": "redacted_thinking"
+            },
+            {
+              "text": "答",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "无签名",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"无签名\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"redacted_thinking\",\"data\":\"R\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"text\",\"text\":\"答\"}}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec",
+        "thinkingBlocks": true
+      },
+      "name": "thinkingBlocks：没有签名的 thinking 块不进 content（发不回官方端点），思考文字仍在 reasoning；redacted_thinking 不要求签名"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "先"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "想"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "text_delta",
+            "text": "我来查"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "再想"
+          },
+          {
+            "blockIndex": 4,
+            "id": "toolu_1",
+            "kind": "tool_use_start",
+            "name": "read"
+          },
+          {
+            "blockIndex": 4,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"p\":1}"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "我来查",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "truncated"
+          },
+          "model": "claude-x",
+          "reasoning": "先想再想",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "cacheCreationInputTokens": 100,
+            "cacheReadInputTokens": 2000,
+            "inputTokens": 25,
+            "outputTokens": 1
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1,\"cache_creation_input_tokens\":100,\"cache_read_input_tokens\":2000}}}\n\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"先\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"AbC\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"dEf==\"}}\n\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"我来查\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"再想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"s2\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":3,\"content_block\":{\"type\":\"redacted_thinking\",\"data\":\"EncRyPt\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":4,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":4,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":1}\"}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec",
+        "thinkingBlocks": true
+      },
+      "name": "thinkingBlocks：断流（truncated）时 thinking / redacted_thinking 一并丢弃，只留文字"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "先"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "想"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "text_delta",
+            "text": "我来查"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "再想"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "我来查",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "cancelled"
+          },
+          "model": "claude-x",
+          "reasoning": "先想再想",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "cacheCreationInputTokens": 100,
+            "cacheReadInputTokens": 2000,
+            "inputTokens": 25,
+            "outputTokens": 1
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1,\"cache_creation_input_tokens\":100,\"cache_read_input_tokens\":2000}}}\n\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"先\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"AbC\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"dEf==\"}}\n\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"我来查\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"再想\"}}\n\n"
+        ],
+        "end": "abort",
+        "protocol": "anthropic",
+        "streamId": "spec",
+        "thinkingBlocks": true
+      },
+      "name": "thinkingBlocks：取消（abort）时同样只留文字"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "inputTokens": 25,
+            "kind": "usage",
+            "outputTokens": 1
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "先"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "想"
+          },
+          {
+            "blockIndex": 1,
+            "kind": "text_delta",
+            "text": "我来查"
+          },
+          {
+            "kind": "reasoning_delta",
+            "text": "再想"
+          },
+          {
+            "blockIndex": 4,
+            "id": "toolu_1",
+            "kind": "tool_use_start",
+            "name": "read"
+          },
+          {
+            "blockIndex": 4,
+            "kind": "tool_use_delta",
+            "partialJson": "{\"p\":1}"
+          },
+          {
+            "kind": "error",
+            "message": "Overloaded"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "我来查",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "failed",
+            "message": "Overloaded"
+          },
+          "model": "claude-x",
+          "reasoning": "先想再想",
+          "skippedFrames": 0,
+          "stopReason": null,
+          "usage": {
+            "cacheCreationInputTokens": 100,
+            "cacheReadInputTokens": 2000,
+            "inputTokens": 25,
+            "outputTokens": 1
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1,\"cache_creation_input_tokens\":100,\"cache_read_input_tokens\":2000}}}\n\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"先\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"AbC\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"dEf==\"}}\n\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"我来查\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"再想\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"s2\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":3,\"content_block\":{\"type\":\"redacted_thinking\",\"data\":\"EncRyPt\"}}\n\ndata: {\"type\":\"content_block_start\",\"index\":4,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":4,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":1}\"}}\n\nevent: error\ndata: {\"type\":\"error\",\"error\":{\"message\":\"Overloaded\"}}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "anthropic",
+        "streamId": "spec",
+        "thinkingBlocks": true
+      },
+      "name": "thinkingBlocks：流内 error（failed）时同样只留文字"
+    },
+    {
+      "expected": {
+        "events": [
+          {
+            "kind": "reasoning_delta",
+            "text": "想"
+          },
+          {
+            "blockIndex": 0,
+            "kind": "text_delta",
+            "text": "答"
+          },
+          {
+            "kind": "finish",
+            "reason": "end_turn"
+          }
+        ],
+        "outcome": {
+          "content": [
+            {
+              "text": "答",
+              "type": "text"
+            }
+          ],
+          "end": {
+            "kind": "complete"
+          },
+          "model": null,
+          "reasoning": "想",
+          "skippedFrames": 0,
+          "stopReason": "end_turn",
+          "usage": {
+            "inputTokens": 0,
+            "outputTokens": 0
+          }
+        }
+      },
+      "fn": "decode",
+      "input": {
+        "chunks": [
+          "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"想\"}}]}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"答\"},\"finish_reason\":\"stop\"}]}\n\n"
+        ],
+        "end": "eof",
+        "protocol": "openai_compatible",
+        "streamId": "spec",
+        "thinkingBlocks": true
+      },
+      "name": "thinkingBlocks 对 OpenAI 兼容协议是 no-op：reasoning_content 照旧只走 reasoning_delta"
+    },
+    {
       "expected": true,
       "fn": "is_stream_options_rejected",
       "input": {
@@ -1972,16 +2713,17 @@
       "name": "finish_reason = end_turn"
     }
   ],
-  "crateVersion": "0.1.4",
-  "description": "OpenAI 兼容 / Anthropic 的 SSE 字节流 → 统一事件与收尾结果。decode 用例：把 input.chunks 依次喂给解码器（end=eof 读到 EOF 后收尾；end=abort 取消），期望值 = 全部事件（喂入时产生的 + 收尾时补的）与 outcome。事件形状 tag=kind、字段 camelCase；结果形状见 expected.outcome。分包不影响结果：把同一段流切到任意位置（包括把多字节 UTF-8 字符或 \\r\\n 切开），事件序列与结果必须完全一致 —— 字符串用例只体现「帧中间切开」，UTF-8 字节切分请自行补测。其余函数：is_stream_options_rejected、looks_like_html、stop_reason_from_openai。",
+  "crateVersion": "0.1.5",
+  "description": "OpenAI 兼容 / Anthropic 的 SSE 字节流 → 统一事件与收尾结果。decode 用例：把 input.chunks 依次喂给解码器（end=eof 读到 EOF 后收尾；end=abort 取消），期望值 = 全部事件（喂入时产生的 + 收尾时补的）与 outcome。事件形状 tag=kind、字段 camelCase；结果形状见 expected.outcome。分包不影响结果：把同一段流切到任意位置（包括把多字节 UTF-8 字符或 \\r\\n 切开），事件序列与结果必须完全一致 —— 字符串用例只体现「帧中间切开」，UTF-8 字节切分请自行补测。input.thinkingBlocks 可选，缺省 = false：为 true 时保留 Anthropic 的 thinking / redacted_thinking 块（含 signature）进 outcome.content，规则见 rules.thinkingBlocks；不开时行为与 0.1.4 逐字节一致。outcome.usage 里 cacheCreationInputTokens / cacheReadInputTokens 为 0 时不出现（缺省按 0 读），规则见 rules.cacheUsage。其余函数：is_stream_options_rejected、looks_like_html、stop_reason_from_openai。",
   "generatedBy": "cargo xtask gen-spec（期望值由 Rust 参考实现算出，请勿手改）",
   "rules": {
-    "blockIndex": "OpenAI 兼容：文字固定块 0，第 k 个工具调用是块 k+1；Anthropic：用协议自带的 index。思考不占块号",
-    "content": "Anthropic 风格 block 数组：{type:text,text} / {type:tool_use,id,name,input}；空文字块省略；参数解析失败或为空 → {}",
+    "blockIndex": "OpenAI 兼容：文字固定块 0，第 k 个工具调用是块 k+1；Anthropic：用协议自带的 index。思考事件（reasoning_delta）不带块号；开启 thinkingBlocks 后 thinking 块在 content 里沿用它的 index 排序，事件的块号不变",
+    "cacheUsage": "仅 Anthropic：message_start.message.usage 与 message_delta.usage 里的 cache_creation_input_tokens → outcome.usage.cacheCreationInputTokens、cache_read_input_tokens → cacheReadInputTokens；口径同 usage（累计值覆盖不累加、0 不覆盖非零）；只进 outcome.usage，不进 usage 事件，只有 cache 变化的帧不发 usage 事件；为 0 时序列化省略（缺省 0）；默认就读，不受 thinkingBlocks 影响。OpenAI 兼容的对应字段（prompt_tokens_details.cached_tokens 等）尚未覆盖",
+    "content": "Anthropic 风格 block 数组：{type:text,text} / {type:tool_use,id,name,input}；空文字块省略；参数解析失败或为空 → {}；数组是稠密的（不留空位），按块号（Anthropic 的 index）升序",
     "end": "complete（有结束原因 / [DONE] / message_stop）、truncated（都没有）、cancelled（abort）、failed、not_event_stream（整段没有一行 SSE，body 为原始响应体）。只有 complete 才有 stopReason 与 finish 事件，content 才带 tool_use 块；其余只留文字",
     "finish": "OpenAI：choices[0] 只读第一个；finish_reason 空串 / null 不覆盖已有值；choices 为空的帧只读 usage；delta 缺失时读 message",
     "lines": "行尾 \\n / \\r\\n / 单独的 \\r；空行分帧；以 : 开头是注释；data: 后的一个空格可省；多行 data 用 \\n 拼接；拼接后不是合法 JSON、但每行单独是 → 逐行各当一帧；开头的 BOM 丢弃；解析失败的帧跳过并计入 skippedFrames",
-    "reasoning": "reasoning_content / reasoning / thinking_delta → reasoning_delta 事件；累积进 outcome.reasoning，不进 content；signature_delta 丢弃",
+    "reasoning": "reasoning_content / reasoning / thinking_delta → reasoning_delta 事件；累积进 outcome.reasoning（与 thinkingBlocks 无关）；默认不进 content，signature_delta 默认丢弃",
     "stopReason": "complete 时：有 finish_reason / stop_reason 取之（OpenAI 经 stop_reason_from_openai 归一化，Anthropic 原样）；否则有 tool_use 块 → tool_use，无 → end_turn",
     "stopReasonFromOpenai": {
       "function_call": "tool_use",
@@ -1991,9 +2733,10 @@
       "tool_calls": "tool_use"
     },
     "terminal": "[DONE]、message_stop、流内 error 之后的输入一律忽略；error 非 null（或 event: error）→ failed",
+    "thinkingBlocks": "input.thinkingBlocks = true（缺省 false）且协议为 Anthropic 时：content 里按 index 升序额外带 {type:thinking,thinking,signature} 与 {type:redacted_thinking,data}。thinking 文字 = content_block_start.thinking + 全部 thinking_delta；signature = content_block_start.signature + 全部 signature_delta，按到达顺序拼接（可能多片）；没有 content_block_start 直接来 delta 的，按 index 现建块；redacted_thinking 取 content_block_start.content_block.data，没有 data 字符串就忽略。块号沿用协议的 index、不重新编号，所以事件序列（含 reasoning_delta 与各事件的 blockIndex）与不开选项时完全相同，只有 outcome.content 不同。🔴 只有 end = complete 才带这两类块；truncated / cancelled / failed / not_event_stream 时与 tool_use 同一条判据，content 只留文字（签名不全，发回去服务端必拒）。complete 时没有签名（signature 为空）的 thinking 块也不进 content，思考文字仍在 outcome.reasoning。OpenAI 兼容协议：选项无效（no-op）",
     "toolCallRouting": "OpenAI：有 index → 块 index+1（但该块已有不同 id 时另起一块）；无 index 有 id → 按 id 认回已有块，认不出另起一块；无 index 无 id → 本帧内位置+1。arguments 是对象时序列化后整段当参数",
     "toolUseStart": "名字已知，且（id 已到 或 参数已开始）才发 tool_use_start；没有 id 的补 call_<streamId>_<块号>，发出后不变；收尾（complete）时把还没发的补发；参数先于 start 到达的，start 之后紧跟一个 tool_use_delta 带上已攒的全部",
-    "usage": "取最后一次出现的值（覆盖不累加）；prompt_tokens / input_tokens、completion_tokens / output_tokens 两套名字都认；值为 0 不覆盖已有非零值；有变化才发 usage 事件"
+    "usage": "取最后一次出现的值（覆盖不累加）；prompt_tokens / input_tokens、completion_tokens / output_tokens 两套名字都认；值为 0 不覆盖已有非零值；input / output 有变化才发 usage 事件（事件只带这两个字段）"
   },
   "specVersion": 1,
   "title": "流式解码"

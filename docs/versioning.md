@@ -18,7 +18,7 @@
 
 > 🔴 **0.x 阶段的换算**：上表按 1.0 之后的语义写。0.x 期间 Cargo 把版本位整体右移一位 ——
 > 表中 patch 与 minor（兼容的新增）都发 `0.1.x` 补丁位，下游 `cargo update` 自动拿到；
-> 表中 major（破坏性）才发 `0.x.0`，下游必须改 `Cargo.toml`。0.1.2、0.1.3、0.1.4 的新增公开 API 都按补丁位发。
+> 表中 major（破坏性）才发 `0.x.0`，下游必须改 `Cargo.toml`。0.1.2、0.1.3、0.1.4、0.1.5 的新增公开 API 都按补丁位发（0.1.5：`StreamDecoder::with_thinking_blocks` 与 `StreamUsage` 加 cache 字段）。
 
 ### 🔴 reqwest 的大版本在公开 API 里
 

@@ -3,6 +3,36 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，版本位的判定规则见
 [`docs/versioning.md`](docs/versioning.md)。
 
+## [0.1.5] - 2026-10-01
+
+**升级只需 `cargo update -p ai-profile`，不用改代码；默认行为与 0.1.4 完全一致。** `stream` 新增两项能力，来自 reeve 接入流式的前置要求：保留 Anthropic 的 thinking 块（含 `signature`）供回传，以及上报 cache 用量。
+
+### 新增
+- **`StreamDecoder::with_thinking_blocks(bool)`**（默认 `false`，**opt-in**）：开启后 `StreamOutcome::content` 按流里的顺序带上
+  `{"type":"thinking","thinking","signature"}` 与 `{"type":"redacted_thinking","data"}`。Anthropic 要求带 `tool_use` 的多轮对话把上一轮的
+  thinking 块**连同 `signature` 原样回传**，否则下一轮请求被拒；0.1.4 有意不保留它们。
+  - 块号沿用 Anthropic 自带的 `index`，`content` 按 `index` 升序（稠密数组，不留空位）；**事件序列完全不变**（`ReasoningDelta` 照发、仍不带块号，
+    其余事件的 `block_index` 也不变），开启与否只有 `content` 不同
+  - `signature` 来自 `signature_delta`，可能分多片，按到达顺序拼接；没有 `content_block_start` 直接来 delta 的网关，按 `index` 现建块
+  - 🔴 **只有 `Complete` 才带思考块**：断流 / 取消 / 流内错误时与工具调用同一条判据，`content` 只留文字（签名不全，发回去服务端必拒）
+  - **没有签名的 thinking 块不进 `content`**（个别 Anthropic 兼容网关不转 `signature_delta`，这种块发不回官方端点）；思考文字仍在 `StreamOutcome::reasoning`。
+    `redacted_thinking` 本身就是不透明负载，不要求签名
+  - OpenAI 兼容协议：no-op（`reasoning_content` 没有签名，也没有回传要求）
+- **cache 用量**：`StreamUsage` 增加 `cache_creation_input_tokens` / `cache_read_input_tokens`（序列化为 `cacheCreationInputTokens` / `cacheReadInputTokens`）。
+  读 Anthropic 的 `message_start` 与 `message_delta` 里的 `usage`，累计值覆盖不累加、0 不覆盖非零，与 input / output 口径一致。
+  **默认就读**（不改 `content`）。两处有意的取舍：
+  - **只进 `StreamOutcome::usage`，不进 `StreamEvent::Usage` 事件**：事件是带命名字段的变体，加字段会让下游不带 `..` 的模式匹配编译失败；
+    也不会因为只有 cache 变化而多发 `Usage` 事件
+  - **为 0 时序列化省略**（缺省 = 0）：没有缓存的流，`usage` 的 JSON 与 0.1.4 逐字节一致
+- 多语言规范：`conformance/stream.json` 的 `decode` 用例 `input` 增加可选 `thinkingBlocks`（缺省 = 关闭），新增 11 条用例
+  （默认关闭时含 thinking 的流、cache 用量与 0 不覆盖、OpenAI 不读 cache、开启后的 thinking + signature + tool_use 交错与分包、无 start 事件、无签名丢弃、
+  断流 / 取消 / 流内错误丢思考块、OpenAI no-op）；`rules` 增加 `thinkingBlocks` / `cacheUsage`。**已有用例一条未改**
+
+### 说明
+- OpenAI 兼容协议的 cache 字段（`prompt_tokens_details.cached_tokens`、DeepSeek 的 `prompt_cache_hit_tokens` 等）**本次未覆盖**，`StreamUsage` 里恒为 0
+- 影响面：六个已接入下游都没有调用 `with_thinking_blocks`，`outcome.content` 不变；`outcome.usage` 只在 Anthropic 流带 cache 字段时多出两个值，
+  下游若按字段读（`input_tokens` / `output_tokens`）不受影响。`StreamUsage` 是 `#[non_exhaustive]`，加字段对下游兼容
+
 ## [0.1.4] - 2026-09-30
 
 **升级只需 `cargo update -p ai-profile`，不用改代码。** 新增流式解码 `stream`（各下游可逐步把自写的 SSE 解析换掉）与按能力反推预置的 `infer_preset_key_for`（来自 prism 接入反馈）。

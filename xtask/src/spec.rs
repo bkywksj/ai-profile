@@ -1069,9 +1069,14 @@ fn history_json() -> Value {
 
 // ── 流式解码 ─────────────────────────────────────────────────────
 
-/// 跑一遍解码器，得到 `{ events, outcome }`。`abort` 为真时不读到 EOF，而是取消。
-fn decode_case(protocol: Protocol, chunks: &[&str], abort: bool) -> Value {
+/// 跑一遍解码器，得到 `{ events, outcome }`。`abort` 为真时不读到 EOF，而是取消；
+/// `thinking` 对应 `with_thinking_blocks`。
+fn decode_case(protocol: Protocol, chunks: &[&str], abort: bool, thinking: bool) -> Value {
     let mut dec = StreamDecoder::new(protocol).with_stream_id("spec");
+    // 选项缺省时不去碰它：用例要钉死的是「默认行为」，显式传 false 会让默认值被改掉时守卫看不见
+    if thinking {
+        dec = dec.with_thinking_blocks(true);
+    }
     let mut events: Vec<StreamEvent> = Vec::new();
     for c in chunks {
         events.extend(dec.push(c.as_bytes()));
@@ -1132,6 +1137,42 @@ fn stream_json() -> Value {
         .filter(|l| !l.starts_with("event:"))
         .collect::<Vec<_>>()
         .join("\n");
+
+    // 思考块：thinking(0，签名分两片) → 文字(1) → thinking(2) → redacted_thinking(3) → tool_use(4)
+    let an_think = concat!(
+        "data: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-x\",\"usage\":{\"input_tokens\":25,\"output_tokens\":1,\"cache_creation_input_tokens\":100,\"cache_read_input_tokens\":2000}}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"先\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"想\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"AbC\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"dEf==\"}}\n\n",
+        "data: {\"type\":\"content_block_stop\",\"index\":0}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"我来查\"}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"再想\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"s2\"}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":3,\"content_block\":{\"type\":\"redacted_thinking\",\"data\":\"EncRyPt\"}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"index\":4,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"read\",\"input\":{}}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"index\":4,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"p\\\":1}\"}}\n\n",
+        "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42,\"cache_read_input_tokens\":2500}}\n\n",
+        "data: {\"type\":\"message_stop\"}\n\n",
+    );
+    // 断流：截掉 message_delta 与 message_stop
+    let an_think_cut = an_think
+        .split("data: {\"type\":\"message_delta\"")
+        .next()
+        .unwrap();
+    // 取消：停在第二个 thinking 的签名到达之前
+    let an_think_midway = an_think
+        .split("data: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"signature_delta\"")
+        .next()
+        .unwrap();
+    let an_think_failed = format!(
+        "{an_think_cut}event: error\ndata: {{\"type\":\"error\",\"error\":{{\"message\":\"Overloaded\"}}}}\n\n"
+    );
+    // 切在第一个 signature_delta 帧的中间
+    let (an_think_a, an_think_b) = an_think.split_at(an_think.find("signature_delta").unwrap() + 3);
 
     // (名称, 协议, 分包, 是否取消)
     let decode: Vec<(&str, &str, Vec<&str>, bool)> = vec![
@@ -1417,26 +1458,127 @@ fn stream_json() -> Value {
             vec!["data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\"}}\n\n"],
             false,
         ),
+        (
+            "Anthropic：默认（没有 thinkingBlocks）时同一段含 thinking / redacted_thinking 的流，content 只有 text 与 tool_use；\
+             cache_creation / cache_read 读进 usage，message_delta 的累计值覆盖 message_start 的",
+            AN,
+            vec![an_think],
+            false,
+        ),
+        (
+            "Anthropic：cache 用量 0 不覆盖已有非零值；只有 cache 变化的帧不发 usage 事件；usage 序列化里为 0 的 cache 字段省略",
+            AN,
+            vec![concat!(
+                "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":5,\"output_tokens\":1,\"cache_read_input_tokens\":300}}}\n\n",
+                "data: {\"type\":\"message_delta\",\"delta\":{},\"usage\":{\"cache_creation_input_tokens\":40}}\n\n",
+                "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":9,\"cache_read_input_tokens\":0}}\n\n",
+            )],
+            false,
+        ),
+        (
+            "OpenAI 兼容：不读 cache 字段（cache_read_input_tokens / prompt_tokens_details.cached_tokens 都忽略），usage 里没有 cache 键",
+            OA,
+            vec!["data: {\"choices\":[{\"delta\":{\"content\":\"a\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":3,\"completion_tokens\":4,\"cache_read_input_tokens\":9,\"prompt_tokens_details\":{\"cached_tokens\":8}}}\n\n"],
+            false,
+        ),
     ];
 
-    let mut cases: Vec<Value> = decode
-        .iter()
-        .map(|(name, protocol, chunks, abort)| {
+    // 同 `decode`，但 input.thinkingBlocks = true（`with_thinking_blocks(true)`）
+    let decode_think: Vec<(&str, &str, Vec<&str>, bool)> = vec![
+        (
+            "thinkingBlocks：thinking（签名分两片拼接）→ 文字 → thinking → redacted_thinking → tool_use，content 按流里的顺序（即 index 升序）保留；\
+             事件序列与不开选项时完全相同，块号沿用协议的 index",
+            AN,
+            vec![an_think],
+            false,
+        ),
+        (
+            "thinkingBlocks：分包（切在 signature_delta 帧中间）结果与整包一致",
+            AN,
+            vec![an_think_a, an_think_b],
+            false,
+        ),
+        (
+            "thinkingBlocks：没有 content_block_start、直接来 thinking_delta / signature_delta 的网关，按 index 现建块",
+            AN,
+            vec![concat!(
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"嗯\"}}\n\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"signature_delta\",\"signature\":\"sg\"}}\n\n",
+                "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n",
+            )],
+            false,
+        ),
+        (
+            "thinkingBlocks：没有签名的 thinking 块不进 content（发不回官方端点），思考文字仍在 reasoning；redacted_thinking 不要求签名",
+            AN,
+            vec![concat!(
+                "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}\n\n",
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"无签名\"}}\n\n",
+                "data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"redacted_thinking\",\"data\":\"R\"}}\n\n",
+                "data: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"text\",\"text\":\"答\"}}\n\n",
+                "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n",
+            )],
+            false,
+        ),
+        (
+            "thinkingBlocks：断流（truncated）时 thinking / redacted_thinking 一并丢弃，只留文字",
+            AN,
+            vec![an_think_cut],
+            false,
+        ),
+        (
+            "thinkingBlocks：取消（abort）时同样只留文字",
+            AN,
+            vec![an_think_midway],
+            true,
+        ),
+        (
+            "thinkingBlocks：流内 error（failed）时同样只留文字",
+            AN,
+            vec![an_think_failed.as_str()],
+            false,
+        ),
+        (
+            "thinkingBlocks 对 OpenAI 兼容协议是 no-op：reasoning_content 照旧只走 reasoning_delta",
+            OA,
+            vec![concat!(
+                "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"想\"}}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{\"content\":\"答\"},\"finish_reason\":\"stop\"}]}\n\n",
+            )],
+            false,
+        ),
+    ];
+
+    let decode_case_json =
+        |name: &str, protocol: &str, chunks: &[&str], abort: bool, thinking: bool| {
             let p = Protocol::parse(protocol).expect("协议拼写");
-            let r = decode_case(p, chunks, *abort);
+            let r = decode_case(p, chunks, abort, thinking);
+            let mut input = json!({
+                "protocol": protocol,
+                "streamId": "spec",
+                "chunks": chunks,
+                "end": if abort { "abort" } else { "eof" },
+            });
+            // 缺省 = 关闭；只在开启时才写，已有用例的 JSON 因此保持不变
+            if thinking {
+                input["thinkingBlocks"] = json!(true);
+            }
             json!({
                 "fn": "decode",
                 "name": name,
-                "input": {
-                    "protocol": protocol,
-                    "streamId": "spec",
-                    "chunks": chunks,
-                    "end": if *abort { "abort" } else { "eof" },
-                },
+                "input": input,
                 "expected": r,
             })
+        };
+    let mut cases: Vec<Value> = decode
+        .iter()
+        .map(|(name, protocol, chunks, abort)| {
+            decode_case_json(name, protocol, chunks, *abort, false)
         })
         .collect();
+    cases.extend(decode_think.iter().map(|(name, protocol, chunks, abort)| {
+        decode_case_json(name, protocol, chunks, *abort, true)
+    }));
 
     let rejected: [(&str, u16, &str); 6] = [
         (
@@ -1516,12 +1658,15 @@ fn stream_json() -> Value {
              （end=eof 读到 EOF 后收尾；end=abort 取消），期望值 = 全部事件（喂入时产生的 + 收尾时补的）与 outcome。\
              事件形状 tag=kind、字段 camelCase；结果形状见 expected.outcome。分包不影响结果：把同一段流切到任意位置\
              （包括把多字节 UTF-8 字符或 \\r\\n 切开），事件序列与结果必须完全一致 —— 字符串用例只体现「帧中间切开」，\
-             UTF-8 字节切分请自行补测。其余函数：is_stream_options_rejected、looks_like_html、stop_reason_from_openai。",
+             UTF-8 字节切分请自行补测。input.thinkingBlocks 可选，缺省 = false：为 true 时保留 Anthropic 的 thinking / \
+             redacted_thinking 块（含 signature）进 outcome.content，规则见 rules.thinkingBlocks；不开时行为与 0.1.4 逐字节一致。\
+             outcome.usage 里 cacheCreationInputTokens / cacheReadInputTokens 为 0 时不出现（缺省按 0 读），规则见 rules.cacheUsage。\
+             其余函数：is_stream_options_rejected、looks_like_html、stop_reason_from_openai。",
         ),
             cases,
         ),
         json!({
-                "blockIndex": "OpenAI 兼容：文字固定块 0，第 k 个工具调用是块 k+1；Anthropic：用协议自带的 index。思考不占块号",
+                "blockIndex": "OpenAI 兼容：文字固定块 0，第 k 个工具调用是块 k+1；Anthropic：用协议自带的 index。思考事件（reasoning_delta）不带块号；开启 thinkingBlocks 后 thinking 块在 content 里沿用它的 index 排序，事件的块号不变",
                 "lines": "行尾 \\n / \\r\\n / 单独的 \\r；空行分帧；以 : 开头是注释；data: 后的一个空格可省；多行 data 用 \\n 拼接；\
                           拼接后不是合法 JSON、但每行单独是 → 逐行各当一帧；开头的 BOM 丢弃；解析失败的帧跳过并计入 skippedFrames",
                 "terminal": "[DONE]、message_stop、流内 error 之后的输入一律忽略；error 非 null（或 event: error）→ failed",
@@ -1529,14 +1674,23 @@ fn stream_json() -> Value {
                                  收尾（complete）时把还没发的补发；参数先于 start 到达的，start 之后紧跟一个 tool_use_delta 带上已攒的全部",
                 "toolCallRouting": "OpenAI：有 index → 块 index+1（但该块已有不同 id 时另起一块）；无 index 有 id → 按 id 认回已有块，认不出另起一块；\
                                     无 index 无 id → 本帧内位置+1。arguments 是对象时序列化后整段当参数",
-                "usage": "取最后一次出现的值（覆盖不累加）；prompt_tokens / input_tokens、completion_tokens / output_tokens 两套名字都认；值为 0 不覆盖已有非零值；有变化才发 usage 事件",
+                "usage": "取最后一次出现的值（覆盖不累加）；prompt_tokens / input_tokens、completion_tokens / output_tokens 两套名字都认；值为 0 不覆盖已有非零值；input / output 有变化才发 usage 事件（事件只带这两个字段）",
+                "cacheUsage": "仅 Anthropic：message_start.message.usage 与 message_delta.usage 里的 cache_creation_input_tokens → outcome.usage.cacheCreationInputTokens、\
+                               cache_read_input_tokens → cacheReadInputTokens；口径同 usage（累计值覆盖不累加、0 不覆盖非零）；只进 outcome.usage，不进 usage 事件，\
+                               只有 cache 变化的帧不发 usage 事件；为 0 时序列化省略（缺省 0）；默认就读，不受 thinkingBlocks 影响。OpenAI 兼容的对应字段（prompt_tokens_details.cached_tokens 等）尚未覆盖",
                 "finish": "OpenAI：choices[0] 只读第一个；finish_reason 空串 / null 不覆盖已有值；choices 为空的帧只读 usage；delta 缺失时读 message",
                 "end": "complete（有结束原因 / [DONE] / message_stop）、truncated（都没有）、cancelled（abort）、failed、not_event_stream（整段没有一行 SSE，body 为原始响应体）。\
                         只有 complete 才有 stopReason 与 finish 事件，content 才带 tool_use 块；其余只留文字",
                 "stopReason": "complete 时：有 finish_reason / stop_reason 取之（OpenAI 经 stop_reason_from_openai 归一化，Anthropic 原样）；否则有 tool_use 块 → tool_use，无 → end_turn",
                 "stopReasonFromOpenai": { "stop": "end_turn", "tool_calls": "tool_use", "function_call": "tool_use", "length": "max_tokens", "other": "原样透传" },
-                "reasoning": "reasoning_content / reasoning / thinking_delta → reasoning_delta 事件；累积进 outcome.reasoning，不进 content；signature_delta 丢弃",
-                "content": "Anthropic 风格 block 数组：{type:text,text} / {type:tool_use,id,name,input}；空文字块省略；参数解析失败或为空 → {}",
+                "reasoning": "reasoning_content / reasoning / thinking_delta → reasoning_delta 事件；累积进 outcome.reasoning（与 thinkingBlocks 无关）；默认不进 content，signature_delta 默认丢弃",
+                "content": "Anthropic 风格 block 数组：{type:text,text} / {type:tool_use,id,name,input}；空文字块省略；参数解析失败或为空 → {}；数组是稠密的（不留空位），按块号（Anthropic 的 index）升序",
+                "thinkingBlocks": "input.thinkingBlocks = true（缺省 false）且协议为 Anthropic 时：content 里按 index 升序额外带 {type:thinking,thinking,signature} 与 {type:redacted_thinking,data}。\
+                                   thinking 文字 = content_block_start.thinking + 全部 thinking_delta；signature = content_block_start.signature + 全部 signature_delta，按到达顺序拼接（可能多片）；\
+                                   没有 content_block_start 直接来 delta 的，按 index 现建块；redacted_thinking 取 content_block_start.content_block.data，没有 data 字符串就忽略。\
+                                   块号沿用协议的 index、不重新编号，所以事件序列（含 reasoning_delta 与各事件的 blockIndex）与不开选项时完全相同，只有 outcome.content 不同。\
+                                   🔴 只有 end = complete 才带这两类块；truncated / cancelled / failed / not_event_stream 时与 tool_use 同一条判据，content 只留文字（签名不全，发回去服务端必拒）。\
+                                   complete 时没有签名（signature 为空）的 thinking 块也不进 content，思考文字仍在 outcome.reasoning。OpenAI 兼容协议：选项无效（no-op）",
             }),
     )
 }
