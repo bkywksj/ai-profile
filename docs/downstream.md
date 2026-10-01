@@ -16,6 +16,7 @@
 | story_loom | `E:/my/桌面软件tauri/story_loom` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `0.1.3` | 2026-09-25 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
 | reeve | `E:/my/桌面软件tauri/reeve` | crates.io 版本，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `0.1.3` | 2026-09-25 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
 | prism | `E:/my/桌面软件tauri/prism` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image）；`mobile-tauri` 壳不依赖 | `0.1.3` | 2026-09-26 | 对话预置 · 协议（OpenAI 兼容 + Anthropic）· 端点 · 验证 · 模型清洗 · 限额 · 历史裁剪与超长重试 · ai.profile 单条与打包 + 导出 · **生图预置与调用**（`media::image`）；对话实现、配图落盘入库留在应用 | `ai-profile-integration` |
+| aibid | `E:/my/backend_tauri/aibid` | crates.io 版本（`desktop/src-tauri/Cargo.toml`，`client` + 默认 `chat`）；桌面端 | `0.1.3` | 2026-09-26 | 对话预置 24 家 · 协议（OpenAI 兼容 + Anthropic）· 端点 · 验证 · 模型清洗 · 限额 · 超长识别 · ai.profile 单条与打包 + 导出（不带密钥）；对话 / 流式 / Anthropic 线格式 / 重试 / 代理 / 密钥存储留在应用；**视觉 / 向量维度**（crate 没有）做成 `model_caps.rs` 叠加表。未发布过，按用户决定不写存量迁移（提交 `bc15d13` / `bb76bfa` / `51aa48e`） | `ai-profile-integration` |
 
 > ⏳ sigil / knowledge_base / onestop / story_loom / reeve 的界面改动都**尚未实机验证**；代码测试全绿。
 > prism 已在 tauri dev 里验证「获取」（文本 / 图片），测试连接、导入导出、生图还没实测。
@@ -45,6 +46,15 @@
 > - **prism 优先**：它已有字节缓冲、`[DONE]`、流内 error、role-only 首块，缺 usage、finish_reason、断流检测（流断了当成功）、2xx 回网页、`stream_options` 重试。
 > - **其余（aibid / onestop / story_loom / knowledge_base）不强制**，下次动对话功能时迁；aibid、onestop 逐块 `from_utf8_lossy` 的乱码会随迁移自然修好。
 >   knowledge_base 的 Ollama 原生 NDJSON 不在 `stream` 范围内，留在应用。
+> - **aibid 迁移时注意**（2026-10-01 摸底，`desktop/src-tauri/src/llm.rs` 的 `chat_stream`）：
+>   ① 只有文本流，无工具调用；回调是 `on_delta(&str)`，返回 `Err` 即取消，收尾用 `ChatReply { content, finish_reason, usage }`；
+>   ② 🔴 **`finish_reason` 的词表**：aibid 用 OpenAI 词表（`stop` / `length` / `tool_calls`）并有截断闸门（AI-04，认 `length`），
+>   crate 的 `StopReason` 是 Anthropic 词表（`end_turn` / `max_tokens` / `tool_use`），迁移时必须换算回去，闸门语义不能变；
+>   ③ `Truncated`（断流）当前会表现为 `finish_reason` 为空，要核对闸门对空值的处置，别让断流变成静默成功；
+>   ④ `stream_options` 重试现在是按**错误字符串**判（`is_stream_options_unsupported`），`stream_send` 在判之前已把响应压成字符串，
+>   换成 crate 的 `is_stream_options_rejected(status, body)` 需要把状态码带出来；
+>   ⑤ 保留：429/5xx 退避重试、`is_stream_unsupported` 回落非流式（`commands::stream_or_chat`）、`report()` 记账；
+>   ⑥ 逐块 `from_utf8_lossy` 的中文乱码会随迁移修好；`ai-profile` 依赖 features 是 `["client"]` 且没关默认特性，所以 `chat`（含 `stream`）已开。
 >
 > story_loom 的本机 lib 单测有 WebView2 入口崩溃（环境问题），
 > 应用侧纯函数测试（`legacy_endpoint` / `provider_share`）是在临时 crate 里 `#[path]` 引入实跑的。
@@ -84,12 +94,11 @@
 
 | 顺序 | 项目 | 现状（2026-09-23 盘点） | 接入时必须处理 |
 |---|---|---|---|
-| 1 | aibid（`E:/my/backend_tauri/aibid`，AI 标书工作站；桌面端在 `desktop/src-tauri`） | **2026-09-26 接入中**（由 aibid 仓库里的会话实施）。0.1.0、无 tag，但 updater 已指向 R2、有面向用户的发布说明底稿 —— **是否已发给用户待确认**。原状：自带一整套手写实现 `llm_presets.rs`（1232 行，15 档）+ `llm.rs`（3165 行：端点拼接、Anthropic 原生协议、三档协议、系统代理），15 档在 crate 里**全都有** | ① key 改名：`openai` → `openai_official`、`anthropic` → `anthropic_official`（`custom` 留应用）；已发给用户则存量配置要迁移 ② 🔴 crate **没有**的维度：每个模型是否支持**视觉**（`vision` / `vision_model`，识别扫描件要在发请求前拦住）、**向量**（`embed_model` / `embed_base_url` / `has_embeddings`）—— 先留在应用侧、按预置 key 叠加；要不要进 crate 另议（knowledge_base 的 RAG 可能也用得上） ③ 对话请求、Anthropic 线格式、视觉请求、向量调用、代理都留应用；验证走 `Verifier::from_builder` 带上它自己的代理 |
-| 2 | sku_lane（`E:/my/桌面软件tauri/sku_lane`，品道 · 电商铺货） | **2026-09-29 接入中**（由 sku_lane 仓库里的会话实施）。未发布（无 tag）。`services/ai.rs`（169 行）**写死 DeepSeek 一家、模型 `deepseek-chat`** —— 该别名 2026-07-24 已下线，**AI 选品评分 / 改写标题现在就是坏的**；无服务商选择、无 `ai.profile` | ① 用户只能填一个 DeepSeek 密钥：接入即新增「模型服务」设置（选服务商 / 获取模型 / 测试连接），属新增界面 ② 未发布，不写迁移 ③ 优先级最高：现在是坏的 |
-| 3 | reka（`E:/my/桌面软件tauri/reka`，HTTP 接口调试工具） | **2026-09-30 接入中**（由 reka 仓库里的会话实施）。未发布（无 tag）。后端 `services/ai_llm.rs`（244 行）按 provider 分派 Anthropic / OpenAI 两套对话，OpenAI 分支**自动补 `/v1`**；前端 `AiSection.tsx` 写死 5 家预置（DeepSeek 默认 `deepseek-chat`，别名已下线）；另有 **TS 版 `lib/aiProfile.ts` 解析器**（117 行）+ `commands/ai_profile.rs` | ① 前端预置表、TS 解析器删掉，改用 crate ② 地址规则换成 crate 的（原样使用），未发布，不写迁移 ③ 对话实现（两套协议）留应用 |
-| 4 | shop_sage（`E:/my/桌面软件tauri/shop_sage`，购物参谋） | **2026-09-30 接入中**（由 shop_sage 仓库里的会话实施）。未发布（无 tag）。服务商是手填自由文本（无预置），协议靠 provider 字符串是否含 "anthropic" 判断；`ModelProfilesSection` / `ImportDialog` / `ShareDialog` 与 **TS 版 `lib/aiProfile.ts` 解析器**（sigil 接入时删掉的那种漂移副本）；`services/ai/client.rs` 手写端点拼接与 Anthropic 分支 | ① 删 TS 解析器，导入导出走 crate 的 `parse_profile` / `to_profile` ② 未发布，不写迁移 |
-| 5 | cross_pilot（`E:/my/桌面软件tauri/cross_pilot`，跨翼 · 亚马逊多店驾驶舱） | 2026-09-26 盘点，未开工。🔴 **已发布**（tag `v0.1.0`，updater 指向 R2，文档站有下载页）。前端 `providerPresets.ts`（285 行，9 家）+ TS 版 `aiProfile.ts`；后端 `services/provider/llm.rs` | ① 🔴 已发布：存量配置的地址写法 / 预置 key 变了要写迁移 + 对照测试（照 reeve / knowledge_base 的范例） ② 工作区有 9 个未提交文件（license / store，2026-07-11 起搁置，非进行中的会话）：接入时不碰、不提交 |
-| 6 | crosspilot_erp（`E:/my/backend_tauri/crosspilot_erp`，跨翼 ERP，Aegis 派生；私有化部署） | 2026-09-30 盘点，未开工。**服务端**有 AI 功能但全是 mock：AI Listing 工厂（生成 / 优化 / 翻译，`server/src/listing.rs`）、差评 AI 回复草稿（`server/src/api/review.rs`）；真实调用待办 B-016（Key 走 env `AEGIS_LLM_KEY`，未接）。桌面端 / 移动端无模型调用 | ① 🔴 首个**服务端**下游：Key 只在服务端、绝不进 WebView；配置放 env 还是 admin 后台 + 服务端加密存储，照 Aegis 的 `ai-profile-onboarding`（2026-09-30 新增）定 ② 这是把 mock 换成真实调用 = 新功能，先出方案给用户确认再动手 ③ 未配置时保留 mock 降级 |
+| 1 | sku_lane（`E:/my/桌面软件tauri/sku_lane`，品道 · 电商铺货） | **2026-09-29 接入中**（由 sku_lane 仓库里的会话实施）。未发布（无 tag）。`services/ai.rs`（169 行）**写死 DeepSeek 一家、模型 `deepseek-chat`** —— 该别名 2026-07-24 已下线，**AI 选品评分 / 改写标题现在就是坏的**；无服务商选择、无 `ai.profile` | ① 用户只能填一个 DeepSeek 密钥：接入即新增「模型服务」设置（选服务商 / 获取模型 / 测试连接），属新增界面 ② 未发布，不写迁移 ③ 优先级最高：现在是坏的 |
+| 2 | reka（`E:/my/桌面软件tauri/reka`，HTTP 接口调试工具） | **2026-09-30 接入中**（由 reka 仓库里的会话实施）。未发布（无 tag）。后端 `services/ai_llm.rs`（244 行）按 provider 分派 Anthropic / OpenAI 两套对话，OpenAI 分支**自动补 `/v1`**；前端 `AiSection.tsx` 写死 5 家预置（DeepSeek 默认 `deepseek-chat`，别名已下线）；另有 **TS 版 `lib/aiProfile.ts` 解析器**（117 行）+ `commands/ai_profile.rs` | ① 前端预置表、TS 解析器删掉，改用 crate ② 地址规则换成 crate 的（原样使用），未发布，不写迁移 ③ 对话实现（两套协议）留应用 |
+| 3 | shop_sage（`E:/my/桌面软件tauri/shop_sage`，购物参谋） | **2026-09-30 接入中**（由 shop_sage 仓库里的会话实施）。未发布（无 tag）。服务商是手填自由文本（无预置），协议靠 provider 字符串是否含 "anthropic" 判断；`ModelProfilesSection` / `ImportDialog` / `ShareDialog` 与 **TS 版 `lib/aiProfile.ts` 解析器**（sigil 接入时删掉的那种漂移副本）；`services/ai/client.rs` 手写端点拼接与 Anthropic 分支 | ① 删 TS 解析器，导入导出走 crate 的 `parse_profile` / `to_profile` ② 未发布，不写迁移 |
+| 4 | cross_pilot（`E:/my/桌面软件tauri/cross_pilot`，跨翼 · 亚马逊多店驾驶舱） | 2026-09-26 盘点，未开工。🔴 **已发布**（tag `v0.1.0`，updater 指向 R2，文档站有下载页）。前端 `providerPresets.ts`（285 行，9 家）+ TS 版 `aiProfile.ts`；后端 `services/provider/llm.rs` | ① 🔴 已发布：存量配置的地址写法 / 预置 key 变了要写迁移 + 对照测试（照 reeve / knowledge_base 的范例） ② 工作区有 9 个未提交文件（license / store，2026-07-11 起搁置，非进行中的会话）：接入时不碰、不提交 |
+| 5 | crosspilot_erp（`E:/my/backend_tauri/crosspilot_erp`，跨翼 ERP，Aegis 派生；私有化部署） | 2026-09-30 盘点，未开工。**服务端**有 AI 功能但全是 mock：AI Listing 工厂（生成 / 优化 / 翻译，`server/src/listing.rs`）、差评 AI 回复草稿（`server/src/api/review.rs`）；真实调用待办 B-016（Key 走 env `AEGIS_LLM_KEY`，未接）。桌面端 / 移动端无模型调用 | ① 🔴 首个**服务端**下游：Key 只在服务端、绝不进 WebView；配置放 env 还是 admin 后台 + 服务端加密存储，照 Aegis 的 `ai-profile-onboarding`（2026-09-30 新增）定 ② 这是把 mock 换成真实调用 = 新功能，先出方案给用户确认再动手 ③ 未配置时保留 mock 降级 |
 
 ### 🔴 存量地址修正（已发布过的下游都要做；reeve、knowledge_base 已做完，可作范例）
 
