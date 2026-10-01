@@ -12,7 +12,7 @@
 |---|---|---|---|---|---|---|
 | sigil | `E:/my/桌面软件tauri/sigil` | crates.io 版本（`src-tauri/Cargo.toml`） | `0.1.4` | 2026-10-01 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 · **流式解码**（`stream`，本地 SSE 解析器已删） | `ai-profile-integration` |
 | knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `0.1.3` | 2026-09-25 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用） | `ai-profile-integration` |
-| onestop | `E:/my/backend_tauri/onestop` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `0.1.3` | 2026-09-25 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现 | `ai-profile-integration` |
+| onestop | `E:/my/backend_tauri/onestop` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `0.1.4` | 2026-10-01 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现；**流式解码**三处全迁（主对话 `chat/mod.rs`、agent 的 OpenAI 与 Anthropic 两路工具循环，提交 `45b79fa` / `e088b91` / `39dfa61`，本地未推送）：断流时主对话保留「[未完成]」提示（产品取舍），工具循环断流不执行工具 | `ai-profile-integration` |
 | story_loom | `E:/my/桌面软件tauri/story_loom` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `0.1.3` | 2026-09-25 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用 | `ai-profile-integration` |
 | reeve | `E:/my/桌面软件tauri/reeve` | crates.io 版本，**两处同值**：`src-tauri/Cargo.toml`（chat + client）与 `src-tauri/reeve-core/Cargo.toml`（只开 chat）；移动端经 `reeve_core::ai_profile` 跟随 | `0.1.3` | 2026-09-25 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包（桌面）；端点 · 预置 · 清洗（移动） | `ai-profile-integration` |
 | prism | `E:/my/桌面软件tauri/prism` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image）；`mobile-tauri` 壳不依赖 | `0.1.4` | 2026-10-01 | 对话预置 · 协议（OpenAI 兼容 + Anthropic）· 端点 · 验证 · 模型清洗 · 限额 · 历史裁剪与超长重试 · ai.profile 单条与打包 + 导出 · **生图预置与调用**（`media::image`）；**流式解码**与**生图预置反推**（`infer_preset_key_for`）、素材库图片尺寸读真实宽高（提交 `e233275` / `82d65ff` / `e919ae3`，本地未推送，会话收尾以 prism 仓库为准）；对话实现、配图落盘入库留在应用 | `ai-profile-integration` |
@@ -25,8 +25,8 @@
 > **sigil 已升到 `0.1.4` 并迁移流式**（提交 `841b309`，2026-10-01，已推 GitHub / Gitee）：删掉 `OaStream` / `parse_sse_event` /
 > `handle_anthropic_sse_event` / `openai_stop_reason` / `looks_like_html`，两个协议共用一个 `pump_stream`；
 > 全量测试 lib 1551 条通过，**用户已实机验证通过**（2026-10-01）。
-> **prism、aibid 也已升到 `0.1.4` 并迁移流式**（2026-10-01，均本地提交未推送，待用户实机验证）：aibid 615 条测试通过，`finish_reason` 词表换算守住 AI-04 截断闸门，断流改为报错而不再静默成功。
-> 其余四家（knowledge_base / onestop / story_loom / reeve）**仍引用 `0.1.3`**；`0.1.4` 是兼容补丁，只升版本号零代码改动，
+> **prism、aibid、onestop 也已升到 `0.1.4` 并迁移流式**（2026-10-01，均本地提交未推送，待用户实机验证）：aibid 615 条测试通过，`finish_reason` 词表换算守住 AI-04 截断闸门，断流改为报错而不再静默成功；onestop 有三处解析（主对话 + agent 两路工具循环），Anthropic 那路原先会在工具参数中途断流时拿空参数 `{}` 去执行工具，已修。
+> 其余三家（knowledge_base / story_loom / reeve）**仍引用 `0.1.3`**；`0.1.4` 是兼容补丁，只升版本号零代码改动，
 > 但要用 `stream` / `infer_preset_key_for` 的下游必须先升。
 >
 > 迁移时的两个提醒（sigil 踩到的）：
@@ -39,7 +39,7 @@
 > ② 素材库记的图片尺寸改为从出图字节读 —— 请求的 `IMAGE_SIZE` 对火山方舟 / OpenAI 官方不生效（方舟按模型默认尺寸出图）。
 > 它反馈的另两条（生图请求体补 `size`、按能力分类模型）结论与待办见 `docs/tasks/` 里的「prism接入反馈三条」。
 >
-> 🔴 **流式解码（`stream`，0.1.4 起可用）的迁移计划**（任务见 `docs/tasks/` 里的「流式解码」；迁移顺序 sigil → prism → aibid → onestop，一次一家）：
+> 🔴 **流式解码（`stream`，0.1.4 起可用）的迁移计划**（任务见 `docs/tasks/` 里的「流式解码」；迁移顺序 sigil → prism → aibid → onestop，一次一家，四家已全部迁完）：
 > - **sigil 先改**：删本地 `OaStream`、`parse_sse_event`、`handle_anthropic_sse_event`、`openai_stop_reason`、`looks_like_html` 及其测试，
 >   用 `StreamDecoder::push` 的事件映射到现有前端事件，`Done.response` 用 `StreamOutcome::content`；
 >   取消接线、`stream_options` 重试与「按地址记住」留在应用。注意三处行为变化：`ToolUseStart` 延迟到工具名已知才发；
