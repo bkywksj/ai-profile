@@ -31,7 +31,10 @@
 > **全部下游现已引用 `0.1.4`。** 其中流式解码：story_loom 已迁（见上表），knowledge_base 也已迁（Ollama 原生 NDJSON 除外，lib 904 条全过），
 > 断流原先会静默当成功；**reeve 的 AI 助手完全没有流式**（`llm_chat` 整段返回、「停止」只是前端软标志），属新增功能而非迁移，先出方案再定。
 >
-> 2026-10-01：**`0.1.5` 已发布到 crates.io**（tag `v0.1.5` 指向 `5986832`，CI 全绿；docs.rs 构建待核对，文档站尚未同步）。它给 `stream` 加了 opt-in 的 `StreamDecoder::with_thinking_blocks(true)`（保留 Anthropic thinking 块含 `signature`，供带工具调用的多轮回传）与 `outcome.usage` 的 cache 读写 token**，
+> 2026-10-02：**`0.1.6` 已发布到 crates.io**（tag `v0.1.6` 指向 `74277d7`，CI 全绿，docs.rs 已构建）。纯预置数据补丁：Claude 候选清单加入 Sonnet 5.5（官方档 / Claude Code 档 `claude-sonnet-5-5`，OpenRouter 档 `anthropic/claude-sonnet-5.5`），**不改任何预置的默认 model、不填静态限额**。
+> 下游**不用急着升**：这只是下拉候选里多一项，用户本来就能手填任意 id；各家顺手 `cargo update -p ai-profile` 即可，零代码改动。
+>
+> 2026-10-01：**`0.1.5` 已发布到 crates.io**（tag `v0.1.5` 指向 `5986832`，CI 全绿，docs.rs 与文档站已同步）。它给 `stream` 加了 opt-in 的 `StreamDecoder::with_thinking_blocks(true)`（保留 Anthropic thinking 块含 `signature`，供带工具调用的多轮回传）与 `outcome.usage` 的 cache 读写 token**，
 > 是 reeve AI 助手接流式的前置条件。默认关闭，**现有下游不用改，`Cargo.toml` 的引用也不用动**：六个下游没人调用该选项，`outcome.content` 不变。
 > 需要回传 thinking 块的应用（目前只有 reeve 的方案会用）升到 `0.1.5` 即可用。
 >
