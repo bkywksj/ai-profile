@@ -34,6 +34,11 @@
 > 2026-10-02：**`0.1.6` 已发布到 crates.io**（tag `v0.1.6` 指向 `74277d7`，CI 全绿，docs.rs 已构建）。纯预置数据补丁：Claude 候选清单加入 Sonnet 5.5（官方档 / Claude Code 档 `claude-sonnet-5-5`，OpenRouter 档 `anthropic/claude-sonnet-5.5`），**不改任何预置的默认 model、不填静态限额**。
 > 下游**不用急着升**：这只是下拉候选里多一项，用户本来就能手填任意 id；各家顺手 `cargo update -p ai-profile` 即可，零代码改动。
 >
+> 2026-10-08：**`0.1.7` 已发布到 crates.io**（tag `v0.1.7` 指向 `8d80dce`，CI 全绿，docs.rs 已构建，文档站已同步）。新增按服务商登记的「关掉思考」参数：
+> `preset::thinking_off_params(protocol, base_url)` / `ProviderPreset::thinking_off_params()`，线格式多一个 `thinkingOff`（对象或 `null`）。
+> 需求来自 **sigil 的网页翻译**（deepseek-flash 一批段落光思考就用掉 4000 多 token）；sigil 接入时：翻译请求并入这些字段（已有同名键不覆盖），被拒（4xx）时去掉重试一次。
+> 其余下游**不调用新接口就零变化**，`cargo update -p ai-profile` 即可。用 `with_thinking_off` 自建预置的下游注意：写成非 JSON 对象时，序列化整个目录会报错。
+>
 > 2026-10-01：**`0.1.5` 已发布到 crates.io**（tag `v0.1.5` 指向 `5986832`，CI 全绿，docs.rs 与文档站已同步）。它给 `stream` 加了 opt-in 的 `StreamDecoder::with_thinking_blocks(true)`（保留 Anthropic thinking 块含 `signature`，供带工具调用的多轮回传）与 `outcome.usage` 的 cache 读写 token**，
 > 是 reeve AI 助手接流式的前置条件。默认关闭，**现有下游不用改，`Cargo.toml` 的引用也不用动**：六个下游没人调用该选项，`outcome.content` 不变。
 > 需要回传 thinking 块的应用（目前只有 reeve 的方案会用）升到 `0.1.5` 即可用。

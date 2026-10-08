@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "b20baf7",
-  "lastSyncTime": "2026-10-08T04:22:45Z",
+  "lastSyncCommit": "8d80dce",
+  "lastSyncTime": "2026-10-08T04:45:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -338,6 +338,23 @@
         "CHANGELOG.md"
       ],
       "note": "0.1.7 关思考参数 thinking_off（未发布）。文档站本地提交 533f609 未推送；reference/changelog.md、reference/versioning.md 与规范页的版本号、public/spec/（v0.1.7 存档，347 条用例）待发版后由 sync-spec 一起补"
+    },
+    {
+      "commit": "8d80dce",
+      "time": "2026-10-08T04:45:00Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "reference/changelog.md",
+        "reference/versioning.md",
+        "reference/spec.md",
+        "public/spec/**"
+      ],
+      "sourceChanges": [
+        "Cargo.toml",
+        "spec/**",
+        "CHANGELOG.md"
+      ],
+      "note": "0.1.7 已发布（tag v0.1.7 → 8d80dce）：sync-spec 生成 v0.1.7 存档（347 条用例）、更新日志与版本号。文档站提交 533f609 + 83d80b9 已推三远程（Gitee 触发上线）"
     }
   ]
 }
