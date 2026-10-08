@@ -250,6 +250,10 @@ pub struct ProviderPreset {
     ///   调用方应在请求被拒（4xx）时**去掉这些字段重试一次**，而不是直接报错
     ///
     /// 线格式是解析后的对象（不是字符串），`None` 序列化为 `null`。用 [`Self::thinking_off_params`] 取解析结果。
+    ///
+    /// 🔴 文本必须是 JSON **对象**：写成数组、字符串、数字、布尔、`null` 或非法文本，取参数返回 `None`，
+    /// **序列化这条预置直接报错** —— 两边同一口径，不会出现「Rust 侧不发、前端拿到一个字符串 / 数组」
+    /// （前端把字符串展开进请求体会多出 `"0"`、`"1"`… 这些键）。空对象 `{}` 两边都算合法：什么都不并入。
     #[serde(serialize_with = "serialize_json_object")]
     pub thinking_off: Option<&'static str>,
 }
@@ -263,17 +267,40 @@ pub const THINKING_TYPE_DISABLED: &str = r#"{"thinking":{"type":"disabled"}}"#;
 /// 关思考：`{"enable_thinking":false}`。阿里云百炼（OpenAI 兼容模式）与硅基流动的写法（2026-10-08 核对）。
 pub const ENABLE_THINKING_FALSE: &str = r#"{"enable_thinking":false}"#;
 
+/// `thinking_off` 文本的**唯一**判定口径：取参数（[`ProviderPreset::thinking_off_params`]）与序列化
+/// （[`serialize_json_object`]）共用这一个函数，所以「取参数是 `None` 的，序列化必然报错」由结构保证，
+/// 不靠两处各写一遍的判断碰巧一致。
+///
+/// 只认 JSON 对象；空对象 `{}` 算合法（并进请求体什么都不加，两边结果一致，不必特意拒绝）。
+/// 错误文字带上实际类型和原文：序列化错误里看不到是哪条预置，靠原文定位。
+fn parse_thinking_off(raw: &str) -> Result<serde_json::Map<String, serde_json::Value>, String> {
+    use serde_json::Value;
+    let actual = match serde_json::from_str(raw) {
+        Ok(Value::Object(m)) => return Ok(m),
+        Ok(Value::Array(_)) => "数组（array）".to_string(),
+        Ok(Value::String(_)) => "字符串（string）".to_string(),
+        Ok(Value::Number(_)) => "数字（number）".to_string(),
+        Ok(Value::Bool(_)) => "布尔（boolean）".to_string(),
+        Ok(Value::Null) => "null".to_string(),
+        Err(e) => format!("非法 JSON（{e}）"),
+    };
+    Err(format!(
+        "thinking_off 必须是 JSON 对象，实际是{actual}：{raw:?}"
+    ))
+}
+
 /// 把预置里的 JSON 文本按对象序列化：前端与其他语言拿到的是能直接并进请求体的对象，不用再解析一次字符串。
+///
+/// 不是对象就报错（判定见 [`parse_thinking_off`]），绝不退化成输出字符串 / 数组 —— 那样 Rust 侧
+/// [`ProviderPreset::thinking_off_params`] 认为「不发」，前端却拿到一个能展开的值。
 fn serialize_json_object<S: serde::Serializer>(
     v: &Option<&'static str>,
     s: S,
 ) -> Result<S::Ok, S::Error> {
-    match v.map(serde_json::from_str::<serde_json::Value>) {
+    match v.map(parse_thinking_off) {
         None => s.serialize_none(),
         Some(Ok(obj)) => obj.serialize(s),
-        Some(Err(e)) => Err(serde::ser::Error::custom(format!(
-            "thinking_off 不是合法的 JSON：{e}"
-        ))),
+        Some(Err(msg)) => Err(serde::ser::Error::custom(msg)),
     }
 }
 
@@ -301,8 +328,8 @@ impl ProviderPreset {
     /// 关思考要并入请求体的字段（[`Self::thinking_off`] 解析成对象）；不知道怎么关时返回 `None`。
     ///
     /// 调用方把返回的每个键并进请求体**顶层**（OpenAI SDK 里就是 `extra_body`），已有的同名键不要覆盖。
-    /// 写坏了（不是 JSON 对象）也返回 `None` —— 守卫测试保证 crate 自己的预置不会这样，
-    /// 这条只防下游用 [`Self::with_thinking_off`] 自建的预置。
+    /// 写坏了（不是 JSON 对象）也返回 `None`，此时序列化这条预置会报错（同一口径，见 [`Self::thinking_off`]）——
+    /// 守卫测试保证 crate 自己的预置不会这样，这条只防下游用 [`Self::with_thinking_off`] 自建的预置。
     ///
     /// ```
     /// # use ai_profile::preset::preset_by_key;
@@ -313,10 +340,7 @@ impl ProviderPreset {
     /// assert!(preset_by_key("openai_official").unwrap().thinking_off_params().is_none());
     /// ```
     pub fn thinking_off_params(&self) -> Option<serde_json::Map<String, serde_json::Value>> {
-        match serde_json::from_str(self.thinking_off?) {
-            Ok(serde_json::Value::Object(m)) => Some(m),
-            _ => None,
-        }
+        parse_thinking_off(self.thinking_off?).ok()
     }
 }
 
@@ -415,7 +439,8 @@ impl ProviderPreset {
         self
     }
     /// 关思考要并入请求体的字段（一个 JSON 对象的文本，常用的两种见 [`THINKING_TYPE_DISABLED`] /
-    /// [`ENABLE_THINKING_FALSE`]）。只填服务商文档写明了的，见 [`Self::thinking_off`]
+    /// [`ENABLE_THINKING_FALSE`]）。只填服务商文档写明了的，见 [`Self::thinking_off`]。
+    /// 写成非对象（数组、字符串、`null`…）时取参数为 `None`，序列化这条预置会报错
     pub const fn with_thinking_off(mut self, json_object: &'static str) -> Self {
         self.thinking_off = Some(json_object);
         self
@@ -1127,37 +1152,41 @@ mod tests {
         }
     }
 
-    /// 下游用 [`ProviderPreset::with_thinking_off`] 写坏了（不是 JSON 对象）：取参数一律 `None`，
-    /// 宁可不关思考，也不能把一个数组、字符串并进请求体。
+    /// 🔴 下游用 [`ProviderPreset::with_thinking_off`] 写坏了（不是 JSON 对象）：取参数与序列化**同一口径** ——
+    /// 取参数一律 `None`（宁可不关思考，也不把数组、字符串并进请求体），序列化这条预置一律报错。
+    ///
+    /// 曾经的 bug：合法但不是对象的 JSON（字符串、数组、数字、布尔、`null`）取参数是 `None`，序列化却原样输出 ——
+    /// Rust 侧认为「不发」，前端拿到 `"enable_thinking=false"` 展开进请求体，多出 `"0"`、`"1"`… 这些键。
     #[test]
-    fn malformed_thinking_off_yields_none() {
-        for raw in [
-            r#"[{"thinking":{"type":"disabled"}}]"#,
-            r#""enable_thinking=false""#,
-            "enable_thinking=false",
-            r#"{"enable_thinking":false"#,
-            "",
-            "null",
-            "true",
-            "42",
+    fn malformed_thinking_off_yields_none_and_refuses_to_serialize() {
+        for (raw, actual) in [
+            (r#"[{"thinking":{"type":"disabled"}}]"#, "array"),
+            (r#""enable_thinking=false""#, "string"),
+            ("42", "number"),
+            ("-0.5", "number"),
+            ("true", "boolean"),
+            ("false", "boolean"),
+            ("null", "null"),
+            ("enable_thinking=false", "非法 JSON"),
+            (r#"{"enable_thinking":false"#, "非法 JSON"),
+            ("", "非法 JSON"),
+            ("   ", "非法 JSON"),
         ] {
             let p = ProviderPreset::new("bad", Kind::Chat, "写坏的", None).with_thinking_off(raw);
             assert!(p.thinking_off_params().is_none(), "{raw:?}");
+            let err = serde_json::to_value(p).expect_err(raw).to_string();
+            assert!(
+                err.contains("thinking_off 必须是 JSON 对象") && err.contains(actual),
+                "{raw:?}: {err}"
+            );
         }
-        // 空对象是合法对象：并进请求体什么都不加，不算写坏
+        // 空对象两边都算合法：取参数是空表，序列化是 {} —— 并进请求体什么都不加，不算写坏
         let p = ProviderPreset::new("empty", Kind::Chat, "空对象", None).with_thinking_off("{}");
         assert_eq!(p.thinking_off_params(), Some(serde_json::Map::new()));
-    }
-
-    /// 不是合法 JSON 的文本，序列化预置时必须报错 —— 不能退化成一个字符串混过去，
-    /// 前端会拿它去展开、并进请求体。
-    #[test]
-    fn invalid_json_thinking_off_refuses_to_serialize() {
-        for raw in ["enable_thinking=false", r#"{"enable_thinking":false"#, ""] {
-            let p = ProviderPreset::new("bad", Kind::Chat, "写坏的", None).with_thinking_off(raw);
-            let err = serde_json::to_value(p).expect_err(raw);
-            assert!(err.to_string().contains("thinking_off"), "{raw:?}: {err}");
-        }
+        assert_eq!(
+            serde_json::to_value(p).unwrap()["thinkingOff"],
+            serde_json::json!({})
+        );
     }
 
     /// 线格式：每条预置都有 `thinkingOff` 键（不省略），值就是 `thinking_off_params` 的结果或 `null`。
