@@ -52,6 +52,7 @@ pub(super) const TTS_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://console.volcengine.com/speech/app"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "siliconflow_tts",
@@ -76,6 +77,7 @@ pub(super) const TTS_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://cloud.siliconflow.cn/account/ak"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "openai_tts",
@@ -97,6 +99,7 @@ pub(super) const TTS_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://platform.openai.com/api-keys"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "custom_tts",
@@ -118,5 +121,6 @@ pub(super) const TTS_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
 ];

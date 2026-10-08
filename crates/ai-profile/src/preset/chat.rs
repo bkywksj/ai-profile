@@ -16,8 +16,8 @@
 //! `cargo xtask probe` 能验地址可达性，但验不了 model id 对不对（那要真实密钥）。
 
 use super::{
-    ExtraField, ModelOption, ProviderPreset, GROUP_ANTHROPIC, GROUP_CHINA, GROUP_INTERNATIONAL,
-    GROUP_LOCAL,
+    ExtraField, ModelOption, ProviderPreset, ENABLE_THINKING_FALSE, GROUP_ANTHROPIC, GROUP_CHINA,
+    GROUP_INTERNATIONAL, GROUP_LOCAL, THINKING_TYPE_DISABLED,
 };
 use crate::kind::{Kind, Protocol};
 
@@ -77,6 +77,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://console.anthropic.com/settings/keys"),
         is_local: false,
         verified_at: None,
+        // Messages API 的 ThinkingConfigDisabled（官方文档，2026-10-08 核对）
+        thinking_off: Some(THINKING_TYPE_DISABLED),
     },
     ProviderPreset {
         key: "claude_code",
@@ -101,6 +103,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: Some("2026-09-22"),
+        // 协议自带的写法；DeepSeek 的 Anthropic 格式同样认它（官方文档，2026-10-08 核对）
+        thinking_off: Some(THINKING_TYPE_DISABLED),
     },
     ProviderPreset {
         key: "codex",
@@ -131,6 +135,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     // ── 组 2 · 国内 ──────────────────────────────────────────────
     ProviderPreset {
@@ -162,6 +167,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://platform.deepseek.com/api_keys"),
         is_local: false,
         verified_at: Some("2026-09-17"),
+        // 默认开思考；OpenAI 与 Anthropic 两种格式都是这个写法（官方文档，2026-10-08 核对）
+        thinking_off: Some(THINKING_TYPE_DISABLED),
     },
     ProviderPreset {
         key: "zhipu",
@@ -193,6 +200,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://open.bigmodel.cn/usercenter/apikeys"),
         is_local: false,
         verified_at: None,
+        // GLM-5.3 / 5.3-FLASH 强制思考关不掉，调用方被拒时去掉重试（官方文档，2026-10-08 核对）
+        thinking_off: Some(THINKING_TYPE_DISABLED),
     },
     ProviderPreset {
         key: "qwen",
@@ -221,6 +230,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://bailian.console.aliyun.com/"),
         is_local: false,
         verified_at: None,
+        // 百炼 OpenAI 兼容模式；qwq-plus 等只能思考的模型关不掉（官方文档，2026-10-08 核对）
+        thinking_off: Some(ENABLE_THINKING_FALSE),
     },
     ProviderPreset {
         key: "moonshot",
@@ -248,6 +259,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://platform.moonshot.cn/console/api-keys"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "siliconflow",
@@ -274,6 +286,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://cloud.siliconflow.cn/account/ak"),
         is_local: false,
         verified_at: None,
+        // 适用于大多数推理模型（官方文档，2026-10-08 核对）
+        thinking_off: Some(ENABLE_THINKING_FALSE),
     },
     ProviderPreset {
         key: "volcengine_ark",
@@ -304,6 +318,8 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey"),
         is_local: false,
         verified_at: None,
+        // thinking.type 可选 enabled / disabled / auto（官方文档，2026-10-08 核对）
+        thinking_off: Some(THINKING_TYPE_DISABLED),
     },
     ProviderPreset {
         key: "tencent_tokenhub",
@@ -339,6 +355,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://console.cloud.tencent.com/tokenhub/apikey"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "minimax",
@@ -363,6 +380,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "qianfan",
@@ -384,6 +402,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "stepfun",
@@ -408,6 +427,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "baichuan",
@@ -432,6 +452,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "mimo",
@@ -456,6 +477,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     // ── 组 3 · 国际 ──────────────────────────────────────────────
     ProviderPreset {
@@ -487,6 +509,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://platform.openai.com/api-keys"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "openrouter",
@@ -519,6 +542,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://openrouter.ai/keys"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "gemini",
@@ -548,6 +572,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://aistudio.google.com/apikey"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "groq",
@@ -573,6 +598,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://console.groq.com/keys"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "xai",
@@ -602,6 +628,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://console.x.ai/"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "together",
@@ -625,6 +652,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     // ── 组 4 · 本地 / 自建 ───────────────────────────────────────
     ProviderPreset {
@@ -652,6 +680,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: true,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "lmstudio",
@@ -674,6 +703,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: true,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "vllm",
@@ -695,6 +725,7 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: true,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: super::CUSTOM_PRESET_KEY,
@@ -717,5 +748,6 @@ pub(super) const CHAT_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
 ];

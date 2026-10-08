@@ -72,6 +72,11 @@
         }
       ],
       "protocol": "anthropic",
+      "thinkingOff": {
+        "thinking": {
+          "type": "disabled"
+        }
+      },
       "vendorId": "anthropic",
       "verifiedAt": null
     },
@@ -142,6 +147,11 @@
         }
       ],
       "protocol": "anthropic",
+      "thinkingOff": {
+        "thinking": {
+          "type": "disabled"
+        }
+      },
       "vendorId": "claude_code",
       "verifiedAt": "2026-09-22"
     },
@@ -200,6 +210,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "codex",
       "verifiedAt": null
     },
@@ -236,6 +247,11 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": {
+        "thinking": {
+          "type": "disabled"
+        }
+      },
       "vendorId": "deepseek",
       "verifiedAt": "2026-09-17"
     },
@@ -290,6 +306,11 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": {
+        "thinking": {
+          "type": "disabled"
+        }
+      },
       "vendorId": "zhipu",
       "verifiedAt": null
     },
@@ -338,6 +359,9 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": {
+        "enable_thinking": false
+      },
       "vendorId": "aliyun",
       "verifiedAt": null
     },
@@ -375,6 +399,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "moonshot",
       "verifiedAt": null
     },
@@ -411,6 +436,9 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": {
+        "enable_thinking": false
+      },
       "vendorId": "siliconflow",
       "verifiedAt": null
     },
@@ -447,6 +475,11 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": {
+        "thinking": {
+          "type": "disabled"
+        }
+      },
       "vendorId": "volcengine",
       "verifiedAt": null
     },
@@ -507,6 +540,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "tencent",
       "verifiedAt": null
     },
@@ -543,6 +577,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "minimax",
       "verifiedAt": null
     },
@@ -573,6 +608,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "baidu",
       "verifiedAt": null
     },
@@ -609,6 +645,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "stepfun",
       "verifiedAt": null
     },
@@ -645,6 +682,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "baichuan",
       "verifiedAt": null
     },
@@ -681,6 +719,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "xiaomi",
       "verifiedAt": null
     },
@@ -741,6 +780,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "openai",
       "verifiedAt": null
     },
@@ -807,6 +847,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "openrouter",
       "verifiedAt": null
     },
@@ -849,6 +890,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "google",
       "verifiedAt": null
     },
@@ -891,6 +933,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "groq",
       "verifiedAt": null
     },
@@ -933,6 +976,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "xai",
       "verifiedAt": null
     },
@@ -963,6 +1007,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "together",
       "verifiedAt": null
     },
@@ -1006,6 +1051,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "ollama",
       "verifiedAt": null
     },
@@ -1030,6 +1076,7 @@
       "model": "",
       "models": [],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "lmstudio",
       "verifiedAt": null
     },
@@ -1054,6 +1101,7 @@
       "model": "",
       "models": [],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "vllm",
       "verifiedAt": null
     },
@@ -1075,6 +1123,7 @@
       "model": "",
       "models": [],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "custom",
       "verifiedAt": null
     },
@@ -1111,6 +1160,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "volcengine",
       "verifiedAt": null
     },
@@ -1159,6 +1209,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "aliyun",
       "verifiedAt": null
     },
@@ -1201,6 +1252,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "siliconflow",
       "verifiedAt": null
     },
@@ -1237,6 +1289,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "openai",
       "verifiedAt": null
     },
@@ -1258,6 +1311,7 @@
       "model": "",
       "models": [],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "custom_image",
       "verifiedAt": null
     },
@@ -1306,6 +1360,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "volcengine",
       "verifiedAt": null
     },
@@ -1354,6 +1409,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "minimaxi",
       "verifiedAt": null
     },
@@ -1402,6 +1458,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "aliyun",
       "verifiedAt": null
     },
@@ -1438,6 +1495,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "siliconflow",
       "verifiedAt": null
     },
@@ -1480,6 +1538,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "zhipu",
       "verifiedAt": null
     },
@@ -1528,6 +1587,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "ai302",
       "verifiedAt": null
     },
@@ -1564,6 +1624,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "ai302",
       "verifiedAt": null
     },
@@ -1585,6 +1646,7 @@
       "model": "",
       "models": [],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "custom_video",
       "verifiedAt": null
     },
@@ -1630,6 +1692,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "volc_speech",
       "verifiedAt": null
     },
@@ -1666,6 +1729,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "siliconflow",
       "verifiedAt": null
     },
@@ -1702,6 +1766,7 @@
         }
       ],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "openai",
       "verifiedAt": null
     },
@@ -1723,6 +1788,7 @@
       "model": "",
       "models": [],
       "protocol": "openai_compatible",
+      "thinkingOff": null,
       "vendorId": "custom_tts",
       "verifiedAt": null
     }

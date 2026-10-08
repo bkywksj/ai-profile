@@ -236,6 +236,45 @@ pub struct ProviderPreset {
     ///
     /// `None` = 未核实，仅供参考。调用方可对久未核实的预置给一个淡色提示。
     pub verified_at: Option<&'static str>,
+
+    /// 关掉「思考」要往请求体里并入的字段（一个 JSON 对象的文本），`None` = 不知道怎么关、什么都别发。
+    ///
+    /// 用途：翻译、摘要这类**不需要推理**的批量任务。带思考的模型默认先想再答，思考算在输出 token 里 ——
+    /// 一批网页段落光思考就能用掉几千 token，又慢又贵，输出上限给紧了还会一个字的正文都回不来。
+    ///
+    /// 🔴 各家写法不同，**只登记官方文档写明了的**：
+    /// - 写法不统一：DeepSeek / 智谱 / 火山方舟 / Anthropic 协议是 `{"thinking":{"type":"disabled"}}`
+    ///   （[`THINKING_TYPE_DISABLED`]），阿里云百炼 / 硅基流动是 `{"enable_thinking":false}`（[`ENABLE_THINKING_FALSE`]）
+    /// - 发错了会被拒：OpenAI 官方遇到不认识的参数直接 400，所以查不到就留 `None`，**不猜**
+    /// - 同一家里也有关不掉的模型（智谱 GLM-5.3、百炼的 `qwq-plus` 等「只能思考」的模型），文档没写发了会怎样 ——
+    ///   调用方应在请求被拒（4xx）时**去掉这些字段重试一次**，而不是直接报错
+    ///
+    /// 线格式是解析后的对象（不是字符串），`None` 序列化为 `null`。用 [`Self::thinking_off_params`] 取解析结果。
+    #[serde(serialize_with = "serialize_json_object")]
+    pub thinking_off: Option<&'static str>,
+}
+
+/// 关思考：`{"thinking":{"type":"disabled"}}`。
+///
+/// Anthropic Messages API 的 `ThinkingConfigDisabled`；DeepSeek（OpenAI 与 Anthropic 两种格式通用）、
+/// 智谱 GLM、火山方舟豆包也用这一写法（各家官方文档，2026-10-08 核对）。
+pub const THINKING_TYPE_DISABLED: &str = r#"{"thinking":{"type":"disabled"}}"#;
+
+/// 关思考：`{"enable_thinking":false}`。阿里云百炼（OpenAI 兼容模式）与硅基流动的写法（2026-10-08 核对）。
+pub const ENABLE_THINKING_FALSE: &str = r#"{"enable_thinking":false}"#;
+
+/// 把预置里的 JSON 文本按对象序列化：前端与其他语言拿到的是能直接并进请求体的对象，不用再解析一次字符串。
+fn serialize_json_object<S: serde::Serializer>(
+    v: &Option<&'static str>,
+    s: S,
+) -> Result<S::Ok, S::Error> {
+    match v.map(serde_json::from_str::<serde_json::Value>) {
+        None => s.serialize_none(),
+        Some(Ok(obj)) => obj.serialize(s),
+        Some(Err(e)) => Err(serde::ser::Error::custom(format!(
+            "thinking_off 不是合法的 JSON：{e}"
+        ))),
+    }
 }
 
 impl ProviderPreset {
@@ -257,6 +296,27 @@ impl ProviderPreset {
                 .any(|h| official.contains(h))
                 .then_some(official)
         })
+    }
+
+    /// 关思考要并入请求体的字段（[`Self::thinking_off`] 解析成对象）；不知道怎么关时返回 `None`。
+    ///
+    /// 调用方把返回的每个键并进请求体**顶层**（OpenAI SDK 里就是 `extra_body`），已有的同名键不要覆盖。
+    /// 写坏了（不是 JSON 对象）也返回 `None` —— 守卫测试保证 crate 自己的预置不会这样，
+    /// 这条只防下游用 [`Self::with_thinking_off`] 自建的预置。
+    ///
+    /// ```
+    /// # use ai_profile::preset::preset_by_key;
+    /// let p = preset_by_key("deepseek").unwrap();
+    /// let params = p.thinking_off_params().unwrap();
+    /// assert_eq!(params["thinking"]["type"], "disabled");
+    /// // 不知道怎么关的服务商：什么都不发
+    /// assert!(preset_by_key("openai_official").unwrap().thinking_off_params().is_none());
+    /// ```
+    pub fn thinking_off_params(&self) -> Option<serde_json::Map<String, serde_json::Value>> {
+        match serde_json::from_str(self.thinking_off?) {
+            Ok(serde_json::Value::Object(m)) => Some(m),
+            _ => None,
+        }
     }
 }
 
@@ -295,6 +355,7 @@ impl ProviderPreset {
             apply_url: None,
             is_local: false,
             verified_at: None,
+            thinking_off: None,
         }
     }
     /// 服务商聚合 id（同一家多种能力共用；缺省 = key）
@@ -351,6 +412,12 @@ impl ProviderPreset {
     /// 本地推理服务（需用户先把服务跑起来）
     pub const fn local(mut self) -> Self {
         self.is_local = true;
+        self
+    }
+    /// 关思考要并入请求体的字段（一个 JSON 对象的文本，常用的两种见 [`THINKING_TYPE_DISABLED`] /
+    /// [`ENABLE_THINKING_FALSE`]）。只填服务商文档写明了的，见 [`Self::thinking_off`]
+    pub const fn with_thinking_off(mut self, json_object: &'static str) -> Self {
+        self.thinking_off = Some(json_object);
         self
     }
 }
@@ -525,6 +592,30 @@ pub fn model_limits(
         .iter()
         .find(|m| m.value == model)
         .and_then(ModelOption::preset_limits)
+}
+
+/// 一条已存的对话配置要关掉「思考」时，该并入请求体的字段；不知道怎么关时返回 `None`（什么都别发）。
+///
+/// 先按 [`infer_preset_key`] 找到预置，再取它的 [`ProviderPreset::thinking_off_params`]。
+/// 按服务商（host）而不是按模型认：参数名是**平台**定的 —— 百炼上的 DeepSeek 模型照样用百炼的 `enable_thinking`。
+/// Anthropic 协议（官方与各家中转）一律是协议自带的 `{"thinking":{"type":"disabled"}}`；
+/// 自定义端点认不出背后是谁，返回 `None`。
+///
+/// 🔴 这是「尽力而为」：同一家里也有关不掉思考的模型，请求被拒（4xx）时调用方应去掉这些字段重试一次。
+///
+/// ```
+/// # use ai_profile::{preset, Protocol};
+/// let p = preset::thinking_off_params(Protocol::OpenAiCompatible, Some("https://api.deepseek.com")).unwrap();
+/// assert_eq!(p["thinking"]["type"], "disabled");
+/// let p = preset::thinking_off_params(Protocol::OpenAiCompatible, Some("https://dashscope.aliyuncs.com/compatible-mode/v1")).unwrap();
+/// assert_eq!(p["enable_thinking"], false);
+/// assert!(preset::thinking_off_params(Protocol::OpenAiCompatible, Some("https://api.openai.com/v1")).is_none());
+/// ```
+pub fn thinking_off_params(
+    protocol: Protocol,
+    base_url: Option<&str>,
+) -> Option<serde_json::Map<String, serde_json::Value>> {
+    preset_by_key(infer_preset_key(protocol, base_url))?.thinking_off_params()
 }
 
 #[cfg(test)]
@@ -834,6 +925,77 @@ mod tests {
             ),
             CUSTOM_PRESET_KEY
         );
+    }
+
+    /// 🔴 守卫：登记了关思考参数的预置，文本必须是 JSON 对象 —— 写坏了 `thinking_off_params` 会静默返回
+    /// `None`（下游照常发请求、只是思考没关掉，没人会发现），序列化预置时还会直接报错。
+    /// 只有对话预置能登记：生图 / 视频 / 配音没有「思考」这回事。
+    #[test]
+    fn thinking_off_is_a_json_object_and_chat_only() {
+        for p in presets() {
+            let Some(raw) = p.thinking_off else { continue };
+            assert_eq!(p.kind, Kind::Chat, "{}: 只有对话预置才有思考可关", p.key);
+            let obj = p.thinking_off_params();
+            assert!(
+                obj.as_ref().is_some_and(|m| !m.is_empty()),
+                "{}: {raw} 不是非空 JSON 对象",
+                p.key
+            );
+        }
+        // 序列化成对象而不是字符串：前端 / 其他语言拿到就能并进请求体
+        let v = serde_json::to_value(preset_by_key("deepseek").unwrap()).unwrap();
+        assert_eq!(
+            v["thinkingOff"],
+            serde_json::json!({ "thinking": { "type": "disabled" } })
+        );
+        let v = serde_json::to_value(preset_by_key("openai_official").unwrap()).unwrap();
+        assert!(v["thinkingOff"].is_null());
+    }
+
+    /// 按服务商取关思考参数：写法各家不同，认错一家就是发了别家的参数（被拒或被忽略）。
+    #[test]
+    fn thinking_off_params_follow_the_platform() {
+        let oa = Protocol::OpenAiCompatible;
+        let disabled = serde_json::json!({ "thinking": { "type": "disabled" } });
+        let enable_false = serde_json::json!({ "enable_thinking": false });
+        for (protocol, url, want) in [
+            (oa, Some("https://api.deepseek.com"), Some(&disabled)),
+            (
+                oa,
+                Some("https://open.bigmodel.cn/api/paas/v4"),
+                Some(&disabled),
+            ),
+            (
+                oa,
+                Some("https://ark.cn-beijing.volces.com/api/v3"),
+                Some(&disabled),
+            ),
+            (
+                oa,
+                Some("https://dashscope.aliyuncs.com/compatible-mode/v1"),
+                Some(&enable_false),
+            ),
+            (
+                oa,
+                Some("https://api.siliconflow.cn/v1"),
+                Some(&enable_false),
+            ),
+            // Anthropic 协议：官方与中转都是协议自带的写法（DeepSeek 的 Anthropic 格式也是它）
+            (Protocol::Anthropic, None, Some(&disabled)),
+            (
+                Protocol::Anthropic,
+                Some("https://api.deepseek.com/anthropic"),
+                Some(&disabled),
+            ),
+            // 🔴 OpenAI 官方遇到不认识的参数直接 400：不知道就不发
+            (oa, Some("https://api.openai.com/v1"), None),
+            // 自定义端点认不出背后是谁
+            (oa, Some("https://relay.example.com/v1"), None),
+            (oa, None, None),
+        ] {
+            let got = thinking_off_params(protocol, url).map(serde_json::Value::Object);
+            assert_eq!(got.as_ref(), want, "{protocol:?} {url:?}");
+        }
     }
 
     /// 兜底档必须存在，否则 `infer_preset_key` 会返回一个查不到的 key。

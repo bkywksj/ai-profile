@@ -26,7 +26,8 @@ use ai_profile::endpoint::{
 use ai_profile::history::is_context_overflow;
 use ai_profile::model_filter::{clean_fetched_models, is_chat_model_id};
 use ai_profile::preset::{
-    infer_preset_key, infer_preset_key_for, model_limits, preset_by_key, presets, vendors_all,
+    infer_preset_key, infer_preset_key_for, model_limits, preset_by_key, presets,
+    thinking_off_params, vendors_all,
 };
 use ai_profile::stream::{
     is_stream_options_rejected, looks_like_html, StopReason, StreamDecoder, StreamEvent,
@@ -909,6 +910,40 @@ fn preset_lookup_json() -> Value {
             "expected": model_limits(protocol, base, model),
         }));
     }
+    // 关思考参数：按平台认（写法各家不同），认不出就是 null —— 发错了 OpenAI 官方直接 400
+    let thinking_inputs: [(Protocol, Option<&str>); 8] = [
+        (Protocol::OpenAiCompatible, Some("https://api.deepseek.com")),
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://dashscope.aliyuncs.com/compatible-mode/v1"),
+        ),
+        (
+            Protocol::OpenAiCompatible,
+            Some("HTTPS://ARK.CN-BEIJING.VOLCES.COM/api/v3"),
+        ),
+        (Protocol::Anthropic, None),
+        // Anthropic 协议的中转（含 DeepSeek 的 Anthropic 格式）：协议自带的写法
+        (
+            Protocol::Anthropic,
+            Some("https://api.deepseek.com/anthropic"),
+        ),
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://api.openai.com/v1"),
+        ),
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://unknown.example.com/v1"),
+        ),
+        (Protocol::OpenAiCompatible, None),
+    ];
+    for (protocol, base) in thinking_inputs {
+        cases.push(json!({
+            "fn": "thinking_off_params",
+            "input": { "protocol": protocol, "baseUrl": base },
+            "expected": thinking_off_params(protocol, base),
+        }));
+    }
     // 用户没填地址时预置实际该请求的端点：官方档（地址留空、界面隐藏地址框）回落到协议官方端点
     for key in [
         "anthropic_official",
@@ -949,6 +984,8 @@ fn preset_lookup_json() -> Value {
              model_limits：先 infer_preset_key 找到预置，再用 model（去两端空白）与它 models 的 value 精确匹配；\
              匹配到且 contextWindow、maxOutput 至少一个非空 → 返回预置限额（字段同 limits.json：source 与逐字段来源都是 preset）；\
              其余情况一律 null，不猜。\
+             thinking_off_params：先 infer_preset_key 找到预置，返回它的 thinkingOff（一个 JSON 对象，调用方把它的键并进请求体顶层，\
+             已有的同名键不覆盖）；预置没登记 → null，什么都别发。这是尽力而为：同一家也有关不掉思考的模型，请求被拒（4xx）时去掉这些字段重试一次。\
              preset_endpoint：用户没填地址时该预置实际请求的端点。预置有 baseUrl → 就是它；没有，但 \
              rules.protocolDefaultBaseUrls[protocol] 包含它 matchHosts 里任一项（子串）→ 这个官方端点；\
              其余（自定义端点、中转档，matchHosts 为空）→ null，必须由用户填。\

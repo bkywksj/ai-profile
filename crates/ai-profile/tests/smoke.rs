@@ -94,6 +94,34 @@ fn default_model_is_in_its_own_list() {
     }
 }
 
+/// 🔴 关思考参数从外部可用：下游自建的静态预置（const）能登记，按地址查与按预置取都拿得到对象。
+#[test]
+fn thinking_off_is_usable_from_outside() {
+    static LOCAL: &[preset::ProviderPreset] = &[preset::ProviderPreset::new(
+        "my_qwen_gateway",
+        Kind::Chat,
+        "内网通义网关",
+        Some("https://llm.corp.example/v1"),
+    )
+    .with_thinking_off(preset::ENABLE_THINKING_FALSE)];
+    let mine = LOCAL[0]
+        .thinking_off_params()
+        .expect("自建预置登记了关思考参数");
+    assert_eq!(mine["enable_thinking"], false);
+
+    let ds = preset::thinking_off_params(
+        Protocol::OpenAiCompatible,
+        Some("https://api.deepseek.com/v1"),
+    )
+    .expect("DeepSeek 登记了关思考参数");
+    assert_eq!(ds["thinking"]["type"], "disabled");
+    assert!(preset::thinking_off_params(Protocol::OpenAiCompatible, None).is_none());
+    assert_eq!(
+        preset::THINKING_TYPE_DISABLED,
+        r#"{"thinking":{"type":"disabled"}}"#
+    );
+}
+
 /// 没有 base_url 的预置必须能被用户自己填地址 —— 即它不该同时没有 base_url
 /// 又没有任何 match_hosts 和提示，那样用户不知道该填什么。
 #[test]

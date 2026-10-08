@@ -3,6 +3,32 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，版本位的判定规则见
 [`docs/versioning.md`](docs/versioning.md)。
 
+## [未发布]
+
+**升级只需 `cargo update -p ai-profile`，不用改代码；不调用新接口的下游行为完全不变。** 新增「关掉思考」的服务商参数表，来自 sigil 的网页翻译：
+用户的 deepseek-flash 默认带思考，一批网页段落光思考就用掉 4000 多 token，译文一个字都没回来。
+
+### 新增
+- **`ProviderPreset::thinking_off`**：关思考要并入请求体顶层的字段（JSON 对象的文本），`None` = 不知道怎么关、什么都别发。
+  **只登记官方文档写明了的**（2026-10-08 逐家核对）：
+  | 预置 | 字段 |
+  |---|---|
+  | `deepseek`、`zhipu`、`volcengine_ark`、`anthropic_official`、`claude_code` | `{"thinking":{"type":"disabled"}}` |
+  | `qwen`（百炼 OpenAI 兼容模式）、`siliconflow` | `{"enable_thinking":false}` |
+
+  其余预置留 `None`：OpenAI 官方遇到不认识的参数直接 400，查不到的不猜。Anthropic 协议的两档用协议自带的 `ThinkingConfigDisabled`，
+  DeepSeek 的 Anthropic 格式也认它（经 Claude Code 档的中转同样适用）
+- **`ProviderPreset::thinking_off_params()`** 取解析后的 `serde_json::Map`；**`preset::thinking_off_params(protocol, base_url)`** 按已存配置取
+  （先 `infer_preset_key`，按平台认而不按模型认：百炼上的 DeepSeek 模型照样用百炼的 `enable_thinking`）
+- 两个常用写法的常量 **`preset::THINKING_TYPE_DISABLED`** / **`preset::ENABLE_THINKING_FALSE`**，下游自建预置用 **`ProviderPreset::with_thinking_off`**（const）登记
+- 多语言规范：`presets.json` 每条预置多一个 `thinkingOff`（对象或 `null`）；`preset_lookup.json` 增加 8 条 `thinking_off_params` 用例。**已有用例一条未改**
+
+### 说明
+- 🔴 **这是尽力而为**：同一家里也有关不掉思考的模型（智谱 GLM-5.3 / 5.3-FLASH「强制思考」、百炼 `qwq-plus` 等只能思考的模型），
+  文档没写发了会被拒还是被忽略。调用方应在请求被拒（4xx）时**去掉这些字段重试一次**，而不是直接报错
+- 只适合不需要推理的任务（翻译、摘要、抽取）；正常对话别关
+- 线格式：`ProviderPreset` 序列化后多一个 `thinkingOff` 字段（解析好的对象，不是字符串）。`#[non_exhaustive]` 结构加字段，对下游兼容
+
 ## [0.1.6] - 2026-10-01
 
 **升级只需 `cargo update -p ai-profile`，不用改代码；没有任何预置的默认 model 变化。**

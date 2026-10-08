@@ -38,6 +38,7 @@ pub(super) const VIDEO_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "minimax_video",
@@ -66,6 +67,7 @@ pub(super) const VIDEO_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://platform.minimaxi.com/user-center/basic-information/interface-key"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "vidu_video",
@@ -92,6 +94,7 @@ pub(super) const VIDEO_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://bailian.console.aliyun.com/?tab=model#/api-key"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "siliconflow_video",
@@ -116,6 +119,7 @@ pub(super) const VIDEO_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://cloud.siliconflow.cn/account/ak"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "zhipu_video",
@@ -141,6 +145,7 @@ pub(super) const VIDEO_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://open.bigmodel.cn/usercenter/apikeys"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "ai302_minimax_video",
@@ -168,6 +173,7 @@ pub(super) const VIDEO_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://dash.302.ai/dashboard/apikey"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "ai302_zhipu_video",
@@ -192,6 +198,7 @@ pub(super) const VIDEO_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://dash.302.ai/dashboard/apikey"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "custom_video",
@@ -214,5 +221,6 @@ pub(super) const VIDEO_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
 ];

@@ -196,6 +196,8 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 | `thinking_blocks_are_off_by_default_and_explicit_false_is_the_same` / `incomplete_streams_drop_thinking_blocks_and_keep_only_text` | 🔴 `with_thinking_blocks` 必须默认关（已发布下游把 `content` 直接存回历史）；断流 / 取消 / 流内错误绝不留下签名不全的 thinking 块 |
 | `cache_only_change_emits_no_usage_event` / `zero_cache_fields_are_omitted_from_the_wire_shape` | cache 用量不进 `Usage` 事件（加字段会破坏下游模式匹配），为 0 时序列化省略（旧 JSON 逐字节不变） |
 | `stream_decoder_is_usable_from_outside` | 🔴 集成测试：`non_exhaustive` 的事件 / 结果从外部能 match，`StreamDecoder` 是 `Send + 'static` |
+| `thinking_off_is_a_json_object_and_chat_only` | 关思考参数写坏了会静默变成「什么都不发」（思考没关掉、没人发现），序列化预置时还会报错；只有对话预置能登记 |
+| `thinking_off_params_follow_the_platform` | 关思考按平台认：认错一家就是发了别家的参数；OpenAI 官方、自定义端点必须是 `None`（OpenAI 遇到未知参数直接 400） |
 | `providers_md_in_sync` | 防止文档变成又一份会漂移的副本 |
 | `spec_files_in_sync`（xtask） | 其他语言照着 `spec/` 实现；用例与代码不同步，别的语言就会悄悄分叉 |
 | `service_config_builder_is_usable_from_outside` | 🔴 集成测试：`non_exhaustive` 入参缺 builder 时下游报 E0639 |

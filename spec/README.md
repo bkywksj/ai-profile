@@ -11,7 +11,7 @@
 | `conformance/diagnose.json` | 验证失败的错误判定：`diagnose` / `suggest_url` / `check_required_fields` |
 | `conformance/ai_profile.json` | `ai.profile` 解析（宽进）与生成（严出） |
 | `conformance/limits.json` | token 限额三层合并 |
-| `conformance/preset_lookup.json` | 从已存配置反推预置：`infer_preset_key` / `infer_preset_key_for`（按能力类别） / `model_limits`（预置登记的静态限额） / `preset_endpoint` |
+| `conformance/preset_lookup.json` | 从已存配置反推预置：`infer_preset_key` / `infer_preset_key_for`（按能力类别） / `model_limits`（预置登记的静态限额） / `thinking_off_params`（关思考要并入请求体的字段） / `preset_endpoint` |
 | `conformance/history.json` | 超长报错识别：`is_context_overflow`（历史裁剪本身暂无用例） |
 | `conformance/stream.json` | 流式解码：OpenAI 兼容 / Anthropic 的 SSE 字节 → 统一事件与收尾结果（`decode`，含分包、断流、取消、流内错误；`input.thinkingBlocks`（可选，缺省 false）开启时保留 Anthropic 的 thinking / redacted_thinking 块，`outcome.usage` 带 cache 读写 token）、`is_stream_options_rejected`、`looks_like_html`、`stop_reason_from_openai`；`rules` 给出块号、分帧、收尾等规则摘要 |
 

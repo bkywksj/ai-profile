@@ -42,6 +42,7 @@ pub(super) const IMAGE_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "wan_image",
@@ -69,6 +70,7 @@ pub(super) const IMAGE_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://bailian.console.aliyun.com/?tab=model#/api-key"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     ProviderPreset {
         key: "siliconflow_image",
@@ -94,6 +96,7 @@ pub(super) const IMAGE_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://cloud.siliconflow.cn/account/ak"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     // ── 国际 ─────────────────────────────────────────────────────
     ProviderPreset {
@@ -116,6 +119,7 @@ pub(super) const IMAGE_PRESETS: &[ProviderPreset] = &[
         apply_url: Some("https://platform.openai.com/api-keys"),
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
     // ── 自定义 ───────────────────────────────────────────────────
     ProviderPreset {
@@ -138,5 +142,6 @@ pub(super) const IMAGE_PRESETS: &[ProviderPreset] = &[
         apply_url: None,
         is_local: false,
         verified_at: None,
+        thinking_off: None,
     },
 ];
