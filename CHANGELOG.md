@@ -21,7 +21,7 @@
 - **`ProviderPreset::thinking_off_params()`** 取解析后的 `serde_json::Map`；**`preset::thinking_off_params(protocol, base_url)`** 按已存配置取
   （先 `infer_preset_key`，按平台认而不按模型认：百炼上的 DeepSeek 模型照样用百炼的 `enable_thinking`）
 - 两个常用写法的常量 **`preset::THINKING_TYPE_DISABLED`** / **`preset::ENABLE_THINKING_FALSE`**，下游自建预置用 **`ProviderPreset::with_thinking_off`**（const）登记
-- 多语言规范：`presets.json` 每条预置多一个 `thinkingOff`（对象或 `null`）；`preset_lookup.json` 增加 8 条 `thinking_off_params` 用例。**已有用例一条未改**
+- 多语言规范：`presets.json` 每条预置多一个 `thinkingOff`（对象或 `null`）；`preset_lookup.json` 增加 11 条 `thinking_off_params` 用例。**已有用例一条未改**
 
 ### 说明
 - 🔴 **这是尽力而为**：同一家里也有关不掉思考的模型（智谱 GLM-5.3 / 5.3-FLASH「强制思考」、百炼 `qwq-plus` 等只能思考的模型），

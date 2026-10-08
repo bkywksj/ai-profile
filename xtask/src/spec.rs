@@ -911,11 +911,20 @@ fn preset_lookup_json() -> Value {
         }));
     }
     // 关思考参数：按平台认（写法各家不同），认不出就是 null —— 发错了 OpenAI 官方直接 400
-    let thinking_inputs: [(Protocol, Option<&str>); 8] = [
+    let thinking_inputs: [(Protocol, Option<&str>); 11] = [
         (Protocol::OpenAiCompatible, Some("https://api.deepseek.com")),
         (
             Protocol::OpenAiCompatible,
+            Some("https://open.bigmodel.cn/api/paas/v4"),
+        ),
+        (
+            Protocol::OpenAiCompatible,
             Some("https://dashscope.aliyuncs.com/compatible-mode/v1"),
+        ),
+        // 不带版本段的旧写法同样按 host 认
+        (
+            Protocol::OpenAiCompatible,
+            Some("https://api.siliconflow.cn"),
         ),
         (
             Protocol::OpenAiCompatible,
@@ -926,6 +935,11 @@ fn preset_lookup_json() -> Value {
         (
             Protocol::Anthropic,
             Some("https://api.deepseek.com/anthropic"),
+        ),
+        // 协议决定写法、不看 host：百炼的 Anthropic 兼容地址不用百炼 OpenAI 兼容模式的 enable_thinking
+        (
+            Protocol::Anthropic,
+            Some("https://dashscope.aliyuncs.com/apps/anthropic"),
         ),
         (
             Protocol::OpenAiCompatible,

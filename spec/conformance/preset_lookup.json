@@ -301,11 +301,33 @@
     },
     {
       "expected": {
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "fn": "thinking_off_params",
+      "input": {
+        "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": {
         "enable_thinking": false
       },
       "fn": "thinking_off_params",
       "input": {
         "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "protocol": "openai_compatible"
+      }
+    },
+    {
+      "expected": {
+        "enable_thinking": false
+      },
+      "fn": "thinking_off_params",
+      "input": {
+        "baseUrl": "https://api.siliconflow.cn",
         "protocol": "openai_compatible"
       }
     },
@@ -342,6 +364,18 @@
       "fn": "thinking_off_params",
       "input": {
         "baseUrl": "https://api.deepseek.com/anthropic",
+        "protocol": "anthropic"
+      }
+    },
+    {
+      "expected": {
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "fn": "thinking_off_params",
+      "input": {
+        "baseUrl": "https://dashscope.aliyuncs.com/apps/anthropic",
         "protocol": "anthropic"
       }
     },
