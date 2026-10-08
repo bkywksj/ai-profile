@@ -198,6 +198,8 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 | `stream_decoder_is_usable_from_outside` | 🔴 集成测试：`non_exhaustive` 的事件 / 结果从外部能 match，`StreamDecoder` 是 `Send + 'static` |
 | `thinking_off_is_a_json_object_and_chat_only` | 关思考参数写坏了会静默变成「什么都不发」（思考没关掉、没人发现），序列化预置时还会报错；只有对话预置能登记 |
 | `thinking_off_params_follow_the_platform` | 关思考按平台认：认错一家就是发了别家的参数；OpenAI 官方、自定义端点必须是 `None`（OpenAI 遇到未知参数直接 400） |
+| `thinking_off_registry_is_exactly_the_documented_list` | 🔴 登记了关思考参数的预置恰好是那 7 档、值恰好是那两种写法：误加一家就是给它发不认识的参数，误删一家就是思考悄悄关不掉；加删都要改这张表并核对官方文档 |
+| `anthropic_protocol_presets_all_register_the_protocol_field` / `every_chat_preset_reaches_its_own_thinking_off_by_address` | Anthropic 协议的档必须登记协议自带写法；登记了的预置按自己的地址反推必须认回自己（被别家 host 抢先认走 = 下游按地址查拿错） |
 | `providers_md_in_sync` | 防止文档变成又一份会漂移的副本 |
 | `spec_files_in_sync`（xtask） | 其他语言照着 `spec/` 实现；用例与代码不同步，别的语言就会悄悄分叉 |
 | `service_config_builder_is_usable_from_outside` | 🔴 集成测试：`non_exhaustive` 入参缺 builder 时下游报 E0639 |
