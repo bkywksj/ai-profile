@@ -186,6 +186,51 @@ mod tests {
         );
     }
 
+    /// 关思考参数跟着条目走：下游自建的条目登记了就保留；同 key 覆盖 crate 预置时整条以下游为准 ——
+    /// 下游没登记就是不发（哪怕 crate 那条登记了），下游登记了就发（哪怕 crate 那条没登记）。
+    ///
+    /// 被覆盖的两条从 crate 数据里现挑，不写死 key：登记清单另有守卫，这里不该跟着它一起红。
+    #[test]
+    fn extend_keeps_thinking_off_and_override_wins() {
+        use crate::preset::{
+            preset_by_key, presets_for, ENABLE_THINKING_FALSE, THINKING_TYPE_DISABLED,
+        };
+        let on = presets_for(Kind::Chat)
+            .find(|p| p.thinking_off.is_some())
+            .unwrap();
+        let off = presets_for(Kind::Chat)
+            .find(|p| p.thinking_off.is_none())
+            .unwrap();
+        let mine = [
+            ProviderPreset::new(
+                "corp_qwen",
+                Kind::Chat,
+                "内网通义网关",
+                Some("https://llm.corp.example/v1"),
+            )
+            .with_group(GROUP_CHINA)
+            .with_thinking_off(ENABLE_THINKING_FALSE),
+            ProviderPreset::new(on.key, Kind::Chat, "下游覆盖、不登记", on.base_url),
+            ProviderPreset::new(off.key, Kind::Chat, "下游覆盖、登记", off.base_url)
+                .with_thinking_off(THINKING_TYPE_DISABLED),
+        ];
+        let list = PresetCatalog::new().extend(&mine).build();
+        let get = |k: &str| list.iter().find(|p| p.key == k).unwrap();
+
+        let corp = get("corp_qwen").thinking_off_params().unwrap();
+        assert_eq!(corp["enable_thinking"], false);
+        assert!(get(on.key).thinking_off_params().is_none(), "{}", on.key);
+        let over = get(off.key).thinking_off_params().unwrap();
+        assert_eq!(over["thinking"]["type"], "disabled", "{}", off.key);
+        // 没碰过的条目原样保留
+        for p in list
+            .iter()
+            .filter(|p| ![on.key, off.key, "corp_qwen"].contains(&p.key))
+        {
+            assert_eq!(p.thinking_off, preset_by_key(p.key).unwrap().thinking_off);
+        }
+    }
+
     #[test]
     fn remove_and_retain() {
         let list = PresetCatalog::new()

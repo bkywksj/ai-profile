@@ -998,6 +998,186 @@ mod tests {
         }
     }
 
+    /// 🔴 守卫：登记了关思考参数的预置**恰好**是这 7 档、值恰好是这两种写法（2026-10-08 按各家官方文档核对）。
+    ///
+    /// 误加一家，下游就会给它发不认识的参数（OpenAI 官方这类直接 400）；误删一家，思考悄悄关不掉、没人发现。
+    /// 加、删、换写法都必须有人有意识地改这张表，并在提交说明里写清核对的是哪份文档。
+    /// 期望值写成 JSON 字面量而不引用常量：常量本身被改错，这里同样会红。
+    #[test]
+    fn thinking_off_registry_is_exactly_the_documented_list() {
+        let disabled = serde_json::json!({ "thinking": { "type": "disabled" } });
+        let enable_false = serde_json::json!({ "enable_thinking": false });
+        let want: std::collections::BTreeMap<&str, serde_json::Value> = [
+            ("anthropic_official", &disabled),
+            ("claude_code", &disabled),
+            ("deepseek", &disabled),
+            ("zhipu", &disabled),
+            ("volcengine_ark", &disabled),
+            ("qwen", &enable_false),
+            ("siliconflow", &enable_false),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k, v.clone()))
+        .collect();
+        // 遍历全部预置（开了多模态也算上），不只对话：生图 / 视频 / 配音一条都不该出现在这里
+        let got: std::collections::BTreeMap<&str, serde_json::Value> = presets()
+            .iter()
+            .filter_map(|p| {
+                let raw = p.thinking_off?;
+                let v = serde_json::from_str(raw)
+                    .unwrap_or_else(|e| panic!("{}: {raw} 不是合法 JSON：{e}", p.key));
+                Some((p.key, v))
+            })
+            .collect();
+        assert_eq!(
+            got, want,
+            "关思考参数的登记清单变了 —— 有意为之就改这张表并核对官方文档"
+        );
+    }
+
+    /// 🔴 守卫：Anthropic 协议的预置一律登记协议自带的 `{"thinking":{"type":"disabled"}}`。
+    ///
+    /// 这是 Messages API 的标准参数（`ThinkingConfigDisabled`），不是某家的怪癖 ——
+    /// 以后再加一档 Anthropic 协议的预置，漏登记它就是「这档关不掉思考」。
+    #[test]
+    fn anthropic_protocol_presets_all_register_the_protocol_field() {
+        let disabled = serde_json::json!({ "thinking": { "type": "disabled" } });
+        let anthropic: Vec<_> = presets_for(Kind::Chat)
+            .filter(|p| p.protocol == Protocol::Anthropic)
+            .collect();
+        assert!(!anthropic.is_empty(), "至少有官方档与 Claude Code 档");
+        for p in anthropic {
+            let got = p.thinking_off_params().map(serde_json::Value::Object);
+            assert_eq!(got.as_ref(), Some(&disabled), "{}", p.key);
+        }
+    }
+
+    /// 反推的边界：存量配置的地址五花八门，按平台认出来的写法不能因为写法差异就变。
+    #[test]
+    fn thinking_off_params_inference_edges() {
+        let oa = Protocol::OpenAiCompatible;
+        let an = Protocol::Anthropic;
+        let disabled = serde_json::json!({ "thinking": { "type": "disabled" } });
+        let enable_false = serde_json::json!({ "enable_thinking": false });
+        for (protocol, url, want) in [
+            // 不带版本段的旧写法：按 host 认
+            (oa, "https://open.bigmodel.cn", Some(&disabled)),
+            (oa, "https://ark.cn-beijing.volces.com", Some(&disabled)),
+            (oa, "https://dashscope.aliyuncs.com", Some(&enable_false)),
+            (oa, "https://api.siliconflow.cn", Some(&enable_false)),
+            // 大小写不敏感
+            (oa, "HTTPS://API.SILICONFLOW.CN/V1", Some(&enable_false)),
+            (oa, "https://Open.BigModel.CN/api/paas/v4", Some(&disabled)),
+            // 带端口、带别的路径、末尾斜杠、两端空白
+            (oa, "https://api.deepseek.com:443/v1/", Some(&disabled)),
+            (oa, "https://api.deepseek.com/beta", Some(&disabled)),
+            (
+                oa,
+                "  https://dashscope.aliyuncs.com/compatible-mode/v1  ",
+                Some(&enable_false),
+            ),
+            // 认得出、但没登记的平台：照样什么都不发
+            (oa, "https://api.openai.com", None),
+            (oa, "https://api.moonshot.ai/v1", None),
+            (oa, "http://127.0.0.1:11434/v1", None),
+            // 空串、纯空白 = 没填地址
+            (oa, "", None),
+            (oa, "   ", None),
+            // Anthropic 协议：空地址就是官方档
+            (an, "", Some(&disabled)),
+            (an, "   ", Some(&disabled)),
+            (an, "https://API.ANTHROPIC.COM/v1", Some(&disabled)),
+            // 🔴 协议决定写法，不看 host：百炼的 Anthropic 兼容地址用协议自带的写法，不是百炼 OpenAI 兼容模式的
+            //    enable_thinking；OpenAI 兼容模式下没登记的 Kimi，走 Anthropic 协议同样是协议写法
+            (
+                an,
+                "https://dashscope.aliyuncs.com/apps/anthropic",
+                Some(&disabled),
+            ),
+            (
+                an,
+                "https://open.bigmodel.cn/api/anthropic",
+                Some(&disabled),
+            ),
+            (an, "https://api.moonshot.cn/anthropic", Some(&disabled)),
+            // 反过来：Anthropic 的地址配成 OpenAI 兼容协议，认不出是谁 → 不发
+            (oa, "https://api.anthropic.com/v1", None),
+        ] {
+            let got = thinking_off_params(protocol, Some(url)).map(serde_json::Value::Object);
+            assert_eq!(got.as_ref(), want, "{protocol:?} {url:?}");
+        }
+    }
+
+    /// 🔴 守卫：每条对话预置用自己的地址按地址查，拿到的必须就是它自己登记的参数。
+    ///
+    /// 登记了却被别家的 `match_hosts` 抢先认走（或自己的 host 写错），`ProviderPreset::thinking_off_params`
+    /// 看着没问题，下游按已存配置调 [`thinking_off_params`] 却拿到别家的写法或 `None`。
+    /// 没有地址的档（Claude Code、Codex、自定义）只能按协议兜底，Anthropic 协议那两档另有守卫。
+    #[test]
+    fn every_chat_preset_reaches_its_own_thinking_off_by_address() {
+        for p in presets_for(Kind::Chat) {
+            let Some(url) = p.endpoint() else { continue };
+            assert_eq!(
+                thinking_off_params(p.protocol, Some(url)),
+                p.thinking_off_params(),
+                "{}：按地址 {url} 认成了 {}",
+                p.key,
+                infer_preset_key(p.protocol, Some(url))
+            );
+        }
+    }
+
+    /// 下游用 [`ProviderPreset::with_thinking_off`] 写坏了（不是 JSON 对象）：取参数一律 `None`，
+    /// 宁可不关思考，也不能把一个数组、字符串并进请求体。
+    #[test]
+    fn malformed_thinking_off_yields_none() {
+        for raw in [
+            r#"[{"thinking":{"type":"disabled"}}]"#,
+            r#""enable_thinking=false""#,
+            "enable_thinking=false",
+            r#"{"enable_thinking":false"#,
+            "",
+            "null",
+            "true",
+            "42",
+        ] {
+            let p = ProviderPreset::new("bad", Kind::Chat, "写坏的", None).with_thinking_off(raw);
+            assert!(p.thinking_off_params().is_none(), "{raw:?}");
+        }
+        // 空对象是合法对象：并进请求体什么都不加，不算写坏
+        let p = ProviderPreset::new("empty", Kind::Chat, "空对象", None).with_thinking_off("{}");
+        assert_eq!(p.thinking_off_params(), Some(serde_json::Map::new()));
+    }
+
+    /// 不是合法 JSON 的文本，序列化预置时必须报错 —— 不能退化成一个字符串混过去，
+    /// 前端会拿它去展开、并进请求体。
+    #[test]
+    fn invalid_json_thinking_off_refuses_to_serialize() {
+        for raw in ["enable_thinking=false", r#"{"enable_thinking":false"#, ""] {
+            let p = ProviderPreset::new("bad", Kind::Chat, "写坏的", None).with_thinking_off(raw);
+            let err = serde_json::to_value(p).expect_err(raw);
+            assert!(err.to_string().contains("thinking_off"), "{raw:?}: {err}");
+        }
+    }
+
+    /// 线格式：每条预置都有 `thinkingOff` 键（不省略），值就是 `thinking_off_params` 的结果或 `null`。
+    ///
+    /// `spec/presets.json` 直接由这份序列化生成（`spec_files_in_sync` 守着），其他语言按键取值：
+    /// 有人给字段加上 `skip_serializing_if`，键就从 JSON 里消失了，「没登记」和「旧版本没有这个字段」再也分不清。
+    #[test]
+    fn every_preset_serializes_thinking_off_as_object_or_null() {
+        for p in presets() {
+            let v = serde_json::to_value(p).unwrap();
+            let got = v
+                .get("thinkingOff")
+                .unwrap_or_else(|| panic!("{}: 线格式缺 thinkingOff 键", p.key));
+            let want = p
+                .thinking_off_params()
+                .map_or(serde_json::Value::Null, serde_json::Value::Object);
+            assert_eq!(got, &want, "{}", p.key);
+        }
+    }
+
     /// 兜底档必须存在，否则 `infer_preset_key` 会返回一个查不到的 key。
     #[test]
     fn custom_preset_exists() {
