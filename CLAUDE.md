@@ -200,6 +200,7 @@ cargo xtask probe       # 🔴 手动探活，打所有预置端点；绝不进 
 | `thinking_off_params_follow_the_platform` | 关思考按平台认：认错一家就是发了别家的参数；OpenAI 官方、自定义端点必须是 `None`（OpenAI 遇到未知参数直接 400） |
 | `thinking_off_registry_is_exactly_the_documented_list` | 🔴 登记了关思考参数的预置恰好是那 7 档、值恰好是那两种写法：误加一家就是给它发不认识的参数，误删一家就是思考悄悄关不掉；加删都要改这张表并核对官方文档 |
 | `anthropic_protocol_presets_all_register_the_protocol_field` / `every_chat_preset_reaches_its_own_thinking_off_by_address` | Anthropic 协议的档必须登记协议自带写法；登记了的预置按自己的地址反推必须认回自己（被别家 host 抢先认走 = 下游按地址查拿错） |
+| `malformed_thinking_off_yields_none_and_refuses_to_serialize` | 🔴 下游 `with_thinking_off` 写成非对象（数组、字符串、数字、布尔、`null`、非法文本）：取参数 `None` 与序列化报错必须同一口径。曾经的 bug：合法但非对象的 JSON 被原样序列化，Rust 侧不发、前端却拿到能展开的值 |
 | `providers_md_in_sync` | 防止文档变成又一份会漂移的副本 |
 | `spec_files_in_sync`（xtask） | 其他语言照着 `spec/` 实现；用例与代码不同步，别的语言就会悄悄分叉 |
 | `service_config_builder_is_usable_from_outside` | 🔴 集成测试：`non_exhaustive` 入参缺 builder 时下游报 E0639 |
