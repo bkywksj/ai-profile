@@ -10,7 +10,7 @@
 
 | 项目 | 仓库路径 | 引用方式 | 当前引用 | 最后同步 | 接入范围 | 本项目侧技能 |
 |---|---|---|---|---|---|---|
-| sigil | `E:/my/桌面软件tauri/sigil` | crates.io 版本（`src-tauri/Cargo.toml`） | `0.1.6` | 2026-10-02 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 · **流式解码**（`stream`，本地 SSE 解析器已删） | `ai-profile-integration` |
+| sigil | `E:/my/桌面软件tauri/sigil` | crates.io 版本（`src-tauri/Cargo.toml`） | `0.1.7` | 2026-10-08 | 预置 · 协议 · 端点 · 验证 · 限额 · 模型清洗 · 历史裁剪 · ai.profile 单条与打包 · **流式解码**（`stream`，本地 SSE 解析器已删）· **关思考**（`thinking_off_params`：网页翻译请求并入这些字段，服务商拒收时去掉重发一次、重发成功才按「地址 + 模型」记住；提交 `c279405`，本地未推送） | `ai-profile-integration` |
 | knowledge_base | `E:/my/桌面软件tauri/knowledge_base` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client）；桌面与 Android 同一个 crate | `0.1.6` | 2026-10-02 | 预置（只用 OpenAI 兼容）· 端点 · 验证 · 限额 · 模型清洗 · ai.profile 单条与打包 · 超长识别（对话协议、RAG 预算、降档阶梯留在应用）；**流式解码**（共用 `read_sse_stream`，迁了写作助手 / RAG 对话 / 智能模式三个 SSE 站点，提交 `6d3ec0f` 起共 6 个，本地未推送）：断流 / 流内错误 / 非事件流都报错，**断流时错误卡片保留已显示的半截正文且不进下一轮上下文**（用户选定）；Ollama 原生 NDJSON 三处原样保留 | `ai-profile-integration` |
 | onestop | `E:/my/backend_tauri/onestop` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts）；只有桌面端碰模型服务 | `0.1.6` | 2026-10-02 | 对话预置 · 协议 · 端点 · 验证（保留非对话模型）· 限额 · ai.profile 单条与打包 · 超长识别 · **生图 / 视频 / 配音预置**（只取它调得通的协议：OpenAI images / 火山方舟视频 / OpenAI speech）；多模态调用仍是它自己的实现；**流式解码**三处全迁（主对话 `chat/mod.rs`、agent 的 OpenAI 与 Anthropic 两路工具循环，提交 `45b79fa` / `e088b91` / `39dfa61`，本地未推送）：断流时主对话保留「[未完成]」提示（产品取舍），工具循环断流不执行工具 | `ai-profile-integration` |
 | story_loom | `E:/my/桌面软件tauri/story_loom` | crates.io 版本（`src-tauri/Cargo.toml`，chat + client + image + video + tts） | `0.1.6` | 2026-10-02 | **四种能力全用**：预置 · 端点 · 验证 · 限额 · ai.profile 单条与打包 + 导出 · 超长识别 · 生图 / 视频 / 配音调用（`media`，实现即来自它）；任务编排、上下文组装、对话实现留在应用；**流式解码**（`provider.rs` 两个协议共用 `pump_stream`，提交 `847ba6c`，本地未推送）：断流 / 流内错误 / 非事件流都改为报错，断流归 `ProviderErrKind::Network`（全本生成会重试整章，最多 3 次） | `ai-profile-integration` |
@@ -38,6 +38,11 @@
 > `preset::thinking_off_params(protocol, base_url)` / `ProviderPreset::thinking_off_params()`，线格式多一个 `thinkingOff`（对象或 `null`）。
 > 需求来自 **sigil 的网页翻译**（deepseek-flash 一批段落光思考就用掉 4000 多 token）；sigil 接入时：翻译请求并入这些字段（已有同名键不覆盖），被拒（4xx）时去掉重试一次。
 > 其余下游**不调用新接口就零变化**，`cargo update -p ai-profile` 即可。用 `with_thinking_off` 自建预置的下游注意：写成非 JSON 对象时，序列化整个目录会报错。
+>
+> 2026-10-08：**sigil 已升 `0.1.7` 并接入关思考**（提交 `c279405`，本地未推送；全量 1847 条通过，开发版实测一批 29 段 1.95 秒 / 输出 347 token，此前同一批光思考就 4253 token、正文 0 字）。
+> 接入时的三条经验，其他下游照做：① 并进请求体顶层、**已有同名键不覆盖**；② 被拒（400 / 422）且**不是上下文超长**时去掉字段重发一次，重发成功才记住这个「地址 + 模型」，
+> 重发也失败说明不是这个字段的问题，不记；③ 智谱 GLM-5.3 强制思考、百炼 `qwq-plus` 只能思考，文档没写发了会怎样，所以第 ② 条的兜底不能省。
+> 另：`preset::thinking_off_params` 只认 crate 自己的预置，下游用 `PresetCatalog` 加 / 覆盖的条目要自己按 key 取（与 `model_limits` 同一设计）。
 >
 > 2026-10-01：**`0.1.5` 已发布到 crates.io**（tag `v0.1.5` 指向 `5986832`，CI 全绿，docs.rs 与文档站已同步）。它给 `stream` 加了 opt-in 的 `StreamDecoder::with_thinking_blocks(true)`（保留 Anthropic thinking 块含 `signature`，供带工具调用的多轮回传）与 `outcome.usage` 的 cache 读写 token**，
 > 是 reeve AI 助手接流式的前置条件。默认关闭，**现有下游不用改，`Cargo.toml` 的引用也不用动**：六个下游没人调用该选项，`outcome.content` 不变。
