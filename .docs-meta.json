@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "171e70b",
-  "lastSyncTime": "2026-10-01T04:30:00Z",
+  "lastSyncCommit": "b20baf7",
+  "lastSyncTime": "2026-10-08T04:22:45Z",
   "coveredSections": [
     "guide",
     "api",
@@ -282,6 +282,62 @@
         "CHANGELOG.md"
       ],
       "note": "0.1.4：流式解码 stream、infer_preset_key_for；规范 v0.1.4 存档（325 条用例，含 stream.json）。文档站提交 fb55b0f 已推三远程，同时带上 3c6662c"
+    },
+    {
+      "commit": "455ba99",
+      "time": "2026-10-01T12:38:53Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "api/stream.md",
+        "reference/changelog.md",
+        "reference/spec.md",
+        "reference/versioning.md",
+        "public/spec/**"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/stream.rs",
+        "spec/**",
+        "CHANGELOG.md"
+      ],
+      "note": "补记（当时漏回写，2026-10-08 按两边提交记录补）：0.1.5 stream 可选保留 thinking 块、Anthropic 缓存用量；规范 v0.1.5 存档（336 条）。文档站提交 0744873"
+    },
+    {
+      "commit": "74277d7",
+      "time": "2026-10-02T01:51:39Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "reference/changelog.md",
+        "reference/spec.md",
+        "reference/versioning.md",
+        "public/spec/**"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/preset/chat.rs",
+        "spec/**",
+        "CHANGELOG.md"
+      ],
+      "note": "补记（当时漏回写，2026-10-08 按两边提交记录补）：0.1.6 Sonnet 5.5 进候选清单；规范 v0.1.6 存档（用例仍 336 条）。文档站提交 955974e"
+    },
+    {
+      "commit": "b20baf7",
+      "time": "2026-10-08T04:22:45Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "api/preset.md",
+        "api/catalog.md",
+        "guide/frontend.md",
+        "reference/spec.md",
+        "public/ai/ai-profile-integration.md",
+        "context7.json"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/preset/mod.rs",
+        "crates/ai-profile/src/preset/chat.rs",
+        "crates/ai-profile/src/preset/catalog.rs",
+        "spec/**",
+        "CHANGELOG.md"
+      ],
+      "note": "0.1.7 关思考参数 thinking_off（未发布）。文档站本地提交 533f609 未推送；reference/changelog.md、reference/versioning.md 与规范页的版本号、public/spec/（v0.1.7 存档，347 条用例）待发版后由 sync-spec 一起补"
     }
   ]
 }
