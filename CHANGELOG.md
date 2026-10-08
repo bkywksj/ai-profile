@@ -3,7 +3,7 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，版本位的判定规则见
 [`docs/versioning.md`](docs/versioning.md)。
 
-## [未发布]
+## [0.1.7] - 2026-10-08
 
 **升级只需 `cargo update -p ai-profile`，不用改代码；不调用新接口的下游行为完全不变。** 新增「关掉思考」的服务商参数表，来自 sigil 的网页翻译：
 用户的 deepseek-flash 默认带思考，一批网页段落光思考就用掉 4000 多 token，译文一个字都没回来。
