@@ -73,7 +73,7 @@
 - 影响面：六个已接入下游都没有调用 `with_thinking_blocks`，`outcome.content` 不变；`outcome.usage` 只在 Anthropic 流带 cache 字段时多出两个值，
   下游若按字段读（`input_tokens` / `output_tokens`）不受影响。`StreamUsage` 是 `#[non_exhaustive]`，加字段对下游兼容
 
-## [0.1.4] - 2026-09-30
+## [0.1.4] - 2026-10-01
 
 **升级只需 `cargo update -p ai-profile`，不用改代码。** 新增流式解码 `stream`（各下游可逐步把自写的 SSE 解析换掉）与按能力反推预置的 `infer_preset_key_for`（来自 prism 接入反馈）。
 
