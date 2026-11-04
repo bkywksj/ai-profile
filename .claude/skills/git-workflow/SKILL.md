@@ -62,7 +62,8 @@ Conventional Commits，中文正文：
 - 🔴 **crate 先推 `github`**：CI（含 MSRV 检查）跑在 GitHub，发布前要等它绿；Gitee / GitCode 是镜像，随后补上
 - 🔴 **文档站必须推 `gitee`**：上线部署由 Gitee 触发，只推 GitHub 的话线上文档不会更新
 - 部署平台（EdgeOne Pages）关联的是 `bkywksj/ai-profile-docs`，**不是**本 crate：
-  安装 `pnpm install`、构建 `pnpm build`、输出 `docs/.vitepress/dist`、根目录 `/`。
+  安装 `pnpm install`、构建 `pnpm build`、根目录 `/`；输出目录 Astro 版是 `dist`（VitePress 时代是 `docs/.vitepress/dist`，
+  切换上线时在 EdgeOne 后台把构建预设改成 Astro、输出目录改 `dist`，Node ≥ 22.12）。
   构建日志报 `ERR_PNPM_NO_PKG_MANIFEST No package.json found` = 关联错成了 crate 仓库
 - 不跑本地 `git push` / `fetch` / `pull`（会弹凭据窗卡死）
 - 推送后看返回的 `pushed` 字段，区分「真推上去」与「远端已是最新」

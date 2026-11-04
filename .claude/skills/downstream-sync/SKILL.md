@@ -40,12 +40,16 @@ description: |
 ## ② 同步文档站
 
 ```bash
-# 在 ../ai-profile-docs
-pnpm sync-providers        # 把 docs/providers.md 同步到 reference/providers.md
+# 在 ../ai-profile-docs（2026-11 起是 Astro 站，命令名与 VitePress 时代相同）
+pnpm sync-providers        # 把 docs/providers.md 同步到 src/content/docs/reference/providers.md
 pnpm sync-spec             # 🔴 只在发版升版本号之后跑：把 spec/ 同步到 public/spec/ 并新建 v<版本>/ 存档
-pnpm build                 # 必须构建通过
-pnpm check                 # 站内链接 + 手写文档里的数量 / 当前版本号与代码一致（check-links + check-facts）
+pnpm build                 # 必须构建通过（产物 dist/）
+pnpm check                 # astro check + 页面里的数量 / 当前版本号与 public/spec 一致（check-facts）+ dist 站内断链（check-links，要先 build）
 ```
+
+> 文档站路径对照（Astro 版 / VitePress 版）：正文 `src/content/docs/<栏目>/<页>.md` / `docs/<栏目>/<页>.md`；
+> 静态文件 `public/**` / `docs/public/**`；构建输出 `dist/` / `docs/.vitepress/dist/`。下文的 `api/*.md` 等都是正文目录下的相对路径。
+> 服务商清单页的表格与统计、规范页的用例表在构建时直接读 `public/spec/`，不用手改；首页、产品矩阵、页头下拉里写死的数字由 `check-facts` 核对。
 
 🔴 `sync-spec` 的时机：crate 改了规则但还没升版本号时，`spec/` 头里仍是旧版本号；
 这时同步会改写已发布版本的冻结存档，脚本会拒绝并报错。**别删存档目录绕过** ——
@@ -55,7 +59,8 @@ pnpm check                 # 站内链接 + 手写文档里的数量 / 当前版
 🔴 **上线由 Gitee 触发**：只推 GitHub 的话线上文档不会更新。
 
 API / 限额 / 协议有变 → 同步改对应页（`api/*.md`、`guide/frontend.md` 的 TS 类型）。
-发了新版本 → 在 `reference/changelog.md` 加一节（面向使用者：带来了什么、升级要不要改代码），导航栏的版本号一起改。
+发了新版本 → 在 `reference/changelog.md` 加一节（面向使用者：带来了什么、升级要不要改代码；日期以本仓库 CHANGELOG.md 为准），
+页头下拉里「更新日志」的说明（文档站 `src/site.config.ts` 的「最新 x.y.z · 日期」）一起改，`pnpm check` 会核对版本号。
 **同步完回到本仓库更新 `.docs-meta.json`**：`lastSyncCommit` + 追加一条 `updateHistory`。
 漏了这步，下次增量更新会从错误的起点算 diff（曾经停在建仓那次一整天）。
 

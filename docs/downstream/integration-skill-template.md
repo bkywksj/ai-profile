@@ -8,7 +8,7 @@
 > sigil 的成品可作参考：`E:/my/桌面软件tauri/sigil/.claude/skills/ai-profile-integration/SKILL.md`。
 >
 > 🔴 这是**我们自己的应用**用的模板（带本机路径与内部流程）。给外部用户的通用版本在文档站
-> `ai-profile-docs/docs/public/ai/ai-profile-integration.md`（线上 `/ai/ai-profile-integration.md`），
+> `ai-profile-docs/public/ai/ai-profile-integration.md`（VitePress 时代在 `docs/public/ai/`；线上 `/ai/ai-profile-integration.md`），
 > 规则类内容两边要保持一致。
 
 ---

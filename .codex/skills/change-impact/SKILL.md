@@ -68,7 +68,7 @@ Context7 规则、已接入的下游项目（清单见 `docs/downstream.md`，�
 | 从外部调用的集成测试 | `tests/smoke.rs` 加一条 | ✋（缺 builder 时下游直接编译失败） |
 | 示例程序 | `crates/ai-profile/examples/*.rs` | 🛡️ CI 编译 examples |
 | 文档站 API 页、`guide/frontend.md` 的 TS 类型 | 手改 | ✋ |
-| 公开 AI 接入文件 | 文档站 `docs/public/ai/ai-profile-integration.md` —— 外部 AI 照它写代码，API 变了它必须跟上 | ✋ |
+| 公开 AI 接入文件 | 文档站 `public/ai/ai-profile-integration.md`（VitePress 时代在 `docs/public/ai/`）—— 外部 AI 照它写代码，API 变了它必须跟上 | ✋ |
 | Context7 规则 | 文档站 `context7.json` 的 `rules` | ✋ |
 | 新增的纯函数要不要进多语言规范 | 能写成「输入 → 输出」的就在 `xtask/src/spec.rs` 加用例，并登记到 `spec/README.md` 与 `reference/spec.md` 的实现范围表 | ✋ |
 | 下游代码 | 逐个改、同一提交里改（`downstream-sync`） | ✋ |
@@ -83,6 +83,8 @@ Context7 规则、已接入的下游项目（清单见 `docs/downstream.md`，�
 「未发布」里每一条改动，A–D 的 ✋ 项都要确认已做 —— 发版是最后一道能补的关口。
 
 ## 二、源码 → 文档页
+
+页面路径相对于文档站的正文目录 `src/content/docs/`（VitePress 时代是 `docs/`）；`public/` 在文档站仓库根。
 
 | 源码 | 文档站页面 |
 |---|---|
