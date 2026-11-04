@@ -101,7 +101,7 @@ crate 代码里不按域名认品牌（2026-09-24 中宇AI智行就是这样撤�
 | 本 crate | `github` | `github.com/bkywksj/ai-profile` | **公开** | `github1` | 🔴 主仓：下游 `Cargo.toml` 按提交号从这里拉，CI 也从这里拉 |
 | 本 crate | `gitee` | `gitee.com/bkywksj/ai-profile` | 私有 | `gitee` | 镜像 |
 | 本 crate | `gitcode` | `gitcode.com/zhuawashi/ai-profile` | 私有 | `gitcode` | 镜像 |
-| 文档站 `../ai-profile-docs` | `github` | `github.com/bkywksj/ai-profile-docs` | 私有 | `github1` | 镜像 |
+| 文档站 `../ai-profile-docs` | `github` | `github.com/bkywksj/ai-profile-docs` | **公开** | `github1` | 镜像；Context7 从这里收录文档（根目录 `context7.json`）。可见性暂不改，文档站迁完 Astro 后再定 |
 | 文档站 | `gitee` | `gitee.com/bkywksj/ai-profile-docs` | 私有 | `gitee` | 🔴 **上线触发源**：推到这里才会重新构建部署 |
 | 文档站 | `gitcode` | `gitcode.com/zhuawashi/ai-profile-docs` | 私有 | `gitcode` | 镜像 |
 
