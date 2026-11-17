@@ -3,6 +3,14 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，版本位的判定规则见
 [`docs/versioning.md`](docs/versioning.md)。
 
+## [未发布]
+
+### 修复
+- **`VerifyError::AuthFailed` 的提示文字不再一律说「密钥无效或已过期」**，改为「鉴权失败（密钥无效、已过期，或账号 / 地区无权访问）：…」。
+  403 也会落到这个变体，而 403 常是地区限制（Anthropic 对不支持的地区直接 403）或账号没开通，原文案让用户反复换 key 也解决不了（onestop 实测踩到）。
+  只改 `Display` 文字：变体、`code`（`auth_failed`）与 `detail` 都不变，按 `code` 分支的下游不受影响；
+  直接展示错误文字的下游会看到新文案
+
 ## [0.1.7] - 2026-10-08
 
 **升级只需 `cargo update -p ai-profile`，不用改代码；不调用新接口的下游行为完全不变。** 新增「关掉思考」的服务商参数表，来自 sigil 的网页翻译：

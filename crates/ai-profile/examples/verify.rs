@@ -53,7 +53,9 @@ async fn main() {
         // 🔴 每个变体对应一个界面动作，不要只显示一行红字
         Err(e) => {
             let action = match &e {
-                VerifyError::AuthFailed { .. } => "高亮密钥输入框：密钥不对或已过期",
+                VerifyError::AuthFailed { .. } => {
+                    "高亮密钥输入框：密钥不对 / 已过期，或账号 / 地区无权访问"
+                }
                 VerifyError::NotFound {
                     suggested_url: Some(_),
                     ..

@@ -27,8 +27,12 @@ use crate::kind::Protocol;
 #[serde(tag = "code", rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum VerifyError {
-    /// 401 / 403 —— 密钥无效或已过期。
-    #[error("密钥无效或已过期：{detail}")]
+    /// 401 / 403 —— 鉴权被拒。
+    ///
+    /// 多数是密钥无效或已过期，但 403 也可能是地区限制（Anthropic 对不支持地区回 403）、
+    /// 账号未开通该接口或权限不足 —— 只说「密钥无效」会让用户反复换 key 也解决不了。
+    /// 原因以 `detail`（端点原文）为准。
+    #[error("鉴权失败（密钥无效、已过期，或账号 / 地区无权访问）：{detail}")]
     AuthFailed {
         /// 端点返回的原始说明（已脱敏，不含密钥）
         detail: String,
@@ -116,5 +120,23 @@ mod tests {
     fn unreachable_is_not_actionable() {
         assert!(!VerifyError::Unreachable { proxy_hint: true }.is_actionable());
         assert!(VerifyError::AuthFailed { detail: "x".into() }.is_actionable());
+    }
+
+    /// 403 也走 AuthFailed,常是地区限制而不是 key 坏了:文案不能只说「密钥无效」,线格式保持不变。
+    #[test]
+    fn auth_failed_message_covers_forbidden_and_keeps_wire_shape() {
+        let e = VerifyError::AuthFailed {
+            detail: "Request not allowed".into(),
+        };
+        let text = e.to_string();
+        assert!(
+            text.contains("地区") && text.contains("Request not allowed"),
+            "{text}"
+        );
+        let j = serde_json::to_string(&e).unwrap();
+        assert_eq!(
+            j,
+            r#"{"code":"auth_failed","detail":"Request not allowed"}"#
+        );
     }
 }
