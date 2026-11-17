@@ -3,7 +3,9 @@
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，版本位的判定规则见
 [`docs/versioning.md`](docs/versioning.md)。
 
-## [未发布]
+## [0.1.8] - 2026-11-17
+
+**升级只需 `cargo update -p ai-profile`，不用改代码；只有一处提示文字变化，线格式不变。**
 
 ### 修复
 - **`VerifyError::AuthFailed` 的提示文字不再一律说「密钥无效或已过期」**，改为「鉴权失败（密钥无效、已过期，或账号 / 地区无权访问）：…」。
