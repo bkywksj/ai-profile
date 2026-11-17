@@ -4,8 +4,8 @@
   "docsLocation": "sibling",
   "docsPath": "../ai-profile-docs",
   "themeColor": "#4f46e5",
-  "lastSyncCommit": "8d80dce",
-  "lastSyncTime": "2026-10-08T04:45:00Z",
+  "lastSyncCommit": "c5249bc",
+  "lastSyncTime": "2026-11-17T15:10:00Z",
   "coveredSections": [
     "guide",
     "api",
@@ -355,6 +355,27 @@
         "CHANGELOG.md"
       ],
       "note": "0.1.7 已发布（tag v0.1.7 → 8d80dce）：sync-spec 生成 v0.1.7 存档（347 条用例）、更新日志与版本号。文档站提交 533f609 + 83d80b9 已推三远程（Gitee 触发上线）"
+    },
+    {
+      "commit": "c5249bc",
+      "time": "2026-11-17T15:10:00Z",
+      "type": "incremental",
+      "affectedDocs": [
+        "reference/changelog.md",
+        "reference/errors.md",
+        "reference/versioning.md",
+        "reference/spec.md",
+        "public/spec/**",
+        "首页 / 产品矩阵 / 技术服务页的当前版本"
+      ],
+      "sourceChanges": [
+        "crates/ai-profile/src/error.rs",
+        "Cargo.toml",
+        "spec/**",
+        "CHANGELOG.md",
+        "docs/downstream.md"
+      ],
+      "note": "0.1.8 已发布（tag v0.1.8 → 401be17）：AuthFailed 提示文字改为「鉴权失败（密钥无效、已过期，或账号 / 地区无权访问）」；sync-spec 新建 v0.1.8 存档；文档站提交 5d78e54 已推三个远程（Gitee 触发上线）"
     }
   ]
 }
